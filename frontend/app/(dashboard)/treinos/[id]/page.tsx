@@ -1,66 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft, Edit2, Trash2, Play, Timer, Dumbbell, Target, Weight,
   RefreshCw, Check, Loader2, X, Trophy, Flame,
 } from "lucide-react";
-import { useWorkout, useWorkouts, Exercise } from "@/hooks/useWorkouts";
+import { useWorkout, useWorkouts } from "@/hooks/useWorkouts";
+import { useWorkoutSession } from "@/hooks/useWorkoutSession";
 import EditarTreinoModal from "@/components/EditarTreinoModal";
-import { api } from "@/lib/api";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tipos
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Estado de cada série durante a execução — o utilizador pode alterar peso e reps
-interface LiveSet {
-  weight: number;
-  reps: number;
-  done: boolean;
-  // prev já vem do workout original (última sessão)
-  prev: number;
-}
-
-// Estado de cada exercício durante a execução
-interface LiveExercise {
-  id: number | undefined;
-  name: string;
-  muscle: string;
-  restSeconds: number;
-  sets: LiveSet[];
-}
-
-// Payload enviado ao backend ao finalizar
-interface SessionPayload {
-  durationMinutes: number;
-  notes: string;
-  exercises: {
-    exerciseId: number;
-    sets: { setIndex: number; weight: number; reps: number; done: boolean }[];
-  }[];
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Converte Exercise[] do backend para LiveExercise[] editável
-function toLiveExercises(exercises: Exercise[]): LiveExercise[] {
-  return exercises.map(ex => ({
-    id: ex.id,
-    name: ex.name,
-    muscle: ex.muscle,
-    restSeconds: ex.restSeconds ?? 60,
-    sets: ex.sets.map(s => ({
-      weight: s.weight ?? 0,
-      reps: s.reps ?? 10,
-      done: false, // começa não feita — o utilizador marca durante a sessão
-      prev: s.prev ?? 0,
-    })),
-  }));
-}
 
 // Formata segundos como "mm:ss" para o cronómetro da sessão
 function formatTime(seconds: number): string {
@@ -69,177 +17,23 @@ function formatTime(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Componente
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function TreinoDetalhe() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const { workout, loading, error } = useWorkout(id);
   const { deleteWorkout } = useWorkouts();
 
-  // ── Modo de execução ────────────────────────────────────────────────────────
-  // false = vista de planeamento | true = sessão em curso
-  const [executing, setExecuting] = useState(false);
-
-  // Exercícios com estado mutável durante a execução
-  const [liveExercises, setLiveExercises] = useState<LiveExercise[]>([]);
-
-  // Cronómetro total da sessão (em segundos)
-  const [sessionSeconds, setSessionSeconds] = useState(0);
-  const sessionRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Timer de descanso entre séries (contagem decrescente)
-  const [restTimer, setRestTimer] = useState<number | null>(null);
-  const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Exercício em destaque no painel lateral (scroll para ele)
-  const [focusedEx, setFocusedEx] = useState(0);
-
-  // Notas da sessão
-  const [notes, setNotes] = useState("");
-
-  // Estado de finalização
-  const [finishing, setFinishing] = useState(false);
-  const [sessionResult, setSessionResult] = useState<{ setsCompleted: number; totalVolume: number; durationMinutes: number } | null>(null);
+  const {
+    executing, liveExercises, focusedEx, notes, setNotes, finishing, sessionResult,
+    sessionSeconds, restTimer, startSession, stopSession, toggleSet, updateLiveSet,
+    handleFinish, startRestTimer, skipRestTimer, addRestSeconds,
+    doneSetsCount, totalSetsCount, progress, liveVolume,
+  } = useWorkoutSession(workout);
 
   // Modais auxiliares
   const [showEditar, setShowEditar] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  // Inicializa liveExercises quando o workout carrega
-  useEffect(() => {
-    if (workout) setLiveExercises(toLiveExercises(workout.exercises));
-  }, [workout]);
-
-  // ── Cronómetro da sessão ─────────────────────────────────────────────────────
-  const startSessionTimer = useCallback(() => {
-    sessionRef.current = setInterval(() => setSessionSeconds(s => s + 1), 1000);
-  }, []);
-
-  const stopSessionTimer = useCallback(() => {
-    if (sessionRef.current) clearInterval(sessionRef.current);
-  }, []);
-
-  // ── Timer de descanso ────────────────────────────────────────────────────────
-  function startRestTimer(seconds: number) {
-    if (restRef.current) clearInterval(restRef.current);
-    setRestTimer(seconds);
-    restRef.current = setInterval(() => {
-      setRestTimer(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(restRef.current!);
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
-
-  function skipRestTimer() {
-    if (restRef.current) clearInterval(restRef.current);
-    setRestTimer(null);
-  }
-
-  // Limpa os intervalos ao desmontar
-  useEffect(() => {
-    return () => {
-      if (sessionRef.current) clearInterval(sessionRef.current);
-      if (restRef.current) clearInterval(restRef.current);
-    };
-  }, []);
-
-  // ── Iniciar sessão ───────────────────────────────────────────────────────────
-  function handleStartSession() {
-    if (!workout) return;
-    setLiveExercises(toLiveExercises(workout.exercises));
-    setSessionSeconds(0);
-    setRestTimer(null);
-    setNotes("");
-    setFocusedEx(0);
-    setExecuting(true);
-    startSessionTimer();
-  }
-
-  // ── Marcar/desmarcar série ───────────────────────────────────────────────────
-  function toggleSet(exIdx: number, setIdx: number) {
-    setLiveExercises(prev => {
-      const next = prev.map((ex, ei) => {
-        if (ei !== exIdx) return ex;
-        const sets = ex.sets.map((s, si) => {
-          if (si !== setIdx) return s;
-          const nowDone = !s.done;
-          // Inicia o timer de descanso ao marcar como feita
-          if (nowDone) startRestTimer(ex.restSeconds);
-          return { ...s, done: nowDone };
-        });
-        return { ...ex, sets };
-      });
-      return next;
-    });
-    setFocusedEx(exIdx);
-  }
-
-  // ── Editar peso/reps de uma série durante a execução ────────────────────────
-  function updateLiveSet(exIdx: number, setIdx: number, field: "weight" | "reps", value: number) {
-    setLiveExercises(prev => prev.map((ex, ei) =>
-      ei !== exIdx ? ex : {
-        ...ex,
-        sets: ex.sets.map((s, si) =>
-          si !== setIdx ? s : { ...s, [field]: value }
-        ),
-      }
-    ));
-  }
-
-  // ── Finalizar sessão ─────────────────────────────────────────────────────────
-  async function handleFinish() {
-    if (!workout) return;
-    stopSessionTimer();
-    setFinishing(true);
-
-    const payload: SessionPayload = {
-      durationMinutes: Math.round(sessionSeconds / 60),
-      notes,
-      exercises: liveExercises
-        .filter(ex => ex.id != null)
-        .map(ex => ({
-          exerciseId: ex.id as number,
-          sets: ex.sets.map((s, idx) => ({
-            setIndex: idx,
-            weight: s.weight,
-            reps: s.reps,
-            done: s.done,
-          })),
-        })),
-    };
-
-    try {
-      const result = await api.post<{ setsCompleted: number; totalVolume: number; durationMinutes: number }>(
-        `/workouts/${workout.id}/session`,
-        payload
-      );
-      setSessionResult(result);
-    } catch {
-      // Mesmo com erro de rede, mostra o resumo local
-      const doneSets = liveExercises.flatMap(ex => ex.sets).filter(s => s.done).length;
-      const vol = liveExercises.flatMap(ex => ex.sets)
-        .filter(s => s.done)
-        .reduce((sum, s) => sum + s.weight * s.reps, 0);
-      setSessionResult({ setsCompleted: doneSets, totalVolume: vol, durationMinutes: Math.round(sessionSeconds / 60) });
-    } finally {
-      setFinishing(false);
-    }
-  }
-
-  // ── Stats da sessão ao vivo ──────────────────────────────────────────────────
-  const allSets = liveExercises.flatMap(ex => ex.sets);
-  const doneSetsCount = allSets.filter(s => s.done).length;
-  const totalSetsCount = allSets.length;
-  const progress = totalSetsCount > 0 ? (doneSetsCount / totalSetsCount) * 100 : 0;
-  const liveVolume = allSets.filter(s => s.done).reduce((sum, s) => sum + s.weight * s.reps, 0);
 
   // ── Estilos da tabela ────────────────────────────────────────────────────────
   const th: React.CSSProperties = {
@@ -357,7 +151,7 @@ export default function TreinoDetalhe() {
               <Edit2 size={14} /> Editar
             </button>
             {/* Botão principal: inicia o modo de execução */}
-            <button className="btn btn-primary btn-lg" onClick={handleStartSession}>
+            <button className="btn btn-primary btn-lg" onClick={startSession}>
               <Play size={14} fill="currentColor" /> Iniciar treino
             </button>
           </div>
@@ -429,7 +223,7 @@ export default function TreinoDetalhe() {
               </div>
             )}
             {/* CTA para iniciar */}
-            <button className="btn btn-primary btn-lg btn-block" onClick={handleStartSession}
+            <button className="btn btn-primary btn-lg btn-block" onClick={startSession}
               style={{ justifyContent: "center" }}>
               <Play size={16} fill="currentColor" /> Iniciar treino agora
             </button>
@@ -481,10 +275,7 @@ export default function TreinoDetalhe() {
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <div className="row gap-3">
-            <button className="icon-btn" onClick={() => {
-              stopSessionTimer();
-              setExecuting(false);
-            }}>
+            <button className="icon-btn" onClick={stopSession}>
               <X size={18} />
             </button>
             <div>
@@ -659,7 +450,7 @@ export default function TreinoDetalhe() {
               </div>
               <div className="row gap-2" style={{ marginTop: 16, justifyContent: "center" }}>
                 <button className="btn btn-secondary btn-sm flex-1" onClick={skipRestTimer}>Pular</button>
-                <button className="btn btn-primary btn-sm flex-1" onClick={() => setRestTimer(t => (t ?? 0) + 30)}>+30s</button>
+                <button className="btn btn-primary btn-sm flex-1" onClick={() => addRestSeconds(30)}>+30s</button>
               </div>
             </div>
           )}

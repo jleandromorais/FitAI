@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
-import { ExerciseSuggestion, ALL_GROUPS } from "@/lib/exercises";
+import { X, Trash2 } from "lucide-react";
+import { ALL_GROUPS } from "@/lib/exercises";
 import { useWorkouts, Workout } from "@/hooks/useWorkouts";
-import { SetRow, ExerciseRow, DAYS_OPTIONS, TAGS_OPTIONS, uid, makeSet, labelStyle, chipToggleStyle } from "@/lib/workout-shared";
+import { ExerciseRow, DAYS_OPTIONS, TAGS_OPTIONS, uid, labelStyle, chipToggleStyle } from "@/lib/workout-shared";
+import { useExerciseRows } from "@/hooks/useExerciseRows";
 import ExerciseCatalog from "@/components/ui/ExerciseCatalog";
 import SetsTable from "@/components/ui/SetsTable";
 
@@ -33,7 +34,8 @@ export default function EditarTreinoModal({ workout, onClose, onSaved }: Props) 
     workout.schedule ? workout.schedule.split(/[,·\s]+/).map(d => d.trim()).filter(Boolean) : []
   );
   const [selectedTags, setSelectedTags] = useState<string[]>(workout.tags ?? []);
-  const [exercises, setExercises]       = useState<ExerciseRow[]>(toExerciseRows(workout));
+  const { exercises, addExercise, addCustomExercise, removeExercise, addSet, removeSet, updateSet } =
+    useExerciseRows(toExerciseRows(workout));
   const [tab, setTab]                   = useState<"info" | "exercicios">("info");
   const [saving, setSaving]             = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -44,39 +46,6 @@ export default function EditarTreinoModal({ workout, onClose, onSaved }: Props) 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
-
-  // ── Gestão de exercícios ──────────────────────────────────────────────────────
-
-  function addExercise(sug: ExerciseSuggestion) {
-    setExercises(prev => [...prev, {
-      id: uid(), name: sug.name, muscle: sug.muscle, group: sug.group, tips: sug.tips,
-      sets: Array.from({ length: sug.defaultSets }, () => makeSet(sug.defaultReps, sug.defaultWeight, sug.defaultRest)),
-    }]);
-  }
-
-  function addCustomExercise(name: string, group: string) {
-    setExercises(prev => [...prev, { id: uid(), name, muscle: group, group, tips: "", sets: [makeSet()] }]);
-  }
-
-  function removeExercise(id: string) {
-    setExercises(prev => prev.filter(e => e.id !== id));
-  }
-
-  function addSet(exId: string) {
-    setExercises(prev => prev.map(e => e.id !== exId ? e : {
-      ...e, sets: [...e.sets, makeSet(e.sets.at(-1)?.reps ?? 10, e.sets.at(-1)?.weight ?? 0, e.sets.at(-1)?.rest ?? 60)],
-    }));
-  }
-
-  function removeSet(exId: string, i: number) {
-    setExercises(prev => prev.map(e => e.id !== exId ? e : { ...e, sets: e.sets.filter((_, j) => j !== i) }));
-  }
-
-  function updateSet(exId: string, i: number, field: keyof SetRow, value: number) {
-    setExercises(prev => prev.map(e => e.id !== exId ? e : {
-      ...e, sets: e.sets.map((s, j) => j !== i ? s : { ...s, [field]: value }),
-    }));
-  }
 
   // ── Submissão ─────────────────────────────────────────────────────────────────
 

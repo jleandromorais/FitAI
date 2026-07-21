@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X, Plus, Trash2, ChevronRight, ChevronLeft, Check } from "lucide-react";
-import { ExerciseSuggestion } from "@/lib/exercises";
 import { useWorkouts } from "@/hooks/useWorkouts";
+import { useWorkoutSlots } from "@/hooks/useWorkoutSlots";
 import {
-  SetRow, ExerciseRow, SlotDef, SplitDef,
   DAYS_OPTIONS, TAGS_OPTIONS, ALL_GROUPS,
-  uid, makeSet, codeFromLabel, buildSlotsFromSplit, SPLITS,
+  codeFromLabel, SPLITS,
   labelStyle, chipToggleStyle,
 } from "@/lib/workout-shared";
 import ExerciseCatalog from "@/components/ui/ExerciseCatalog";
@@ -18,15 +17,44 @@ interface Props {
   onCreated: () => void;
 }
 
+const STEP_LABELS = ["Split", "Dias", "Exercícios", "Revisão"];
+
+function StepDots({ step }: { step: number }) {
+  return (
+    <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 28 }}>
+      {STEP_LABELS.map((label, i) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{
+            width: 24, height: 24, borderRadius: "50%",
+            background: i <= step ? "var(--accent)" : "var(--surface-2)",
+            border: `2px solid ${i === step ? "var(--accent)" : "var(--border)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, fontWeight: 700,
+            color: i <= step ? "#000" : "var(--text-mute)", transition: "all 0.2s",
+          }}>
+            {i < step ? <Check size={11} /> : i + 1}
+          </div>
+          <span style={{ fontSize: 11, color: i === step ? "var(--text)" : "var(--text-mute)" }}>{label}</span>
+          {i < STEP_LABELS.length - 1 && <div style={{ width: 16, height: 1, background: "var(--border)" }} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function NovoTreinoModal({ onClose, onCreated }: Props) {
   const { createWorkout } = useWorkouts();
 
-  const [step, setStep]                   = useState(0);
-  const [selectedSplit, setSelectedSplit] = useState<SplitDef | null>(null);
-  const [slots, setSlots]                 = useState<SlotDef[]>([]);
-  const [activeSlotIdx, setActiveSlotIdx] = useState(0);
-  const [saving, setSaving]               = useState(false);
-  const [error, setError]                 = useState<string | null>(null);
+  const {
+    step, setStep,
+    selectedSplit, selectSplit,
+    slots, activeSlotIdx, setActiveSlotIdx,
+    addCustomSlot, updateSlotLabel, toggleSlotGroup, toggleSlotDay, toggleSlotTag, removeSlot, duplicateSlot,
+    addExercise, addCustomExercise, removeExercise, addSet, removeSet, updateSet,
+  } = useWorkoutSlots();
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState<string | null>(null);
 
   // Fecha com Esc
   useEffect(() => {
@@ -34,119 +62,6 @@ export default function NovoTreinoModal({ onClose, onCreated }: Props) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
-
-  // ── Selecionar split ──────────────────────────────────────────────────────────
-
-  function selectSplit(split: SplitDef) {
-    setSelectedSplit(split);
-    setSlots(split.id === "custom"
-      ? [{ id: uid(), label: "Treino A", groups: [], days: [], tags: [], exercises: [] }]
-      : buildSlotsFromSplit(split)
-    );
-    setActiveSlotIdx(0);
-    setStep(1);
-  }
-
-  // ── Gestão de slots ───────────────────────────────────────────────────────────
-
-  function addCustomSlot() {
-    const letters = "ABCDEFGHIJ";
-    setSlots(prev => [...prev, { id: uid(), label: `Treino ${letters[prev.length] ?? prev.length + 1}`, groups: [], days: [], tags: [], exercises: [] }]);
-  }
-
-  function updateSlotLabel(slotId: string, label: string) {
-    setSlots(prev => prev.map(s => s.id !== slotId ? s : { ...s, label }));
-  }
-
-  function toggleSlotGroup(slotId: string, group: string) {
-    setSlots(prev => prev.map(s => s.id !== slotId ? s : {
-      ...s, groups: s.groups.includes(group) ? s.groups.filter(g => g !== group) : [...s.groups, group],
-    }));
-  }
-
-  function toggleSlotDay(slotId: string, day: string) {
-    setSlots(prev => prev.map(s => s.id !== slotId ? s : {
-      ...s, days: s.days.includes(day) ? s.days.filter(d => d !== day) : [...s.days, day],
-    }));
-  }
-
-  function toggleSlotTag(slotId: string, tag: string) {
-    setSlots(prev => prev.map(s => s.id !== slotId ? s : {
-      ...s, tags: s.tags.includes(tag) ? s.tags.filter(t => t !== tag) : [...s.tags, tag],
-    }));
-  }
-
-  function removeSlot(slotId: string) {
-    setSlots(prev => {
-      const next = prev.filter(s => s.id !== slotId);
-      setActiveSlotIdx(i => Math.min(i, next.length - 1));
-      return next;
-    });
-  }
-
-  function duplicateSlot(slotId: string) {
-    setSlots(prev => {
-      const idx = prev.findIndex(s => s.id === slotId);
-      if (idx === -1) return prev;
-      const origin = prev[idx];
-      const baseName = origin.label.replace(/\s+\d+$/, "");
-      const siblings = prev.filter(s => s.label.replace(/\s+\d+$/, "") === baseName);
-      const needsRenameOriginal = siblings.length === 1;
-      const newSlot: SlotDef = { id: uid(), label: `${baseName} ${siblings.length + 1}`, groups: [...origin.groups], days: [], tags: [...origin.tags], exercises: [] };
-      const next = [...prev];
-      if (needsRenameOriginal) next[idx] = { ...origin, label: `${baseName} 1` };
-      next.splice(idx + 1, 0, newSlot);
-      return next;
-    });
-  }
-
-  // ── Gestão de exercícios ──────────────────────────────────────────────────────
-
-  function addExercise(sug: ExerciseSuggestion) {
-    const defaultSets: SetRow[] = Array.from({ length: sug.defaultSets }, () =>
-      makeSet(sug.defaultReps, sug.defaultWeight, sug.defaultRest)
-    );
-    setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: [...s.exercises, { id: uid(), name: sug.name, muscle: sug.muscle, group: sug.group, sets: defaultSets, tips: sug.tips }],
-    }));
-  }
-
-  function addCustomExercise(name: string, group: string) {
-    const slot = slots[activeSlotIdx];
-    setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: [...s.exercises, { id: uid(), name, muscle: group || slot.groups[0] || "Outros", group, sets: [makeSet()], tips: "" }],
-    }));
-  }
-
-  function removeExercise(exId: string) {
-    setSlots(prev => prev.map((s, i) =>
-      i !== activeSlotIdx ? s : { ...s, exercises: s.exercises.filter(e => e.id !== exId) }
-    ));
-  }
-
-  function addSet(exId: string) {
-    setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: s.exercises.map(e => e.id !== exId ? e : {
-        ...e, sets: [...e.sets, makeSet(e.sets.at(-1)?.reps ?? 10, e.sets.at(-1)?.weight ?? 0, e.sets.at(-1)?.rest ?? 60)],
-      }),
-    }));
-  }
-
-  function removeSet(exId: string, setIdx: number) {
-    setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: s.exercises.map(e =>
-        e.id !== exId ? e : { ...e, sets: e.sets.filter((_, j) => j !== setIdx) }
-      ),
-    }));
-  }
-
-  function updateSet(exId: string, setIdx: number, field: keyof SetRow, value: number) {
-    setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: s.exercises.map(e =>
-        e.id !== exId ? e : { ...e, sets: e.sets.map((set, j) => j !== setIdx ? set : { ...set, [field]: value }) }
-      ),
-    }));
-  }
 
   // ── Submissão ─────────────────────────────────────────────────────────────────
 
@@ -176,32 +91,6 @@ export default function NovoTreinoModal({ onClose, onCreated }: Props) {
     } finally {
       setSaving(false);
     }
-  }
-
-  // ── Indicador de passos ───────────────────────────────────────────────────────
-
-  function StepDots() {
-    const labels = ["Split", "Dias", "Exercícios", "Revisão"];
-    return (
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 28 }}>
-        {labels.map((label, i) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: "50%",
-              background: i <= step ? "var(--accent)" : "var(--surface-2)",
-              border: `2px solid ${i === step ? "var(--accent)" : "var(--border)"}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 10, fontWeight: 700,
-              color: i <= step ? "#000" : "var(--text-mute)", transition: "all 0.2s",
-            }}>
-              {i < step ? <Check size={11} /> : i + 1}
-            </div>
-            <span style={{ fontSize: 11, color: i === step ? "var(--text)" : "var(--text-mute)" }}>{label}</span>
-            {i < labels.length - 1 && <div style={{ width: 16, height: 1, background: "var(--border)" }} />}
-          </div>
-        ))}
-      </div>
-    );
   }
 
   // ── Passo 0: Escolha do split ─────────────────────────────────────────────────
@@ -472,7 +361,7 @@ export default function NovoTreinoModal({ onClose, onCreated }: Props) {
         </div>
 
         <div style={{ padding: "24px 24px 0", overflowY: "auto", flex: 1 }}>
-          {step > 0 && <StepDots />}
+          {step > 0 && <StepDots step={step} />}
           {step === 0 && renderStep0()}
           {step === 1 && renderStep1()}
           {step === 2 && renderStep2()}
