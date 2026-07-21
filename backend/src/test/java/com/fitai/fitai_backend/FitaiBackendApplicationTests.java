@@ -16,7 +16,11 @@ import org.springframework.test.context.TestPropertySource;
     "jwt.expiration=86400000",
     "jwt.refresh-expiration=604800000",
     "google.client-id=test-client-id",
-    "cors.allowed-origins=http://localhost:3000"
+    "cors.allowed-origins=http://localhost:3000",
+    "spring.mail.host=localhost",
+    "spring.mail.port=2525",
+    "mail.from=no-reply@fitai.app",
+    "app.frontend-url=http://localhost:3000"
 })
 class FitaiBackendApplicationTests {
 

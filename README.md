@@ -120,6 +120,8 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 JWT_SECRET=<segredo de pelo menos 256 bits>
 GOOGLE_CLIENT_ID=<client id do Google Cloud>
+MAIL_USERNAME=<usuário SMTP, ex: Mailtrap>
+MAIL_PASSWORD=<password SMTP>
 ```
 
 ### 3. Frontend
@@ -136,7 +138,8 @@ Cria o ficheiro `frontend/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8081
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<o teu Google Client ID>
-NEXT_PUBLIC_GEMINI_API_KEY=<a tua Gemini API Key>
+GROQ_API_KEY=<a tua Groq API Key>
+JWT_SECRET=<mesmo valor usado no backend — necessário para validar o login nas rotas de IA>
 ```
 
 ---
@@ -157,6 +160,30 @@ npm run test:coverage     # com cobertura
 ```bash
 cd backend
 ./gradlew test
+```
+
+Inclui testes unitários (services, security) e testes de integração (`*IT`) que sobem o contexto Spring completo com H2 e validam o fluxo HTTP real via MockMvc (auth ponta a ponta, isolamento de dados entre usuários).
+
+### E2E (Playwright)
+
+Os testes E2E rodam contra o app real (frontend + backend + Postgres), não contra mocks. Antes de rodar:
+
+```bash
+# Terminal 1 — backend + banco
+cd backend
+./gradlew bootRun
+
+# Terminal 2 — frontend
+cd frontend
+npm run dev
+```
+
+Depois, em outro terminal:
+
+```bash
+cd frontend
+npx playwright install chromium   # só na primeira vez
+npm run test:e2e
 ```
 
 ---
@@ -275,6 +302,10 @@ Guia completo em [backend/DEPLOY.md](backend/DEPLOY.md). Em resumo:
 | `JWT_REFRESH_EXPIRATION` | Validade do refresh token em ms (default `604800000` = 7 dias) |
 | `GOOGLE_CLIENT_ID` | Client ID do Google Cloud Console |
 | `CORS_ALLOWED_ORIGINS` | URLs permitidas separadas por vírgula |
+| `MAIL_HOST` / `MAIL_PORT` | Host/porta SMTP (default: sandbox do Mailtrap) |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | Credenciais SMTP para envio do e-mail de reset de senha |
+| `MAIL_FROM` | Endereço remetente dos e-mails |
+| `FRONTEND_URL` | URL do frontend, usada para montar o link de reset de senha |
 
 ### Frontend (Vercel)
 
@@ -282,7 +313,8 @@ Guia completo em [backend/DEPLOY.md](backend/DEPLOY.md). Em resumo:
 |---|---|
 | `NEXT_PUBLIC_API_URL` | URL pública do backend |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Client ID do Google (mesmo valor do backend) |
-| `NEXT_PUBLIC_GEMINI_API_KEY` | API Key do Google AI Studio |
+| `GROQ_API_KEY` | API Key da Groq, usada pela rota de geração de treino com IA |
+| `JWT_SECRET` | Mesmo segredo do backend — usado para validar o login antes de gerar treino com IA |
 
 ---
 

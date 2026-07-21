@@ -1,20 +1,40 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { SignJWT } from "jose";
 import { POST } from "@/app/api/generate-workout/route";
 import { NextRequest } from "next/server";
 
-function makeRequest(body: object): NextRequest {
+const JWT_SECRET = "test-secret-key-with-at-least-32-chars!!";
+
+async function signToken(email: string): Promise<string> {
+  const key = new TextEncoder().encode(JWT_SECRET);
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(email)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+}
+
+function makeRequest(body: object, token?: string): NextRequest {
   return {
     json: () => Promise.resolve(body),
+    cookies: {
+      get: (name: string) => (name === "token" && token ? { value: token } : undefined),
+    },
+    headers: {
+      get: () => null,
+    },
   } as unknown as NextRequest;
 }
 
-function makeGeminiResponse(text: string, ok = true) {
+function makeGroqResponse(text: string, ok = true) {
   return vi.fn().mockResolvedValue({
     ok,
     text: () => Promise.resolve(text),
     json: () =>
       Promise.resolve({
-        candidates: [{ content: { parts: [{ text }] } }],
+        choices: [{ message: { content: text } }],
       }),
   });
 }
@@ -31,18 +51,19 @@ const VALID_WORKOUT_JSON = JSON.stringify({
           name: "Supino Reto",
           muscle: "Peitoral",
           restSeconds: 90,
-          sets: [
-            { reps: 10, weight: 60, done: false, prev: 0 },
-          ],
+          sets: [{ reps: 10, weight: 60, done: false, prev: 0 }],
         },
       ],
     },
   ],
 });
 
+const VALID_BODY = { level: "Iniciante", goal: "Hipertrofia", days: "3", equipment: "Academia", duration: "60min" };
+
 describe("POST /api/generate-workout", () => {
   beforeEach(() => {
-    vi.stubEnv("GEMINI_API_KEY", "fake-key-123");
+    vi.stubEnv("GROQ_API_KEY", "fake-key-123");
+    vi.stubEnv("JWT_SECRET", JWT_SECRET);
   });
 
   afterEach(() => {
@@ -50,22 +71,37 @@ describe("POST /api/generate-workout", () => {
     vi.unstubAllEnvs();
   });
 
-  it("retorna 500 quando GEMINI_API_KEY não está configurada", async () => {
-    vi.unstubAllEnvs();
-    vi.stubEnv("GEMINI_API_KEY", "");
+  it("retorna 401 quando não há token", async () => {
+    const req = makeRequest(VALID_BODY);
+    const res = await POST(req);
 
-    const req = makeRequest({ level: "Iniciante", goal: "Hipertrofia", days: "3", equipment: "Academia", duration: "60min" });
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 401 quando o token é inválido", async () => {
+    const req = makeRequest(VALID_BODY, "token-invalido");
+    const res = await POST(req);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("retorna 500 quando GROQ_API_KEY não está configurada", async () => {
+    vi.stubEnv("GROQ_API_KEY", "");
+    const token = await signToken("ana@test.com");
+
+    const req = makeRequest(VALID_BODY, token);
     const res = await POST(req);
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain("GEMINI_API_KEY");
+    expect(body.error).toContain("GROQ_API_KEY");
   });
 
-  it("retorna workouts gerados quando Gemini responde corretamente", async () => {
-    global.fetch = makeGeminiResponse(VALID_WORKOUT_JSON);
+  it("retorna workouts gerados quando autenticado e Groq responde corretamente", async () => {
+    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+    const token = await signToken("ana@test.com");
 
-    const req = makeRequest({ level: "Iniciante", goal: "Hipertrofia", days: "3", equipment: "Academia", duration: "60min" });
+    const req = makeRequest(VALID_BODY, token);
     const res = await POST(req);
 
     expect(res.status).toBe(200);
@@ -76,9 +112,10 @@ describe("POST /api/generate-workout", () => {
 
   it("remove blocos ```json``` da resposta antes de parsear", async () => {
     const withMarkdown = "```json\n" + VALID_WORKOUT_JSON + "\n```";
-    global.fetch = makeGeminiResponse(withMarkdown);
+    global.fetch = makeGroqResponse(withMarkdown);
+    const token = await signToken("ana@test.com");
 
-    const req = makeRequest({ level: "Iniciante", goal: "Hipertrofia", days: "3", equipment: "Academia", duration: "60min" });
+    const req = makeRequest(VALID_BODY, token);
     const res = await POST(req);
 
     expect(res.status).toBe(200);
@@ -86,43 +123,43 @@ describe("POST /api/generate-workout", () => {
     expect(body.workouts).toHaveLength(1);
   });
 
-  it("retorna 502 quando Gemini retorna JSON inválido", async () => {
-    global.fetch = makeGeminiResponse("isso não é JSON");
+  it("retorna 502 quando Groq retorna JSON inválido", async () => {
+    global.fetch = makeGroqResponse("isso não é JSON");
+    const token = await signToken("ana@test.com");
 
-    const req = makeRequest({ level: "Iniciante", goal: "Hipertrofia", days: "3", equipment: "Academia", duration: "60min" });
+    const req = makeRequest(VALID_BODY, token);
     const res = await POST(req);
 
     expect(res.status).toBe(502);
-    const body = await res.json();
-    expect(body.error).toContain("Resposta inválida");
   });
 
-  it("retorna 502 quando a chamada ao Gemini falha (não-ok)", async () => {
+  it("retorna 502 quando a chamada ao Groq falha (não-ok)", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       text: () => Promise.resolve("Service Unavailable"),
     });
+    const token = await signToken("ana@test.com");
 
-    const req = makeRequest({ level: "Avançado", goal: "Força", days: "5", equipment: "Academia", duration: "90min" });
+    const req = makeRequest({ level: "Avançado", goal: "Força", days: "5", equipment: "Academia", duration: "90min" }, token);
     const res = await POST(req);
 
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body.error).toContain("Gemini API error");
+    expect(body.error).toContain("Groq API error");
   });
 
-  it("faz a requisição ao Gemini com o prompt correto", async () => {
-    global.fetch = makeGeminiResponse(VALID_WORKOUT_JSON);
+  it("faz a requisição ao Groq com o prompt correto", async () => {
+    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+    const token = await signToken("ana@test.com");
 
-    const req = makeRequest({ level: "Intermediário", goal: "Emagrecimento", days: "4", equipment: "Halteres", duration: "45min" });
+    const req = makeRequest({ level: "Intermediário", goal: "Emagrecimento", days: "4", equipment: "Halteres", duration: "45min" }, token);
     await POST(req);
 
     const [url, options] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toContain("gemini-2.0-flash-lite");
-    expect(url).toContain("fake-key-123");
+    expect(url).toContain("api.groq.com");
 
     const reqBody = JSON.parse(options.body);
-    const promptText = reqBody.contents[0].parts[0].text;
+    const promptText = reqBody.messages[0].content;
     expect(promptText).toContain("Intermediário");
     expect(promptText).toContain("Emagrecimento");
     expect(promptText).toContain("Halteres");

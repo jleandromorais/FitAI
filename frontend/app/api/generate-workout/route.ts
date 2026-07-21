@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuthToken } from "@/lib/auth-jwt";
 
 export interface GenerateRequest {
   level: string;
@@ -132,6 +133,11 @@ IMPORTANTE:
 }
 
 export async function POST(req: NextRequest) {
+  const userEmail = await verifyAuthToken(req);
+  if (!userEmail) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GROQ_API_KEY não configurada." }, { status: 500 });

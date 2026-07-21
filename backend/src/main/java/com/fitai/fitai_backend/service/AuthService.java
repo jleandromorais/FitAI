@@ -30,6 +30,7 @@ public class AuthService {
     private final PasswordEncoder     passwordEncoder;
     private final JwtUtil             jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final EmailService        emailService;
 
     public AuthResponse register(RegisterRequest request) {
         log.info("Tentativa de registro: email={}", request.getEmail());
@@ -51,11 +52,13 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+
         log.info("Tentativa de login: email={}", request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> {
                     log.warn("Login falhou — email não encontrado: {}", request.getEmail());
+                    
                     return new BadCredentialsException("Credenciais inválidas.");
                 });
 
@@ -114,29 +117,26 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
-    // Gera um token de reset e o armazena no usuário (válido por 30 min).
-    // Em produção, o token seria enviado por e-mail; aqui é retornado na resposta
-    // para que o frontend possa redirecionar o usuário sem depender de SMTP.
-    public String forgotPassword(ForgotPasswordRequest request) {
+    // Gera um token de reset, armazena no usuário (válido por 30 min) e envia por e-mail.
+    // Sempre retorna normalmente (sem indicar se o email existe ou não), para evitar
+    // que a resposta seja usada para enumerar contas cadastradas.
+    public void forgotPassword(ForgotPasswordRequest request) {
         log.info("Solicitação de reset de senha: email={}", request.getEmail());
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> {
-                    log.warn("Reset solicitado para email não cadastrado: {}", request.getEmail());
-                    return new IllegalArgumentException("Email não encontrado.");
-                });
+        userRepository.findByEmail(request.getEmail()).ifPresentOrElse(user -> {
+            if (user.getGoogleId() != null && user.getPassword() == null) {
+                log.info("Reset ignorado — conta Google sem senha: email={}", user.getEmail());
+                return;
+            }
 
-        if (user.getGoogleId() != null && user.getPassword() == null) {
-            throw new IllegalArgumentException("Esta conta usa login pelo Google. Não é possível redefinir senha.");
-        }
+            String token = jwtUtil.generateRefreshToken(); // token opaco aleatório
+            user.setResetToken(token);
+            user.setResetTokenExpiry(Instant.now().plusSeconds(1800)); // 30 minutos
+            userRepository.save(user);
 
-        String token = jwtUtil.generateRefreshToken(); // token opaco aleatório
-        user.setResetToken(token);
-        user.setResetTokenExpiry(Instant.now().plusSeconds(1800)); // 30 minutos
-        userRepository.save(user);
-
-        log.info("Token de reset gerado: email={}", user.getEmail());
-        return token;
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
+            log.info("Token de reset gerado e enviado por e-mail: email={}", user.getEmail());
+        }, () -> log.warn("Reset solicitado para email não cadastrado: {}", request.getEmail()));
     }
 
     public void resetPassword(ResetPasswordRequest request) {

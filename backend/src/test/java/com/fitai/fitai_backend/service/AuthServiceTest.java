@@ -1,12 +1,15 @@
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.AuthResponse;
+import com.fitai.fitai_backend.dto.ForgotPasswordRequest;
 import com.fitai.fitai_backend.dto.LoginRequest;
 import com.fitai.fitai_backend.dto.RefreshRequest;
 import com.fitai.fitai_backend.dto.RegisterRequest;
+import com.fitai.fitai_backend.dto.ResetPasswordRequest;
 import com.fitai.fitai_backend.model.User;
 import com.fitai.fitai_backend.repository.UserRepository;
 import com.fitai.fitai_backend.security.JwtUtil;
+import com.fitai.fitai_backend.service.GoogleTokenVerifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,9 +30,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock UserRepository  userRepository;
-    @Mock PasswordEncoder passwordEncoder;
-    @Mock JwtUtil         jwtUtil;
+    @Mock UserRepository       userRepository;
+    @Mock PasswordEncoder      passwordEncoder;
+    @Mock JwtUtil              jwtUtil;
+    @Mock GoogleTokenVerifier  googleTokenVerifier;
+    @Mock EmailService         emailService;
 
     @InjectMocks AuthService authService;
 
@@ -146,7 +151,107 @@ class AuthServiceTest {
         assertThat(captor.getValue().getRefreshTokenExpiry()).isNull();
     }
 
+    // ── forgotPassword ───────────────────────────────────────────────────────
+
+    @Test
+    void forgotPassword_emailExiste_deveGerarTokenEEnviarEmail() {
+        User user = User.builder().email("ana@test.com").password("hash").build();
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(jwtUtil.generateRefreshToken()).thenReturn("reset-token");
+
+        authService.forgotPassword(buildForgotPasswordRequest("ana@test.com"));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getResetToken()).isEqualTo("reset-token");
+        assertThat(captor.getValue().getResetTokenExpiry()).isAfter(Instant.now());
+        verify(emailService).sendPasswordResetEmail("ana@test.com", "reset-token");
+    }
+
+    @Test
+    void forgotPassword_emailNaoExiste_naoDeveLancarNemEnviarEmail() {
+        when(userRepository.findByEmail("naoexiste@test.com")).thenReturn(Optional.empty());
+
+        assertThatCode(() -> authService.forgotPassword(buildForgotPasswordRequest("naoexiste@test.com")))
+                .doesNotThrowAnyException();
+
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
+    }
+
+    @Test
+    void forgotPassword_contaGoogleSemSenha_naoDeveGerarTokenNemEnviarEmail() {
+        User user = User.builder().email("google@test.com").googleId("g-123").password(null).build();
+        when(userRepository.findByEmail("google@test.com")).thenReturn(Optional.of(user));
+
+        assertThatCode(() -> authService.forgotPassword(buildForgotPasswordRequest("google@test.com")))
+                .doesNotThrowAnyException();
+
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
+    }
+
+    // ── resetPassword ────────────────────────────────────────────────────────
+
+    @Test
+    void resetPassword_tokenValido_deveAtualizarSenhaELimparToken() {
+        User user = User.builder().email("ana@test.com")
+                .resetToken("valid-token")
+                .resetTokenExpiry(Instant.now().plusSeconds(600))
+                .build();
+        when(userRepository.findByResetToken("valid-token")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("novaSenha123")).thenReturn("novo-hash");
+
+        authService.resetPassword(buildResetPasswordRequest("valid-token", "novaSenha123"));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPassword()).isEqualTo("novo-hash");
+        assertThat(captor.getValue().getResetToken()).isNull();
+        assertThat(captor.getValue().getResetTokenExpiry()).isNull();
+    }
+
+    @Test
+    void resetPassword_tokenInexistente_deveLancarIllegalArgument() {
+        when(userRepository.findByResetToken("invalido")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.resetPassword(buildResetPasswordRequest("invalido", "novaSenha")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Token inválido");
+    }
+
+    @Test
+    void resetPassword_tokenExpirado_deveLancarIllegalArgumentELimparToken() {
+        User user = User.builder().email("ana@test.com")
+                .resetToken("expirado")
+                .resetTokenExpiry(Instant.now().minusSeconds(1))
+                .build();
+        when(userRepository.findByResetToken("expirado")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.resetPassword(buildResetPasswordRequest("expirado", "novaSenha")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("expirado");
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getResetToken()).isNull();
+        assertThat(captor.getValue().getResetTokenExpiry()).isNull();
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private ForgotPasswordRequest buildForgotPasswordRequest(String email) {
+        ForgotPasswordRequest r = new ForgotPasswordRequest();
+        setField(r, "email", email);
+        return r;
+    }
+
+    private ResetPasswordRequest buildResetPasswordRequest(String token, String newPassword) {
+        ResetPasswordRequest r = new ResetPasswordRequest();
+        setField(r, "token", token);
+        setField(r, "newPassword", newPassword);
+        return r;
+    }
 
     private RegisterRequest buildRegisterRequest(String name, String email, String password) {
         RegisterRequest r = new RegisterRequest();
