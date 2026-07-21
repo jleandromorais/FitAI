@@ -26,19 +26,36 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
 
+        // Lê o header "Authorization" da requisição (ex: "Bearer eyJhbGciOi...")
         String header = request.getHeader("Authorization");
 
+        // Só processa se o header existir e seguir o padrão "Bearer <token>"
         if (header != null && header.startsWith("Bearer ")) {
+            // Remove o prefixo "Bearer " (7 caracteres) para extrair só o token JWT
             String token = header.substring(7);
+
+            // Valida assinatura e expiração do token
             if (jwtUtil.isValid(token)) {
+                // Extrai o email do usuário a partir das claims do token
                 String email = jwtUtil.extractEmail(token);
+
+                // Carrega os detalhes do usuário (roles, etc.) a partir do email
                 var userDetails = userDetailsService.loadUserByUsername(email);
+
+                // Monta o objeto de autenticação do Spring Security.
+                // Sem credenciais (null) pois a autenticação já foi feita via JWT,
+                // e sem authorities (List.of()) — não há controle de papéis/roles aqui.
                 var auth = new UsernamePasswordAuthenticationToken(
                         userDetails, null, List.of());
+
+                // Registra o usuário autenticado no contexto de segurança da requisição atual,
+                // permitindo que controllers protegidos identifiquem quem está fazendo a chamada
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
+        // Independente de haver token válido ou não, continua a cadeia de filtros
+        // (se não autenticado, endpoints protegidos vão barrar depois via Spring Security)
         chain.doFilter(request, response);
     }
 }

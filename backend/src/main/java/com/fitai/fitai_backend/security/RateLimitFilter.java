@@ -24,11 +24,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final long WINDOW_SECONDS = 60;
     private static final long CLEANUP_INTERVAL_SECONDS = 300;
 
+    // Contador de tentativas de um IP dentro da janela atual, e quando essa janela começou
     private record Bucket(int count, long windowStart) {}
 
+    // Estado em memória por IP. ConcurrentHashMap pois o filtro roda concorrentemente entre requisições
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
     private volatile long lastCleanup = Instant.now().getEpochSecond();
 
+    // Filtro só se aplica a rotas de autenticação — demais endpoints passam direto
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/auth/");
@@ -41,8 +44,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String ip = resolveClientIp(request);
         long now = Instant.now().getEpochSecond();
 
+        // Remove buckets antigos periodicamente para não crescer indefinidamente em memória
         periodicCleanup(now);
 
+        // Atualiza atomicamente o bucket do IP: reinicia a janela se expirou, senão incrementa o contador
         Bucket bucket = buckets.compute(ip, (key, existing) -> {
             if (existing == null || now - existing.windowStart() >= WINDOW_SECONDS) {
                 return new Bucket(1, now);
@@ -50,6 +55,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return new Bucket(existing.count() + 1, existing.windowStart());
         });
 
+        // Excedeu o limite da janela atual — bloqueia com 429 e não deixa a requisição prosseguir
         if (bucket.count() > MAX_REQUESTS) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
@@ -60,6 +66,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    // Prioriza o header X-Forwarded-For (requisição atrás de proxy/load balancer);
+    // usa o primeiro IP da lista, que é o do cliente original. Faz fallback para o IP direto da conexão
     private String resolveClientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
@@ -68,6 +76,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return request.getRemoteAddr();
     }
 
+    // Roda no máximo a cada CLEANUP_INTERVAL_SECONDS, removendo buckets cuja janela já expirou
     private void periodicCleanup(long now) {
         if (now - lastCleanup >= CLEANUP_INTERVAL_SECONDS) {
             lastCleanup = now;
