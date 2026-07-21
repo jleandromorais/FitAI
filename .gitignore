@@ -15,3 +15,8 @@ backend/application.properties
 .DS_Store
 Thumbs.db
 *.log
+
+# ── BMAD ──────────────────────────────────────────────────────────
+_bmad/
+_bmad-output/
+.claude/
