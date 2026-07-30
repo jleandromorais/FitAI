@@ -65,6 +65,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // Excedeu o limite da janela atual — bloqueia com 429 e não deixa a requisição prosseguir
         if (bucket.count() > MAX_REQUESTS) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            response.setHeader("Retry-After", String.valueOf(WINDOW_SECONDS));
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Muitas tentativas. Aguarde 1 minuto.\"}");
             return;

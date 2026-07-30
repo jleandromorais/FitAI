@@ -8,10 +8,11 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
 // ── Etapa 1: solicitar o token de reset ──────────────────────────────────────
 
-function ForgotStep({ onTokenReceived }: { onTokenReceived: (token: string, email: string) => void }) {
+function ForgotStep() {
   const [email, setEmail]     = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [sent, setSent]       = useState(false);
 
   async function handleSubmit() {
     setError(null);
@@ -27,12 +28,26 @@ function ForgotStep({ onTokenReceived }: { onTokenReceived: (token: string, emai
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao solicitar reset.");
-      onTokenReceived(data.resetToken, email);
+      setSent(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro inesperado.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (sent) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px 0" }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+          Verifique seu e-mail
+        </h2>
+        <p style={{ color: "var(--text-dim)", fontSize: 14 }}>
+          Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -161,16 +176,6 @@ function ResetSenhaForm() {
   const searchParams     = useSearchParams();
   const tokenFromUrl     = searchParams.get("token");
 
-  const [step, setStep]   = useState<"forgot" | "reset">(tokenFromUrl ? "reset" : "forgot");
-  const [token, setToken] = useState(tokenFromUrl ?? "");
-  const [email, setEmail] = useState("");
-
-  function handleTokenReceived(receivedToken: string, receivedEmail: string) {
-    setToken(receivedToken);
-    setEmail(receivedEmail);
-    setStep("reset");
-  }
-
   return (
     <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: "32px 16px" }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
@@ -182,9 +187,9 @@ function ResetSenhaForm() {
         </div>
 
         <div className="card" style={{ padding: 32 }}>
-          {step === "forgot"
-            ? <ForgotStep onTokenReceived={handleTokenReceived} />
-            : <ResetStep token={token} email={email} />
+          {tokenFromUrl
+            ? <ResetStep token={tokenFromUrl} email="" />
+            : <ForgotStep />
           }
         </div>
 

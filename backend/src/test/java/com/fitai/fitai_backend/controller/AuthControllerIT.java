@@ -100,9 +100,10 @@ class AuthControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resetToken").doesNotExist());
 
-        // 5. Capturar o token gerado via o e-mail "enviado" (mock) para poder resetar a senha
+        // 5. Capturar o token gerado via o e-mail "enviado" (mock) para poder resetar a senha.
+        // O envio agora é assíncrono (@Async), então aguarda a chamada em vez de checar na hora.
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
+        verify(mailSender, timeout(2000)).send(captor.capture());
         String emailBody = captor.getValue().getText();
         String resetToken = emailBody.substring(emailBody.indexOf("token=") + "token=".length()).trim().split("\\s+")[0];
         assertThat(resetToken).isNotBlank();

@@ -1,3 +1,4 @@
+
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.AuthResponse;
@@ -14,11 +15,17 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +38,33 @@ public class AuthService {
     private final JwtUtil             jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
     private final EmailService        emailService;
+
+    // Hash de senha nunca usado por conta real — comparado contra o password informado
+    // quando o e-mail não existe ou a conta não tem senha (Google-only), pra manter o
+    // tempo de resposta igual ao de um login que realmente roda BCrypt. Sem isso, a
+    // diferença de tempo entre os dois caminhos denuncia quais e-mails estão cadastrados.
+    private volatile String dummyPasswordHash;
+
+    private String dummyPasswordHash() {
+        if (dummyPasswordHash == null) {
+            dummyPasswordHash = passwordEncoder.encode("dummy-" + UUID.randomUUID());
+        }
+        return dummyPasswordHash;
+    }
+
+    // Tokens de refresh/reset são opacos e de alta entropia — SHA-256 é suficiente
+    // (não são senhas de baixa entropia sujeitas a força bruta offline). Guardar o hash
+    // em vez do valor cru evita que um vazamento do banco entregue sessões/tokens de
+    // reset prontos para uso.
+    static String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 indisponível", e);
+        }
+    }
 
     public AuthResponse register(RegisterRequest request) {
         log.info("Tentativa de registro: email={}", request.getEmail());
@@ -46,7 +80,15 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .build();
 
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            // Duas requisições concorrentes podem passar no existsByEmail antes de
+            // qualquer uma salvar — a constraint única do banco é a garantia real.
+            log.warn("Registro recusado — corrida detectada na constraint única: email={}", request.getEmail());
+            throw new IllegalArgumentException("Email já cadastrado.");
+        }
+
         log.info("Usuário registrado com sucesso: email={}", user.getEmail());
         return buildAuthResponse(user);
     }
@@ -55,15 +97,18 @@ public class AuthService {
 
         log.info("Tentativa de login: email={}", request.getEmail());
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> {
-                    log.warn("Login falhou — email não encontrado: {}", request.getEmail());
-                    
-                    return new BadCredentialsException("Credenciais inválidas.");
-                });
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Login falhou — senha incorreta: email={}", request.getEmail());
+        // Sempre roda o BCrypt, mesmo quando o e-mail não existe ou a conta é
+        // Google-only (sem senha) — contra um hash "dummy" nesses casos — para que o
+        // tempo de resposta não denuncie quais e-mails estão cadastrados.
+        String hashToCheck = (user != null && user.getPassword() != null)
+                ? user.getPassword()
+                : dummyPasswordHash();
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), hashToCheck);
+
+        if (user == null || !passwordMatches) {
+            log.warn("Login falhou: email={}", request.getEmail());
             throw new BadCredentialsException("Credenciais inválidas.");
         }
 
@@ -75,6 +120,13 @@ public class AuthService {
         log.info("Tentativa de login via Google");
 
         GoogleIdToken.Payload payload = googleTokenVerifier.verify(request.getIdToken());
+
+        // Um e-mail não verificado no Google não prova posse — sem essa checagem,
+        // alguém poderia se autenticar como o dono de uma conta já existente aqui.
+        if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+            log.warn("Login Google recusado — e-mail não verificado: {}", payload.getEmail());
+            throw new BadCredentialsException("E-mail do Google não verificado.");
+        }
 
         String googleId = payload.getSubject();
         String email    = payload.getEmail();
@@ -90,6 +142,11 @@ public class AuthService {
 
         if (user.getGoogleId() == null) {
             user.setGoogleId(googleId);
+        } else if (!user.getGoogleId().equals(googleId)) {
+            // Conta encontrada por e-mail já está vinculada a um googleId diferente —
+            // aceitar aqui seria confiar cegamente numa identidade Google divergente.
+            log.warn("Login Google recusado — googleId divergente do vinculado: email={}", email);
+            throw new BadCredentialsException("Conta já vinculada a outra credencial Google.");
         }
 
         log.info("Login Google bem-sucedido: email={}", email);
@@ -99,7 +156,7 @@ public class AuthService {
     public AuthResponse refresh(RefreshRequest request) {
         log.debug("Tentativa de refresh token");
 
-        User user = userRepository.findByRefreshToken(request.getRefreshToken())
+        User user = userRepository.findByRefreshToken(hashToken(request.getRefreshToken()))
                 .orElseThrow(() -> {
                     log.warn("Refresh falhou — token não encontrado");
                     return new BadCredentialsException("Refresh token inválido.");
@@ -130,10 +187,12 @@ public class AuthService {
             }
 
             String token = jwtUtil.generateRefreshToken(); // token opaco aleatório
-            user.setResetToken(token);
+            user.setResetToken(hashToken(token)); // só o hash é persistido; o token cru vai só no e-mail
             user.setResetTokenExpiry(Instant.now().plusSeconds(1800)); // 30 minutos
             userRepository.save(user);
 
+            // Assíncrono: mantém o tempo de resposta deste branch parecido com o do
+            // branch "e-mail não encontrado" (que só loga), fechando o canal de timing.
             emailService.sendPasswordResetEmail(user.getEmail(), token);
             log.info("Token de reset gerado e enviado por e-mail: email={}", user.getEmail());
         }, () -> log.warn("Reset solicitado para email não cadastrado: {}", request.getEmail()));
@@ -142,7 +201,7 @@ public class AuthService {
     public void resetPassword(ResetPasswordRequest request) {
         log.info("Tentativa de reset de senha com token");
 
-        User user = userRepository.findByResetToken(request.getToken())
+        User user = userRepository.findByResetToken(hashToken(request.getToken()))
                 .orElseThrow(() -> {
                     log.warn("Reset falhou — token não encontrado");
                     return new IllegalArgumentException("Token inválido.");
@@ -172,7 +231,7 @@ public class AuthService {
         String accessToken  = jwtUtil.generateToken(user.getEmail());
         String refreshToken = jwtUtil.generateRefreshToken();
 
-        user.setRefreshToken(refreshToken);
+        user.setRefreshToken(hashToken(refreshToken)); // só o hash é persistido; o cru vai só na resposta
         user.setRefreshTokenExpiry(jwtUtil.refreshTokenExpiry());
         userRepository.save(user);
 

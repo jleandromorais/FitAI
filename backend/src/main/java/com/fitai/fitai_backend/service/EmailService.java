@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,6 +23,11 @@ public class EmailService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    // Assíncrono para que forgotPassword() responda no mesmo tempo tanto quando o
+    // e-mail existe (grava + dispara este envio) quanto quando não existe (só loga) —
+    // sem isso, a latência do envio de e-mail vira um canal de timing que denuncia
+    // quais e-mails estão cadastrados.
+    @Async
     public void sendPasswordResetEmail(String to, String token) {
         String link = frontendUrl + "/reset-senha?token=" + token;
 

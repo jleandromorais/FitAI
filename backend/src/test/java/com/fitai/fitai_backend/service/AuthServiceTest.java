@@ -112,10 +112,10 @@ class AuthServiceTest {
     void refresh_tokenValido_deveEmitirNovoPar() {
         stubTokenGeneration();
         User user = User.builder().name("Ana").email("ana@test.com")
-                .refreshToken("refresh-token")
+                .refreshToken(AuthService.hashToken("refresh-token"))
                 .refreshTokenExpiry(Instant.now().plusSeconds(3600))
                 .build();
-        when(userRepository.findByRefreshToken("refresh-token")).thenReturn(Optional.of(user));
+        when(userRepository.findByRefreshToken(AuthService.hashToken("refresh-token"))).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenReturn(user);
 
         AuthResponse res = authService.refresh(buildRefreshRequest("refresh-token"));
@@ -126,7 +126,7 @@ class AuthServiceTest {
 
     @Test
     void refresh_tokenInexistente_deveLancarBadCredentials() {
-        when(userRepository.findByRefreshToken("token-invalido")).thenReturn(Optional.empty());
+        when(userRepository.findByRefreshToken(AuthService.hashToken("token-invalido"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refresh(buildRefreshRequest("token-invalido")))
                 .isInstanceOf(BadCredentialsException.class)
@@ -136,10 +136,10 @@ class AuthServiceTest {
     @Test
     void refresh_tokenExpirado_deveLancarBadCredentialsEInvalidarToken() {
         User user = User.builder().name("Ana").email("ana@test.com")
-                .refreshToken("expirado")
+                .refreshToken(AuthService.hashToken("expirado"))
                 .refreshTokenExpiry(Instant.now().minusSeconds(1))
                 .build();
-        when(userRepository.findByRefreshToken("expirado")).thenReturn(Optional.of(user));
+        when(userRepository.findByRefreshToken(AuthService.hashToken("expirado"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.refresh(buildRefreshRequest("expirado")))
                 .isInstanceOf(BadCredentialsException.class)
@@ -163,7 +163,7 @@ class AuthServiceTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getResetToken()).isEqualTo("reset-token");
+        assertThat(captor.getValue().getResetToken()).isEqualTo(AuthService.hashToken("reset-token"));
         assertThat(captor.getValue().getResetTokenExpiry()).isAfter(Instant.now());
         verify(emailService).sendPasswordResetEmail("ana@test.com", "reset-token");
     }
@@ -196,10 +196,10 @@ class AuthServiceTest {
     @Test
     void resetPassword_tokenValido_deveAtualizarSenhaELimparToken() {
         User user = User.builder().email("ana@test.com")
-                .resetToken("valid-token")
+                .resetToken(AuthService.hashToken("valid-token"))
                 .resetTokenExpiry(Instant.now().plusSeconds(600))
                 .build();
-        when(userRepository.findByResetToken("valid-token")).thenReturn(Optional.of(user));
+        when(userRepository.findByResetToken(AuthService.hashToken("valid-token"))).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("novaSenha123")).thenReturn("novo-hash");
 
         authService.resetPassword(buildResetPasswordRequest("valid-token", "novaSenha123"));
@@ -213,7 +213,7 @@ class AuthServiceTest {
 
     @Test
     void resetPassword_tokenInexistente_deveLancarIllegalArgument() {
-        when(userRepository.findByResetToken("invalido")).thenReturn(Optional.empty());
+        when(userRepository.findByResetToken(AuthService.hashToken("invalido"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.resetPassword(buildResetPasswordRequest("invalido", "novaSenha")))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -223,10 +223,10 @@ class AuthServiceTest {
     @Test
     void resetPassword_tokenExpirado_deveLancarIllegalArgumentELimparToken() {
         User user = User.builder().email("ana@test.com")
-                .resetToken("expirado")
+                .resetToken(AuthService.hashToken("expirado"))
                 .resetTokenExpiry(Instant.now().minusSeconds(1))
                 .build();
-        when(userRepository.findByResetToken("expirado")).thenReturn(Optional.of(user));
+        when(userRepository.findByResetToken(AuthService.hashToken("expirado"))).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.resetPassword(buildResetPasswordRequest("expirado", "novaSenha")))
                 .isInstanceOf(IllegalArgumentException.class)

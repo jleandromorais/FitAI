@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Optional;
 
 @Component
 public class JwtUtil {
@@ -83,6 +84,23 @@ public class JwtUtil {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
+        }
+    }
+
+    // Faz o parsing uma única vez (assinatura + expiração + subject), em vez de
+    // isValid() + extractEmail() em sequência — evita reparsear o token e fecha a
+    // janela entre as duas chamadas em que ele poderia expirar entre uma e outra.
+    public Optional<String> extractEmailIfValid(String token) {
+        try {
+            String email = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+            return Optional.ofNullable(email);
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
         }
     }
 }
