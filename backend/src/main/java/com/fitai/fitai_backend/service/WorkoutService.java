@@ -1,6 +1,7 @@
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.*;
+import com.fitai.fitai_backend.exception.ResourceNotFoundException;
 import com.fitai.fitai_backend.model.*;
 import com.fitai.fitai_backend.repository.UserRepository;
 import com.fitai.fitai_backend.repository.WorkoutRepository;
@@ -48,7 +49,7 @@ public class WorkoutService {
         Workout w = workoutRepository.findByIdAndUserEmail(id, email)
                 .orElseThrow(() -> {
                     log.warn("Treino não encontrado: id={}, email={}", id, email);
-                    return new IllegalArgumentException("Treino não encontrado.");
+                    return new ResourceNotFoundException("Treino não encontrado.");
                 });
         return toDto(w);
     }
@@ -126,7 +127,7 @@ public class WorkoutService {
         Workout workout = workoutRepository.findByIdAndUserEmail(id, email)
                 .orElseThrow(() -> {
                     log.warn("Atualização falhou — treino não encontrado: id={}, email={}", id, email);
-                    return new IllegalArgumentException("Treino não encontrado.");
+                    return new ResourceNotFoundException("Treino não encontrado.");
                 });
 
         // Atualiza os campos simples
@@ -187,7 +188,7 @@ public class WorkoutService {
         Workout workout = workoutRepository.findByIdAndUserEmail(workoutId, email)
                 .orElseThrow(() -> {
                     log.warn("Sessão falhou — treino não encontrado: id={}, email={}", workoutId, email);
-                    return new IllegalArgumentException("Treino não encontrado.");
+                    return new ResourceNotFoundException("Treino não encontrado.");
                 });
 
         int setsCompleted = 0;
@@ -361,7 +362,7 @@ public class WorkoutService {
         Workout w = workoutRepository.findByIdAndUserEmail(id, email)
                 .orElseThrow(() -> {
                     log.warn("Deleção falhou — treino não encontrado: id={}, email={}", id, email);
-                    return new IllegalArgumentException("Treino não encontrado.");
+                    return new ResourceNotFoundException("Treino não encontrado.");
                 });
         workoutRepository.delete(w);
         log.info("Treino deletado: id={}, email={}", id, email);

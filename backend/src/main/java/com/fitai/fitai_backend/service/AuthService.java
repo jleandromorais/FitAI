@@ -159,6 +159,10 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
+        // Invalida a sessão ativa: se a senha foi resetada por suspeita de conta
+        // comprometida, o refresh token antigo não deve continuar válido
+        user.setRefreshToken(null);
+        user.setRefreshTokenExpiry(null);
         userRepository.save(user);
 
         log.info("Senha redefinida com sucesso: email={}", user.getEmail());

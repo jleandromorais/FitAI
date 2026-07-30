@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,6 +24,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_REQUESTS = 10;
     private static final long WINDOW_SECONDS = 60;
     private static final long CLEANUP_INTERVAL_SECONDS = 300;
+
+    // Se true, confia no header X-Forwarded-For (só deve ser true quando a app roda
+    // atrás de um proxy confiável — Railway, Fly, etc. — que sobrescreve esse header
+    // e não repassa o valor enviado pelo cliente original)
+    @Value("${security.trust-proxy-headers:true}")
+    private boolean trustProxyHeaders;
 
     // Contador de tentativas de um IP dentro da janela atual, e quando essa janela começou
     private record Bucket(int count, long windowStart) {}
@@ -66,12 +73,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    // Prioriza o header X-Forwarded-For (requisição atrás de proxy/load balancer);
-    // usa o primeiro IP da lista, que é o do cliente original. Faz fallback para o IP direto da conexão
+    // getRemoteAddr() é o IP da conexão TCP direta — quem a estabelece é o proxy
+    // (Railway/Fly), nunca o cliente final, então não pode ser forjado.
+    // X-Forwarded-For, ao contrário, é um header comum enviado pelo próprio cliente
+    // e não pode ser confiado sem validar a cadeia de proxies — por isso só é usado
+    // quando explicitamente habilitado via security.trust-proxy-headers.
     private String resolveClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        if (trustProxyHeaders) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                String[] ips = forwarded.split(",");
+                return ips[ips.length - 1].trim();
+            }
         }
         return request.getRemoteAddr();
     }
