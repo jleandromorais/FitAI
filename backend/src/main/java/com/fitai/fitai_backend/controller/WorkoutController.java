@@ -3,10 +3,13 @@ package com.fitai.fitai_backend.controller;
 import com.fitai.fitai_backend.dto.*;
 import com.fitai.fitai_backend.service.WorkoutService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/workouts")
 @RequiredArgsConstructor
+@Validated
 public class WorkoutController {
 
     private final WorkoutService workoutService;
@@ -31,7 +35,7 @@ public class WorkoutController {
 
     @GetMapping("/sessions/recent")
     public ResponseEntity<List<SessionHistoryDto>> recentSessions(
-            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "30") @Min(1) @Max(3650) int days,
             @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(workoutService.getRecentSessions(user.getUsername(), days));
     }
@@ -51,7 +55,7 @@ public class WorkoutController {
     // Recebe os dados reais da sessão (peso/reps executados) e persiste no banco
     @PostMapping("/{id}/session")
     public ResponseEntity<SessionResponse> saveSession(@PathVariable Long id,
-                                                       @RequestBody SessionRequest req,
+                                                       @Valid @RequestBody SessionRequest req,
                                                        @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(workoutService.saveSession(id, req, user.getUsername()));
     }

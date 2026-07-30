@@ -1,9 +1,11 @@
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.*;
+import com.fitai.fitai_backend.exception.ResourceNotFoundException;
 import com.fitai.fitai_backend.model.*;
 import com.fitai.fitai_backend.repository.UserRepository;
 import com.fitai.fitai_backend.repository.WorkoutRepository;
+import com.fitai.fitai_backend.repository.WorkoutSessionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,8 +24,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class WorkoutServiceTest {
 
-    @Mock WorkoutRepository workoutRepository;
-    @Mock UserRepository    userRepository;
+    @Mock WorkoutRepository        workoutRepository;
+    @Mock UserRepository           userRepository;
+    @Mock WorkoutSessionRepository sessionRepository;
 
     @InjectMocks WorkoutService workoutService;
 
@@ -81,7 +84,7 @@ class WorkoutServiceTest {
         when(workoutRepository.findByIdAndUserEmail(99L, "ana@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workoutService.getById(99L, "ana@test.com"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Treino não encontrado");
     }
 
@@ -112,7 +115,7 @@ class WorkoutServiceTest {
         req.setCode("X");
 
         assertThatThrownBy(() -> workoutService.create(req, "naoexiste@test.com"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Usuário não encontrado");
     }
 
@@ -132,7 +135,7 @@ class WorkoutServiceTest {
         when(workoutRepository.findByIdAndUserEmail(99L, "ana@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> workoutService.delete(99L, "ana@test.com"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     // ── toDto (campos calculados) ─────────────────────────────────────────────
@@ -206,7 +209,7 @@ class WorkoutServiceTest {
         req.setExercises(List.of());
 
         assertThatThrownBy(() -> workoutService.saveSession(99L, req, "ana@test.com"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

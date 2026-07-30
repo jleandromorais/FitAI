@@ -4,6 +4,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,8 @@ import java.util.Collections;
 
 @Service
 public class GoogleTokenVerifier {
+
+    private static final Logger log = LoggerFactory.getLogger(GoogleTokenVerifier.class);
 
     private final GoogleIdTokenVerifier verifier;
 
@@ -30,7 +34,10 @@ public class GoogleTokenVerifier {
             }
             return token.getPayload();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Falha ao validar token do Google: " + e.getMessage());
+            // Não repassa e.getMessage() ao cliente — pode conter detalhe interno
+            // (ex: erro de rede/DNS ao contactar o Google). Fica só no log do servidor.
+            log.warn("Falha ao validar token do Google: {}", e.getMessage());
+            throw new IllegalArgumentException("Token do Google inválido.");
         }
     }
 }

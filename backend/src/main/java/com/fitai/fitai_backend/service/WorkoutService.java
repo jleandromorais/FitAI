@@ -66,7 +66,7 @@ public class WorkoutService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Criação de treino falhou — usuário não encontrado: email={}", email);
-                    return new IllegalArgumentException("Usuário não encontrado.");
+                    return new ResourceNotFoundException("Usuário não encontrado.");
                 });
 
         // Monta o treino como uma caixa vazia com nome, código (A/B/C), dias e tags
@@ -234,12 +234,12 @@ public class WorkoutService {
 
         workoutRepository.save(workout);
 
-        // Registra o histórico da sessão
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        // Registra o histórico da sessão — o dono já veio junto com o treino
+        // (findByIdAndUserEmail já garantiu que pertence a esse email), sem
+        // necessidade de uma segunda busca redundante ao banco.
         sessionRepository.save(WorkoutSession.builder()
                 .workout(workout)
-                .user(user)
+                .user(workout.getUser())
                 .executedAt(LocalDateTime.now())
                 .durationMinutes(req.getDurationMinutes() != null ? req.getDurationMinutes() : 0)
                 .setsCompleted(setsCompleted)
@@ -319,7 +319,7 @@ public class WorkoutService {
                 }
 
                 // Registra ou actualiza o exercício no mapa (mantém o maior peso visto)
-                String key = ex.getName().toLowerCase();
+                String key = ex.getName().toLowerCase(java.util.Locale.ROOT);
                 ExerciseProgressDto existing = exerciseMap.get(key);
                 if (existing == null || maxCurrent > existing.getCurrentWeight()) {
                     exerciseMap.put(key, new ExerciseProgressDto(

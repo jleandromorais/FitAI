@@ -163,7 +163,7 @@ class WorkoutControllerIT {
 
         // Usuário B não deve conseguir acessar o treino do usuário A
         mockMvc.perform(get("/workouts/" + workoutId).header("Authorization", "Bearer " + tokenB))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
 
         // Usuário B não deve ver o treino do usuário A na sua listagem
         mockMvc.perform(get("/workouts").header("Authorization", "Bearer " + tokenB))

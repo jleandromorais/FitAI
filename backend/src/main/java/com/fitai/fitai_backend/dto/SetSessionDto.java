@@ -1,5 +1,6 @@
 package com.fitai.fitai_backend.dto;
 
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 /**
@@ -10,7 +11,12 @@ import lombok.Data;
 @Data
 public class SetSessionDto {
     private Integer setIndex;  // posição da série dentro do exercício (0-based)
+
+    @PositiveOrZero
     private Double  weight;    // peso realmente usado (pode diferir do planeado)
+
+    @PositiveOrZero
     private Integer reps;      // reps realmente feitas
+
     private Boolean done;      // true = série concluída
 }

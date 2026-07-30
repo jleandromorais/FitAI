@@ -1,5 +1,7 @@
 package com.fitai.fitai_backend.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.util.List;
 
@@ -12,5 +14,8 @@ import java.util.List;
 public class SessionRequest {
     private Integer                  durationMinutes; // tempo total da sessão em minutos
     private String                   notes;           // anotações livres do utilizador
+
+    @NotNull
+    @Valid
     private List<ExerciseSessionDto> exercises;       // exercícios com sets realizados
 }

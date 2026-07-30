@@ -18,7 +18,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return userRepository.findByEmail(email)
                 .map(user -> org.springframework.security.core.userdetails.User
                         .withUsername(user.getEmail())
-                        .password(user.getPassword())
+                        // Contas só-Google não têm senha local; o builder do Spring Security
+                        // exige um valor não-nulo, mas esse UserDetails nunca é usado para
+                        // checar senha (autenticação já foi feita via JWT ou Google)
+                        .password(user.getPassword() != null ? user.getPassword() : "")
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
     }
