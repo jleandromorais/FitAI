@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, Settings, LogOut } from "lucide-react";
+import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, Settings, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
@@ -11,6 +12,15 @@ export default function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { workouts } = useWorkouts();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Fecha o menu mobile automaticamente ao navegar para outra rota — ajusta
+  // durante o render (padrão recomendado pelo React) em vez de useEffect
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setMobileOpen(false);
+  }
 
   const NAV = [
     { href: "/",           icon: Home,     label: "Dashboard" },
@@ -29,7 +39,26 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="sidebar">
+    <>
+      {/* Botão hambúrguer — só visível em telas estreitas (ver globals.css) */}
+      <button
+        type="button"
+        className="hamburger-btn"
+        onClick={() => setMobileOpen(o => !o)}
+        aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+        aria-expanded={mobileOpen}
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Overlay atrás do menu aberto no mobile — clicar fecha */}
+      <div
+        className={`sidebar-backdrop${mobileOpen ? " visible" : ""}`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       {/* Brand */}
       <div className="sidebar-brand">
         <div className="sidebar-brand-mark">F</div>
@@ -92,6 +121,7 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
