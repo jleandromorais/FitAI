@@ -3,7 +3,6 @@ primary_region = "gru"
 
 [build]
   dockerfile = "backend/Dockerfile"
-  context = "backend"
 
 [http_service]
   internal_port = 8080
