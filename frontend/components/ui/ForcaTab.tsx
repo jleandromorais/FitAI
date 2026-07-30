@@ -63,6 +63,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                 height={240}
                 showDots
                 yLabel={v => `${v.toFixed(0)}kg`}
+                label={`Evolução de carga — ${selectedEx.name}`}
               />
             </div>
 

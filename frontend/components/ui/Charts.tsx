@@ -1,14 +1,23 @@
 "use client";
 
+import { useId } from "react";
+
 interface LineChartProps {
   data: number[];
   height?: number;
   color?: string;
   showDots?: boolean;
   yLabel?: (v: number) => string;
+  label?: string;
 }
 
-export function LineChart({ data, height = 180, color = 'var(--accent)', showDots, yLabel }: LineChartProps) {
+export function LineChart({ data, height = 180, color = 'var(--accent)', showDots, yLabel, label }: LineChartProps) {
+  // useId() inclui ":" (ex: ":r0:"), inválido em referências url(#id) — remove.
+  // Precisa vir antes de qualquer return condicional (Rules of Hooks).
+  const gid = `lcg-${useId().replace(/:/g, "")}`;
+
+  if (data.length < 2) return null; // precisa de ao menos 2 pontos pra traçar uma linha
+
   const W = 600, H = height, padL = 36, padR = 8, padT = 16, padB = 22;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
@@ -17,10 +26,10 @@ export function LineChart({ data, height = 180, color = 'var(--accent)', showDot
   const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
   const areaPath = path + ` L${pts[pts.length - 1][0]},${H - padB} L${padL},${H - padB} Z`;
   const fmt = yLabel ?? ((v: number) => v.toString());
-  const gid = `lcg-${Math.random().toString(36).slice(2, 7)}`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}
+      role="img" aria-label={label ?? "Gráfico de evolução"}>
       <defs>
         <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.28" />
@@ -53,16 +62,17 @@ export function LineChart({ data, height = 180, color = 'var(--accent)', showDot
   );
 }
 
-interface BarChartProps { data: number[]; height?: number; }
+interface BarChartProps { data: number[]; height?: number; label?: string; }
 
-export function BarChart({ data, height = 180 }: BarChartProps) {
+export function BarChart({ data, height = 180, label }: BarChartProps) {
   const W = 600, H = height, padT = 16, padB = 22, padL = 36, padR = 8;
-  const max = Math.max(...data);
+  const max = Math.max(...data) || 1; // evita 0/0 = NaN quando todos os valores são 0
   const barW = (W - padL - padR) / data.length * 0.55;
   const gap = (W - padL - padR) / data.length;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}
+      role="img" aria-label={label ?? "Gráfico de barras"}>
       <g className="chart-grid">
         {[0, 1, 2, 3].map(i => {
           const y = padT + (i / 3) * (H - padT - padB);
@@ -82,9 +92,11 @@ export function BarChart({ data, height = 180 }: BarChartProps) {
   );
 }
 
-interface SparklineProps { data: number[]; width?: number; height?: number; color?: string; }
+interface SparklineProps { data: number[]; width?: number; height?: number; color?: string; label?: string; }
 
-export function Sparkline({ data, width = 100, height = 30, color = 'var(--accent)' }: SparklineProps) {
+export function Sparkline({ data, width = 100, height = 30, color = 'var(--accent)', label }: SparklineProps) {
+  if (data.length < 2) return null; // precisa de ao menos 2 pontos pra traçar uma linha
+
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
   const stepX = width / (data.length - 1);
@@ -93,7 +105,8 @@ export function Sparkline({ data, width = 100, height = 30, color = 'var(--accen
   ).join(' ');
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <svg width={width} height={height} style={{ display: 'block' }}
+      role="img" aria-label={label ?? "Mini-gráfico de tendência"}>
       <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

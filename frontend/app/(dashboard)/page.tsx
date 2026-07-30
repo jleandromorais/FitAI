@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Bell, Play, Timer, Dumbbell, Target, Sparkles, Trophy, TrendingUp, Loader2 } from "lucide-react";
+import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, TrendingUp, Loader2 } from "lucide-react";
 import { Sparkline } from "@/components/ui/Charts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
@@ -36,12 +36,10 @@ function calcMuscleDistribution(workouts: Workout[]) {
     .map(([label, count]) => ({ label, value: Math.round((count / total) * 100) }));
 }
 
-function buildVolumeSparkline(volumePerWorkout: number[], totalVolume: number): number[] {
-  // Usa os volumes reais dos treinos se disponíveis
-  if (volumePerWorkout.length >= 3) return volumePerWorkout.slice(-12);
-  // Fallback: gera estimativa baseada no volume total quando não há sessões
-  const base = totalVolume || 1000;
-  return Array.from({ length: 8 }, (_, i) => Math.round(base * (0.7 + (i / 7) * 0.3)));
+// Só usa volumes reais — o Sparkline em si já lida com poucos pontos (ou
+// nenhum), então não há motivo pra inventar uma curva quando faltam dados.
+function buildVolumeSparkline(volumePerWorkout: number[]): number[] {
+  return volumePerWorkout.slice(-12);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +61,7 @@ export default function Dashboard() {
     const totalSets   = progress?.totalSetsCompleted ?? workouts.reduce((sum, w) => sum + (w.totalSets ?? 0), 0);
     const featured    = [...workouts].sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))[0];
     const muscleDistribution = calcMuscleDistribution(workouts);
-    const volumeSparkline    = buildVolumeSparkline(progress?.volumePerWorkout ?? [], totalVolume);
+    const volumeSparkline    = buildVolumeSparkline(progress?.volumePerWorkout ?? []);
 
     return { totalVolume, totalSets, featured, muscleDistribution, volumeSparkline };
   }, [workouts, progress]);
@@ -87,10 +85,6 @@ export default function Dashboard() {
             </div>
             <h1 className="page-title">Bom dia, {firstName} 👋</h1>
             <div className="page-sub">Vamos começar sua jornada.</div>
-          </div>
-          <div className="page-actions">
-            <button className="icon-btn"><Search size={18} /></button>
-            <button className="icon-btn"><Bell size={18} /></button>
           </div>
         </div>
 
@@ -138,10 +132,6 @@ export default function Dashboard() {
               ? `Você tem ${workouts.length} treino${workouts.length !== 1 ? "s" : ""} cadastrado${workouts.length !== 1 ? "s" : ""}. Hora de mover ferro.`
               : "Hora de começar."}
           </div>
-        </div>
-        <div className="page-actions">
-          <button className="icon-btn"><Search size={18} /></button>
-          <button className="icon-btn"><Bell size={18} /></button>
         </div>
       </div>
 

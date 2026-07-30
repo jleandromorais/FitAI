@@ -5,20 +5,14 @@ import { ExerciseProgress, ProgressData } from "@/hooks/useProgress";
 import { SessionHistory } from "@/hooks/useSessions";
 
 /**
- * Devolve uma sequência simulada de evolução de carga para o gráfico de linha.
- * Usa o peso anterior (prev) como ponto inicial e o atual como ponto final,
- * interpolando os valores intermédios.
- * Quando houver histórico real de sessões, substitui por dados reais.
+ * Devolve os dois únicos pontos de carga que realmente temos — peso da
+ * sessão anterior (prev) e peso atual. Não há histórico granular por sessão
+ * armazenado ainda, então não interpola pontos intermédios fictícios entre
+ * eles (isso mostraria uma "evolução" que nunca foi medida de verdade).
  */
 function buildLoadHistory(ex: ExerciseProgress): number[] {
-  const start = ex.prevWeight > 0 ? ex.prevWeight : ex.currentWeight * 0.85;
-  const end = ex.currentWeight;
-  // Gera 8 pontos interpolados — suficiente para o gráfico ter forma
-  return Array.from({ length: 8 }, (_, i) => {
-    const t = i / 7;
-    // Progressão não-linear para parecer mais realista
-    return parseFloat((start + (end - start) * (t * t)).toFixed(1));
-  });
+  if (ex.prevWeight <= 0) return [ex.currentWeight];
+  return [ex.prevWeight, ex.currentWeight];
 }
 
 export interface MuscleVolumeEntry {

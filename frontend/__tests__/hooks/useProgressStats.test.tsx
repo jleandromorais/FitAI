@@ -46,10 +46,9 @@ describe("useProgressStats", () => {
     expect(result.current.selectedEx?.name).toBe("Agachamento");
   });
 
-  it("gera histórico de carga interpolado com 8 pontos terminando no peso atual", () => {
+  it("gera histórico de carga com os 2 pontos reais (prev e current)", () => {
     const { result } = renderHook(() => useProgressStats(PROGRESS_DATA, [], 0, NOW));
-    expect(result.current.loadHistory).toHaveLength(8);
-    expect(result.current.loadHistory[7]).toBe(70); // último ponto = currentWeight
+    expect(result.current.loadHistory).toEqual([60, 70]); // Supino Reto: prevWeight=60, currentWeight=70
   });
 
   it("prs contém apenas exercícios com delta positivo, ordenados decrescente", () => {
