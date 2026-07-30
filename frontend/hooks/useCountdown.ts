@@ -8,11 +8,13 @@ export function useStopwatch() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const start = useCallback(() => {
+    if (intervalRef.current) return; // já rodando — evita empilhar intervalos
     intervalRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
   }, []);
 
   const stop = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null; // senão start() depois de stop() nunca reinicia
   }, []);
 
   const reset = useCallback(() => setSeconds(0), []);

@@ -27,6 +27,9 @@ export interface SessionResult {
   setsCompleted: number;
   totalVolume: number;
   durationMinutes: number;
+  // false quando o resumo é uma estimativa local porque o save no
+  // backend falhou (rede/erro) — a sessão pode não ter sido persistida
+  saved: boolean;
 }
 
 // Converte Exercise[] do backend para LiveExercise[] editável
@@ -121,14 +124,16 @@ export function useWorkoutSession(workout: Workout | null) {
 
     try {
       const result = await api.post<SessionResult>(`/workouts/${workout.id}/session`, payload);
-      setSessionResult(result);
+      setSessionResult({ ...result, saved: true });
     } catch {
-      // Mesmo com erro de rede, mostra o resumo local
+      // O save no backend falhou — mostra o resumo mesmo assim (não trava o
+      // utilizador no meio do treino), mas marca saved=false para a tela
+      // avisar que talvez precise repetir o registo
       const doneSets = liveExercises.flatMap(ex => ex.sets).filter(s => s.done).length;
       const vol = liveExercises.flatMap(ex => ex.sets)
         .filter(s => s.done)
         .reduce((sum, s) => sum + s.weight * s.reps, 0);
-      setSessionResult({ setsCompleted: doneSets, totalVolume: vol, durationMinutes: Math.round(session.seconds / 60) });
+      setSessionResult({ setsCompleted: doneSets, totalVolume: vol, durationMinutes: Math.round(session.seconds / 60), saved: false });
     } finally {
       setFinishing(false);
     }

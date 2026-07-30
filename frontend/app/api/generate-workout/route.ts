@@ -26,8 +26,15 @@ export interface GenerateResponse {
   workouts: GeneratedWorkout[];
 }
 
+// Dias fora de 3-6 não têm um split definido em getSplit() — cai no default
+// "adaptado para N dias", e N cru (incluindo NaN) vaza pro prompt da IA
+function parseValidDays(days: string): number {
+  const n = parseInt(days, 10);
+  return Number.isInteger(n) && n >= 3 && n <= 6 ? n : 3;
+}
+
 function getSplit(days: string, goal: string, level: string): string {
-  const n = parseInt(days);
+  const n = parseValidDays(days);
   const isStrength = goal === "Força";
   const isFat = goal === "Emagrecimento";
 
@@ -75,7 +82,7 @@ function getRepScheme(goal: string, level: string): string {
 function buildPrompt(req: GenerateRequest): string {
   const split = getSplit(req.days, req.goal, req.level);
   const repScheme = getRepScheme(req.goal, req.level);
-  const n = parseInt(req.days);
+  const n = parseValidDays(req.days);
 
   return `Você é um personal trainer com certificação NSCA e 10 anos de experiência em academias. Crie um plano de treino profissional em JSON.
 
@@ -158,6 +165,7 @@ export async function POST(req: NextRequest) {
         temperature: 0.7,
         max_tokens: 4096,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!res.ok) {
@@ -173,8 +181,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "IA retornou resposta vazia. Tente novamente." }, { status: 502 });
     }
 
-    const parsed: GenerateResponse = JSON.parse(clean);
-    return NextResponse.json(parsed);
+    const parsed = JSON.parse(clean);
+    if (!Array.isArray(parsed?.workouts)) {
+      return NextResponse.json({ error: "IA retornou formato inesperado. Tente novamente." }, { status: 502 });
+    }
+
+    return NextResponse.json(parsed as GenerateResponse);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro inesperado.";
     return NextResponse.json({ error: message }, { status: 502 });

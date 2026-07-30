@@ -62,7 +62,7 @@ export function useWorkoutSlots() {
   function removeSlot(slotId: string) {
     setSlots(prev => {
       const next = prev.filter(s => s.id !== slotId);
-      setActiveSlotIdx(i => Math.min(i, next.length - 1));
+      setActiveSlotIdx(i => Math.max(0, Math.min(i, next.length - 1)));
       return next;
     });
   }

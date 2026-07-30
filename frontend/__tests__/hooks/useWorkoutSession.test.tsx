@@ -131,11 +131,11 @@ describe("useWorkoutSession", () => {
     expect(mockApi.post).toHaveBeenCalledWith("/workouts/1/session", expect.objectContaining({
       exercises: [expect.objectContaining({ exerciseId: 10 })],
     }));
-    expect(result.current.sessionResult).toEqual({ setsCompleted: 1, totalVolume: 600, durationMinutes: 5 });
+    expect(result.current.sessionResult).toEqual({ setsCompleted: 1, totalVolume: 600, durationMinutes: 5, saved: true });
     expect(result.current.finishing).toBe(false);
   });
 
-  it("handleFinish usa resumo local quando a API falha", async () => {
+  it("handleFinish usa resumo local e marca saved=false quando a API falha", async () => {
     mockApi.post.mockRejectedValue(new Error("Falha de rede"));
     const { result } = renderHook(() => useWorkoutSession(WORKOUT));
     act(() => result.current.startSession());
@@ -148,6 +148,7 @@ describe("useWorkoutSession", () => {
     expect(result.current.sessionResult).not.toBeNull();
     expect(result.current.sessionResult?.setsCompleted).toBe(1);
     expect(result.current.sessionResult?.totalVolume).toBe(600);
+    expect(result.current.sessionResult?.saved).toBe(false);
   });
 
   it("stopSession para o cronómetro e sai do modo de execução", () => {

@@ -5,7 +5,7 @@ const PUBLIC_ROUTES = ["/login", "/register"];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("token")?.value;
-  const isPublic = PUBLIC_ROUTES.some(r => pathname.startsWith(r));
+  const isPublic = PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + "/"));
 
   // Autenticado a tentar aceder ao login → manda para o dashboard
   if (token && isPublic) {
@@ -23,5 +23,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)",],
+  // Rotas /api/* têm sua própria verificação JWT real (ver lib/auth-jwt.ts) e
+  // devolvem JSON 401 — não devem passar pelo redirect de página deste middleware
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)",],
 };

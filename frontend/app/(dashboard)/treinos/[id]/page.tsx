@@ -75,9 +75,19 @@ export default function TreinoDetalhe() {
           </div>
 
           <h1 className="h-display" style={{ fontSize: 28, marginBottom: 8 }}>Treino concluído!</h1>
-          <p style={{ color: "var(--text-dim)", marginBottom: 32, fontSize: 14 }}>
+          <p style={{ color: "var(--text-dim)", marginBottom: sessionResult.saved ? 32 : 12, fontSize: 14 }}>
             {workout.name} — ótimo trabalho, {formatTime(sessionSeconds)} de esforço.
           </p>
+
+          {!sessionResult.saved && (
+            <div style={{
+              padding: "10px 16px", borderRadius: 10, marginBottom: 20,
+              background: "var(--surface-2)", border: "1px solid var(--danger)",
+              color: "var(--danger)", fontSize: 13,
+            }}>
+              Não foi possível salvar esta sessão no servidor. Os números abaixo são uma estimativa local — verifique sua conexão.
+            </div>
+          )}
 
           {/* Resumo em 3 stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 32 }}>

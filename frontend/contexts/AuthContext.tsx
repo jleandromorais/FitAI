@@ -33,8 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } catch {
+        // "user" corrompido no localStorage — descarta a sessão em vez de quebrar
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
   }, []);
 
@@ -69,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       localStorage.setItem("token", data.token);
       localStorage.setItem("refreshToken", data.refreshToken);
+      // O middleware (proxy.ts) decide com base neste cookie — sem atualizá-lo
+      // aqui, ele expira (24h) mesmo com a sessão ainda válida via refresh token
+      // e o utilizador é redirecionado para /login apesar de estar autenticado
+      document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
       setToken(data.token);
       return true;
     } catch {
