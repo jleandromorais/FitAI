@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
+import EffortLines from "@/components/ui/EffortLines";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
@@ -78,28 +79,26 @@ function LoginForm() {
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
 
       {/* ── Coluna esquerda: branding ── */}
-      <div style={{
-        width: "45%", background: "var(--surface-2)",
-        borderRight: "1px solid var(--border)",
-        display: "flex", flexDirection: "column", justifyContent: "space-between",
-        padding: "48px 56px",
-      }} className="hidden lg:flex">
+      <div className="auth-brand hidden lg:flex">
+        <div className="auth-brand-glow" />
+        <EffortLines />
 
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="sidebar-brand-mark" style={{ width: 40, height: 40, fontSize: 18 }}>F</div>
-          <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "var(--text)" }}>
-            FitAI
-          </span>
+        <div className="auth-brand-content">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="sidebar-brand-mark" style={{ width: 40, height: 40, fontSize: 18 }}>F</div>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "var(--text)" }}>
+              FitAI
+            </span>
+          </div>
         </div>
 
         {/* Frase */}
-        <div>
+        <div className="auth-brand-content">
           <h1 style={{
             fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 700,
             color: "var(--text)", lineHeight: 1.15, marginBottom: 20,
           }}>
-            Transforme seu corpo,<br />supere seus limites.
+            Cada série te leva<br />mais <span className="flame-word">perto do limite.</span>
           </h1>
           <p style={{ color: "var(--text-dim)", fontSize: 16, lineHeight: 1.65, maxWidth: 420 }}>
             Treinos personalizados com inteligência artificial para você evoluir todos os dias.
@@ -116,7 +115,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <p style={{ fontSize: 12, color: "var(--text-mute)" }}>© 2026 FitAI. Todos os direitos reservados.</p>
+        <p className="auth-brand-content" style={{ fontSize: 12, color: "var(--text-mute)" }}>© 2026 FitAI. Todos os direitos reservados.</p>
       </div>
 
       {/* ── Coluna direita: formulário ── */}

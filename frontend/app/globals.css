@@ -1,22 +1,28 @@
 @import "tailwindcss";
 
 /* ─── TOKENS ─────────────────────────────────────────────────────── */
+/* Direção "Combustão": carvão quente em vez de preto-terminal, laranja-brasa
+   como identidade (energia/esforço), verde reservado como sinal semântico
+   de conquista (streak, meta batida) — não mais a cor da marca. */
 :root {
-  --bg:           #0a0a0a;
-  --surface:      #111111;
-  --surface-2:    #1a1a1a;
-  --surface-3:    #222222;
-  --border:       #2a2a2a;
-  --border-soft:  #1f1f1f;
+  --bg:           #12100e;
+  --surface:      #1c1815;
+  --surface-2:    #241f1a;
+  --surface-3:    #2c261f;
+  --border:       #332b23;
+  --border-soft:  #241f1a;
 
-  --text:         #f0f0f0;
-  --text-dim:     #a0a0a0;
-  --text-mute:    #555555;
+  --text:         #f5f1ea;
+  --text-dim:     #a89e8f;
+  --text-mute:    #6b6053;
 
-  --accent:       #00ff88;
-  --accent-hover: #00e07a;
-  --accent-soft:  rgba(0,255,136,0.08);
+  --accent:       #ff5a2e;
+  --accent-hover: #ff7a52;
+  --accent-soft:  rgba(255,90,46,0.1);
   --danger:       #ff4d4d;
+
+  --gain:         #8fe85a;
+  --gain-soft:    rgba(143,232,90,0.1);
 
   --font-display: var(--font-space), 'Space Grotesk', system-ui, sans-serif;
   --font-body:    var(--font-inter), 'Inter', system-ui, sans-serif;
@@ -85,7 +91,7 @@ body {
   height: 34px;
   border-radius: 9px;
   background: var(--accent);
-  color: #000;
+  color: #16100c;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 16px;
@@ -169,8 +175,8 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a4a2e, #0a1f14);
-  border: 1px solid rgba(0,255,136,0.25);
+  background: linear-gradient(135deg, #4a2418, #1f100a);
+  border: 1px solid rgba(255,90,46,0.3);
   color: var(--accent);
   font-family: var(--font-mono);
   font-weight: 600;
@@ -189,7 +195,7 @@ body {
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 20px;
-  border: 1px solid rgba(0,255,136,0.2);
+  border: 1px solid rgba(255,90,46,0.25);
 }
 
 /* ─── SIDEBAR MOBILE (hambúrguer + overlay abaixo de 768px) ──────────── */
@@ -321,12 +327,16 @@ body {
   padding: 20px;
   transition: border-color 0.2s;
 }
-.card:hover { border-color: #333; }
+.card:hover { border-color: #3d332a; }
 .card.card-accent {
-  border-color: rgba(0,255,136,0.2);
-  background: linear-gradient(135deg, #0f1f16 0%, var(--surface) 60%);
+  border-color: rgba(255,90,46,0.25);
+  background: radial-gradient(140% 100% at 100% 0%, var(--accent-soft), transparent 60%), var(--surface);
 }
 .card.card-tight { padding: 14px 16px; }
+.card.card-gain {
+  border-color: rgba(143,232,90,0.25);
+  background: radial-gradient(140% 100% at 100% 0%, var(--gain-soft), transparent 60%), var(--surface);
+}
 
 /* ─── BUTTONS ─────────────────────────────────────────────────────── */
 .btn {
@@ -346,7 +356,7 @@ body {
   text-decoration: none;
 }
 .btn:active { transform: scale(0.97); }
-.btn-primary { background: var(--accent); color: #000; }
+.btn-primary { background: var(--accent); color: #16100c; }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
 .btn-secondary:hover { color: var(--text); border-color: #3a3a3a; }
@@ -392,7 +402,7 @@ body {
   user-select: none;
 }
 .chip:hover { color: var(--text); border-color: #3a3a3a; }
-.chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.chip.active { background: var(--accent); color: #16100c; border-color: var(--accent); }
 .chip.chip-accent {
   background: var(--accent-soft);
   color: var(--accent);
@@ -510,6 +520,46 @@ body {
 .auth-card {
   width: 100%;
   max-width: 420px;
+}
+
+.auth-brand {
+  position: relative;
+  width: 45%;
+  background: var(--surface-2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 56px;
+  overflow: hidden;
+}
+
+.effort-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.auth-brand-glow {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  left: -160px;
+  bottom: -180px;
+  background: radial-gradient(circle, rgba(255,90,46,0.22), transparent 65%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.auth-brand-content { position: relative; z-index: 2; }
+
+.flame-word {
+  background: linear-gradient(90deg, var(--accent), #ffab7a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* ─── ANIMATIONS ──────────────────────────────────────────────────── */
