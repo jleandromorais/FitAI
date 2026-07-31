@@ -37,19 +37,22 @@ export function useWorkouts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    try {
-      setLoading(true);
-      const data = await api.get<Workout[]>("/workouts");
-      setWorkouts(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar treinos.");
-    } finally {
-      setLoading(false);
-    }
+  function fetchWorkouts() {
+    return api.get<Workout[]>("/workouts")
+      .then(setWorkouts)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Erro ao carregar treinos."))
+      .finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, []);
+  // Recarga manual (ex: após criar/editar um treino) — mostra o loading de novo.
+  async function load() {
+    setLoading(true);
+    await fetchWorkouts();
+  }
+
+  useEffect(() => {
+    fetchWorkouts();
+  }, []);
 
   async function createWorkout(req: Omit<Workout, "id" | "duration" | "totalSets" | "volume">) {
     const created = await api.post<Workout>("/workouts", req);
