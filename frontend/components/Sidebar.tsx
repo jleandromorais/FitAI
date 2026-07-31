@@ -95,7 +95,7 @@ export default function Sidebar() {
           <div className="avatar">{initials}</div>
           <div className="flex-1">
             <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
-              {user?.name ?? "Usuário"}
+              {user?.name || user?.email?.split("@")[0] || "Usuário"}
             </div>
             <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
               {user?.email ?? ""}

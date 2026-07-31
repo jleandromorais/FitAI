@@ -75,11 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       localStorage.setItem("token", data.token);
       localStorage.setItem("refreshToken", data.refreshToken);
+      // O backend também devolve name/email em /auth/refresh — sem persistir isso
+      // aqui, um refresh silencioso (comum logo após o login, já que o access token
+      // dura pouco) sobrescrevia token/refreshToken mas deixava "user" intocado.
+      // Se por algum motivo "user" nunca existiu no localStorage, isso fazia a
+      // sidebar cair no fallback genérico "Usuário" mesmo com a sessão válida.
+      const updatedUser = { name: data.name, email: data.email };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
       // O middleware (proxy.ts) decide com base neste cookie — sem atualizá-lo
       // aqui, ele expira (24h) mesmo com a sessão ainda válida via refresh token
       // e o utilizador é redirecionado para /login apesar de estar autenticado
       document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
       setToken(data.token);
+      setUser(updatedUser);
       return true;
     } catch {
       logout();
