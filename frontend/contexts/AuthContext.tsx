@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
@@ -24,25 +24,32 @@ const AuthContext = createContext<AuthContextType>({
   refreshAccessToken: async () => false,
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const router = useRouter();
+// Lê a sessão salva no localStorage. Executado apenas como lazy initializer
+// do useState (nunca em efeito), pois é leitura síncrona de fonte externa.
+// Guarda contra SSR, onde localStorage não existe.
+function readStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  const storedUser = localStorage.getItem("user");
+  if (!storedUser) return null;
+  try {
+    return JSON.parse(storedUser);
+  } catch {
+    // "user" corrompido no localStorage — descarta a sessão em vez de quebrar
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    return null;
+  }
+}
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (storedToken && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
-      } catch {
-        // "user" corrompido no localStorage — descarta a sessão em vez de quebrar
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    }
-  }, []);
+function readStoredToken(hasUser: boolean): string | null {
+  if (typeof window === "undefined" || !hasUser) return null;
+  return localStorage.getItem("token");
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
+  const [token, setToken] = useState<string | null>(() => readStoredToken(user !== null));
+  const router = useRouter();
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");

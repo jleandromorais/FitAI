@@ -56,11 +56,15 @@ export default function CalendarioPage() {
 
   // Navegação de mês
   const [mesOffset, setMesOffset] = useState(0);
-  const baseDate = new Date();
-  baseDate.setDate(1);
-  baseDate.setMonth(baseDate.getMonth() + mesOffset);
-  const year  = baseDate.getFullYear();
-  const month = baseDate.getMonth();
+  // year/month calculados em useMemo como primitivos estáveis — um objeto
+  // Date (mesmo recriado a cada render) não é uma dependência segura para
+  // o React Compiler preservar a memoização abaixo.
+  const { year, month } = useMemo(() => {
+    const today = new Date();
+    const d = new Date(today.getFullYear(), today.getMonth() + mesOffset, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  }, [mesOffset]);
+  const baseDate = new Date(year, month, 1);
 
   // ── Dias com sessão real executada no mês atual ───────────────────────────
   const doneDays = useMemo(() => {
