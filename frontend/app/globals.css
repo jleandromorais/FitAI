@@ -453,7 +453,10 @@ body {
   display: flex;
   align-items: center;
 }
-.input-with-icon svg {
+/* Direct-child selector only — the password show/hide toggle nests its own
+   svg inside a <button> at the right; matching it here would rip it out of
+   the button's layout and make the button unclickable (regressed before). */
+.input-with-icon > svg {
   position: absolute;
   left: 12px;
   color: var(--text-mute);

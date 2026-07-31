@@ -7,6 +7,8 @@ import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, Settings, LogOut, 
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
+const truncateStyle = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as const;
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -33,6 +35,8 @@ export default function Sidebar() {
   const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
+  const displayName = user?.name || user?.email?.split("@")[0] || "Usuário";
+  const displayEmail = user?.email ?? "";
 
   function handleLogout() {
     if (window.confirm("Tem certeza que deseja sair?")) logout();
@@ -94,11 +98,11 @@ export default function Sidebar() {
         <div className="side-user">
           <div className="avatar">{initials}</div>
           <div className="flex-1">
-            <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
-              {user?.name || user?.email?.split("@")[0] || "Usuário"}
+            <div title={displayName} style={{ ...truncateStyle, fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
+              {displayName}
             </div>
-            <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
-              {user?.email ?? ""}
+            <div title={displayEmail} style={{ ...truncateStyle, fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
+              {displayEmail}
             </div>
           </div>
           <button
@@ -106,7 +110,7 @@ export default function Sidebar() {
             onClick={() => router.push("/perfil")}
             title="Configurações"
             aria-label="Configurações"
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, flexShrink: 0 }}
           >
             <Settings size={16} color="var(--text-mute)" />
           </button>
@@ -115,7 +119,7 @@ export default function Sidebar() {
             onClick={handleLogout}
             title="Sair"
             aria-label="Sair"
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, flexShrink: 0 }}
           >
             <LogOut size={16} color="var(--text-mute)" />
           </button>
