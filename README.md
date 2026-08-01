@@ -120,8 +120,8 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 JWT_SECRET=<segredo de pelo menos 256 bits>
 GOOGLE_CLIENT_ID=<client id do Google Cloud>
-MAIL_USERNAME=<usuário SMTP, ex: Mailtrap>
-MAIL_PASSWORD=<password SMTP>
+SENDGRID_API_KEY=<api key da SendGrid, sendgrid.com>
+SENDGRID_FROM=<email verificado via Single Sender Verification>
 ```
 
 ### 3. Frontend
@@ -302,9 +302,8 @@ Guia completo em [backend/DEPLOY.md](backend/DEPLOY.md). Em resumo:
 | `JWT_REFRESH_EXPIRATION` | Validade do refresh token em ms (default `604800000` = 7 dias) |
 | `GOOGLE_CLIENT_ID` | Client ID do Google Cloud Console |
 | `CORS_ALLOWED_ORIGINS` | URLs permitidas separadas por vírgula |
-| `MAIL_HOST` / `MAIL_PORT` | Host/porta SMTP (default: sandbox do Mailtrap) |
-| `MAIL_USERNAME` / `MAIL_PASSWORD` | Credenciais SMTP para envio do e-mail de reset de senha |
-| `MAIL_FROM` | Endereço remetente dos e-mails |
+| `SENDGRID_API_KEY` | API key da SendGrid (sendgrid.com) para envio do e-mail de reset de senha via HTTPS — SMTP direto é bloqueado em várias plataformas de deploy |
+| `SENDGRID_FROM` | Endereço remetente — precisa estar verificado via Single Sender Verification no painel da SendGrid |
 | `FRONTEND_URL` | URL do frontend, usada para montar o link de reset de senha |
 
 ### Frontend (Vercel)

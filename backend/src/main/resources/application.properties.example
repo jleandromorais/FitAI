@@ -27,14 +27,11 @@ google.client-id=${GOOGLE_CLIENT_ID}
 # CORS — origens permitidas separadas por vírgula
 cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,https://fit-ai-theta-eight.vercel.app}
 
-# E-mail (reset de senha) — em dev, use uma sandbox gratuita como o Mailtrap (mailtrap.io)
-spring.mail.host=${MAIL_HOST:sandbox.smtp.mailtrap.io}
-spring.mail.port=${MAIL_PORT:2525}
-spring.mail.username=${MAIL_USERNAME}
-spring.mail.password=${MAIL_PASSWORD}
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-mail.from=${MAIL_FROM:no-reply@fitai.app}
+# E-mail (reset de senha) — SendGrid (sendgrid.com), via API HTTPS.
+# SMTP direto é bloqueado por várias plataformas de deploy (Railway incluída).
+# sendgrid.from precisa ser um remetente verificado via Single Sender Verification.
+sendgrid.api-key=${SENDGRID_API_KEY}
+sendgrid.from=${SENDGRID_FROM}
 
 # URL do frontend, usada para montar o link de redefinição de senha no e-mail
 app.frontend-url=${FRONTEND_URL:http://localhost:3000}

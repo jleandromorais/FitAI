@@ -2,12 +2,12 @@ package com.fitai.fitai_backend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fitai.fitai_backend.service.SendGridClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,9 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "jwt.refresh-expiration=604800000",
     "google.client-id=test-client-id",
     "cors.allowed-origins=http://localhost:3000",
-    "spring.mail.host=localhost",
-    "spring.mail.port=2525",
-    "mail.from=no-reply@fitai.app",
+    "sendgrid.api-key=test-key",
+    "sendgrid.from=no-reply@fitai.app",
     "app.frontend-url=http://localhost:3000",
 })
 class WorkoutControllerIT {
@@ -51,7 +50,7 @@ class WorkoutControllerIT {
     private WebApplicationContext context;
 
     @MockitoBean
-    private JavaMailSender mailSender;
+    private SendGridClient sendGridClient;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

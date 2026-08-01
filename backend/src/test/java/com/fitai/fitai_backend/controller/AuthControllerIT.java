@@ -1,25 +1,24 @@
 package com.fitai.fitai_backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fitai.fitai_backend.service.SendGridClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,9 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "jwt.refresh-expiration=604800000",
     "google.client-id=test-client-id",
     "cors.allowed-origins=http://localhost:3000",
-    "spring.mail.host=localhost",
-    "spring.mail.port=2525",
-    "mail.from=no-reply@fitai.app",
+    "sendgrid.api-key=test-key",
+    "sendgrid.from=no-reply@fitai.app",
     "app.frontend-url=http://localhost:3000",
 })
 class AuthControllerIT {
@@ -56,13 +54,18 @@ class AuthControllerIT {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
-    private JavaMailSender mailSender;
+    private SendGridClient sendGridClient;
 
     private MockMvc mockMvc;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> okResponse = mock(HttpResponse.class);
+        when(okResponse.statusCode()).thenReturn(202);
+        when(sendGridClient.send(anyString(), anyString(), anyString())).thenReturn(okResponse);
     }
 
     @Test
@@ -102,9 +105,9 @@ class AuthControllerIT {
 
         // 5. Capturar o token gerado via o e-mail "enviado" (mock) para poder resetar a senha.
         // O envio agora é assíncrono (@Async), então aguarda a chamada em vez de checar na hora.
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, timeout(2000)).send(captor.capture());
-        String emailBody = captor.getValue().getText();
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(sendGridClient, timeout(2000)).send(eq(email), anyString(), captor.capture());
+        String emailBody = captor.getValue();
         String resetToken = emailBody.substring(emailBody.indexOf("token=") + "token=".length()).trim().split("\\s+")[0];
         assertThat(resetToken).isNotBlank();
 
@@ -132,6 +135,6 @@ class AuthControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resetToken").doesNotExist());
 
-        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+        verify(sendGridClient, never()).send(anyString(), anyString(), anyString());
     }
 }
