@@ -28,7 +28,7 @@ function makeRequest(body: object, token?: string): NextRequest {
   } as unknown as NextRequest;
 }
 
-function makeGroqResponse(text: string, ok = true) {
+function makeOpenRouterResponse(text: string, ok = true) {
   return vi.fn().mockResolvedValue({
     ok,
     text: () => Promise.resolve(text),
@@ -62,7 +62,7 @@ const VALID_BODY = { level: "Iniciante", goal: "Hipertrofia", days: "3", equipme
 
 describe("POST /api/generate-workout", () => {
   beforeEach(() => {
-    vi.stubEnv("GROQ_API_KEY", "fake-key-123");
+    vi.stubEnv("OPENROUTER_API_KEY", "fake-key-123");
     vi.stubEnv("JWT_SECRET", JWT_SECRET);
   });
 
@@ -85,8 +85,8 @@ describe("POST /api/generate-workout", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retorna 500 quando GROQ_API_KEY não está configurada", async () => {
-    vi.stubEnv("GROQ_API_KEY", "");
+  it("retorna 500 quando OPENROUTER_API_KEY não está configurada", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "");
     const token = await signToken("ana@test.com");
 
     const req = makeRequest(VALID_BODY, token);
@@ -94,11 +94,11 @@ describe("POST /api/generate-workout", () => {
 
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain("GROQ_API_KEY");
+    expect(body.error).toContain("OPENROUTER_API_KEY");
   });
 
-  it("retorna workouts gerados quando autenticado e Groq responde corretamente", async () => {
-    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+  it("retorna workouts gerados quando autenticado e OpenRouter responde corretamente", async () => {
+    global.fetch = makeOpenRouterResponse(VALID_WORKOUT_JSON);
     const token = await signToken("ana@test.com");
 
     const req = makeRequest(VALID_BODY, token);
@@ -112,7 +112,7 @@ describe("POST /api/generate-workout", () => {
 
   it("remove blocos ```json``` da resposta antes de parsear", async () => {
     const withMarkdown = "```json\n" + VALID_WORKOUT_JSON + "\n```";
-    global.fetch = makeGroqResponse(withMarkdown);
+    global.fetch = makeOpenRouterResponse(withMarkdown);
     const token = await signToken("ana@test.com");
 
     const req = makeRequest(VALID_BODY, token);
@@ -123,8 +123,8 @@ describe("POST /api/generate-workout", () => {
     expect(body.workouts).toHaveLength(1);
   });
 
-  it("retorna 502 quando Groq retorna JSON inválido", async () => {
-    global.fetch = makeGroqResponse("isso não é JSON");
+  it("retorna 502 quando OpenRouter retorna JSON inválido", async () => {
+    global.fetch = makeOpenRouterResponse("isso não é JSON");
     const token = await signToken("ana@test.com");
 
     const req = makeRequest(VALID_BODY, token);
@@ -133,7 +133,7 @@ describe("POST /api/generate-workout", () => {
     expect(res.status).toBe(502);
   });
 
-  it("retorna 502 quando a chamada ao Groq falha (não-ok)", async () => {
+  it("retorna 502 quando a chamada ao OpenRouter falha (não-ok)", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       text: () => Promise.resolve("Service Unavailable"),
@@ -145,18 +145,18 @@ describe("POST /api/generate-workout", () => {
 
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body.error).toContain("Groq API error");
+    expect(body.error).toContain("OpenRouter API error");
   });
 
-  it("faz a requisição ao Groq com o prompt correto", async () => {
-    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+  it("faz a requisição ao OpenRouter com o prompt correto", async () => {
+    global.fetch = makeOpenRouterResponse(VALID_WORKOUT_JSON);
     const token = await signToken("ana@test.com");
 
     const req = makeRequest({ level: "Intermediário", goal: "Emagrecimento", days: "4", equipment: "Halteres", duration: "45min" }, token);
     await POST(req);
 
     const [url, options] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toContain("api.groq.com");
+    expect(url).toContain("openrouter.ai");
 
     const reqBody = JSON.parse(options.body);
     const promptText = reqBody.messages[0].content;

@@ -145,32 +145,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GROQ_API_KEY não configurada." }, { status: 500 });
+    return NextResponse.json({ error: "OPENROUTER_API_KEY não configurada." }, { status: 500 });
   }
 
   try {
     const body: GenerateRequest = await req.json();
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-20b:free",
         messages: [{ role: "user", content: buildPrompt(body) }],
         temperature: 0.7,
-        max_tokens: 4096,
+        // Modelo de raciocínio — os tokens de "pensamento" também contam nesse limite,
+        // então precisa de mais margem que um modelo direto pra não truncar o JSON final.
+        max_tokens: 8192,
       }),
       signal: AbortSignal.timeout(30000),
     });
 
     if (!res.ok) {
       const err = await res.text();
-      return NextResponse.json({ error: `Groq API error: ${err}` }, { status: 502 });
+      return NextResponse.json({ error: `OpenRouter API error: ${err}` }, { status: 502 });
     }
 
     const data = await res.json();

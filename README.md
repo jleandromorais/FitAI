@@ -138,7 +138,7 @@ Cria o ficheiro `frontend/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8081
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<o teu Google Client ID>
-GROQ_API_KEY=<a tua Groq API Key>
+OPENROUTER_API_KEY=<a tua OpenRouter API Key>
 JWT_SECRET=<mesmo valor usado no backend — necessário para validar o login nas rotas de IA>
 ```
 
@@ -312,7 +312,7 @@ Guia completo em [backend/DEPLOY.md](backend/DEPLOY.md). Em resumo:
 |---|---|
 | `NEXT_PUBLIC_API_URL` | URL pública do backend |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Client ID do Google (mesmo valor do backend) |
-| `GROQ_API_KEY` | API Key da Groq, usada pela rota de geração de treino com IA |
+| `OPENROUTER_API_KEY` | API Key da OpenRouter, usada pela rota de geração de treino com IA |
 | `JWT_SECRET` | Mesmo segredo do backend — usado para validar o login antes de gerar treino com IA |
 
 ---
