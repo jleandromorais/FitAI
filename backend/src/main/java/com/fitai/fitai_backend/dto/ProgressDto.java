@@ -43,4 +43,11 @@ public class ProgressDto {
      * Usado na aba "Força" e no card "Todos os exercícios".
      */
     private List<ExerciseProgressDto> exercises;
+
+    /**
+     * Dias consecutivos com treino nos dias agendados (schedule) dos treinos
+     * do utilizador. Dias fora de qualquer schedule não contam nem quebram
+     * o streak. Ver WorkoutService.computeCurrentStreak().
+     */
+    private Integer currentStreak;
 }

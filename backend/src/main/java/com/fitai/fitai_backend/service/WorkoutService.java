@@ -12,8 +12,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -347,8 +351,90 @@ public class WorkoutService {
                 workouts.size(),
                 volumePerWorkout,
                 workoutLabels,
-                exercises
+                exercises,
+                computeCurrentStreak(workouts, email)
         );
+    }
+
+    // Abreviações em português (sem acento, minúsculas) usadas no campo livre
+    // Workout.schedule — o mesmo formato produzido tanto pelo NovoTreinoModal
+    // quanto pelo prompt de geração por IA (ver DAYS_OPTIONS no frontend).
+    // Chave já sem acento — o acento é removido do token antes do lookup.
+    private static final Map<String, DayOfWeek> DAY_ABBREVIATIONS = Map.of(
+            "seg", DayOfWeek.MONDAY,
+            "ter", DayOfWeek.TUESDAY,
+            "qua", DayOfWeek.WEDNESDAY,
+            "qui", DayOfWeek.THURSDAY,
+            "sex", DayOfWeek.FRIDAY,
+            "sab", DayOfWeek.SATURDAY,
+            "dom", DayOfWeek.SUNDAY
+    );
+
+    // schedule é texto livre; calendario/page.tsx e EditarTreinoModal.tsx no
+    // frontend já normalizam tanto "Seg, Qui" quanto "Seg · Qui" com esse
+    // mesmo padrão de separadores — o parser aqui precisa aceitar os mesmos,
+    // senão treinos com "·" ficam com schedule vazio e o streak zera à toa.
+    private static Set<DayOfWeek> parseScheduledDays(List<Workout> workouts) {
+        Set<DayOfWeek> days = new java.util.HashSet<>();
+        for (Workout w : workouts) {
+            if (w.getSchedule() == null) continue;
+            for (String token : w.getSchedule().split("[,·\\s]+")) {
+                String key = token.trim().toLowerCase(java.util.Locale.ROOT).replace("á", "a");
+                if (key.isEmpty()) continue;
+                DayOfWeek day = DAY_ABBREVIATIONS.get(key);
+                if (day == null) {
+                    log.warn("Dia da semana não reconhecido em schedule: token='{}', workoutId={}", token, w.getId());
+                } else {
+                    days.add(day);
+                }
+            }
+        }
+        return days;
+    }
+
+    /*
+     * STREAK ATUAL
+     *
+     * Conta dias consecutivos, andando de hoje para trás, em que o
+     * utilizador treinou em todos os dias que tinha algum treino agendado
+     * (schedule). Dias fora de qualquer schedule são pulados — não contam
+     * nem quebram a sequência. Se hoje é um dia agendado mas ainda não teve
+     * sessão, isso não quebra o streak (o dia ainda não acabou).
+     *
+     * Sem limite de janela de datas — usa TODO o histórico de sessões,
+     * diferente de getRecentSessions() que só olha os últimos N dias.
+     */
+    private Integer computeCurrentStreak(List<Workout> workouts, String email) {
+        Set<DayOfWeek> scheduledDays = parseScheduledDays(workouts);
+
+        if (scheduledDays.isEmpty()) return 0;
+
+        Set<LocalDate> trainedDates = sessionRepository.findAllByUserEmail(email).stream()
+                .map(s -> s.getExecutedAt().toLocalDate())
+                .collect(java.util.stream.Collectors.toSet());
+
+        LocalDate today = LocalDate.now();
+        LocalDate cursor = today;
+        int streak = 0;
+
+        // Limite de segurança pra garantir término mesmo num estado de dados patológico
+        for (int i = 0; i < 3650; i++) {
+            if (!scheduledDays.contains(cursor.getDayOfWeek())) {
+                cursor = cursor.minusDays(1);
+                continue;
+            }
+            if (trainedDates.contains(cursor)) {
+                streak++;
+                cursor = cursor.minusDays(1);
+            } else if (cursor.equals(today)) {
+                // Hoje é dia agendado mas ainda não treinou — dia não acabou, não quebra
+                cursor = cursor.minusDays(1);
+            } else {
+                break; // dia agendado no passado sem sessão — streak quebrado
+            }
+        }
+
+        return streak;
     }
 
     /*

@@ -13,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -261,5 +263,121 @@ class WorkoutServiceTest {
         assertThat(dto.getTotalSetsCompleted()).isEqualTo(1);
         assertThat(dto.getExercises()).hasSize(1);
         assertThat(dto.getExercises().get(0).getName()).isEqualTo("Supino");
+    }
+
+    // ── computeCurrentStreak (via getProgress) ──────────────────────────────────
+
+    private static String abbrevFor(DayOfWeek d) {
+        return switch (d) {
+            case MONDAY -> "Seg";
+            case TUESDAY -> "Ter";
+            case WEDNESDAY -> "Qua";
+            case THURSDAY -> "Qui";
+            case FRIDAY -> "Sex";
+            case SATURDAY -> "Sáb";
+            case SUNDAY -> "Dom";
+        };
+    }
+
+    // Treino agendado todo dia da semana — isola o teste de qual dia é "hoje"
+    // quando o suite roda, já que qualquer dia bate com o schedule.
+    private Workout treinoTodoDia() {
+        return Workout.builder().id(2L).user(user).name("Treino B").code("B")
+                .schedule("Seg, Ter, Qua, Qui, Sex, Sáb, Dom")
+                .exercises(new ArrayList<>()).tags(new ArrayList<>()).build();
+    }
+
+    @Test
+    void getProgress_streakAtivo_contaDiasConsecutivosTreinados() {
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(treinoTodoDia()));
+
+        LocalDate today = LocalDate.now();
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(1).atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(2).atTime(10, 0)).build()
+        ));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(3);
+    }
+
+    @Test
+    void getProgress_hojeAindaNaoTreinado_naoQuebraStreak() {
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(treinoTodoDia()));
+
+        LocalDate today = LocalDate.now();
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.minusDays(1).atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(2).atTime(10, 0)).build()
+        ));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(2);
+    }
+
+    @Test
+    void getProgress_diaAgendadoSemSessao_quebraStreak() {
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(treinoTodoDia()));
+
+        LocalDate today = LocalDate.now();
+        // Falta sessão em today.minusDays(1) — quebra o streak ali, today-2 não deve ser contado
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(2).atTime(10, 0)).build()
+        ));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(1);
+    }
+
+    @Test
+    void getProgress_scheduleComSeparadorPontoMedio_reconheceMesmoAssim() {
+        // calendario/page.tsx e EditarTreinoModal.tsx já tratam "Seg · Qui" como
+        // formato válido (split em /[,·\s]+/) — o parser do backend precisa aceitar igual.
+        LocalDate today = LocalDate.now();
+        Workout w = Workout.builder().id(2L).user(user).name("Treino B").code("B")
+                .schedule(abbrevFor(today.getDayOfWeek()) + " · " + abbrevFor(today.minusDays(1).getDayOfWeek()))
+                .exercises(new ArrayList<>()).tags(new ArrayList<>()).build();
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(w));
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(1).atTime(10, 0)).build()
+        ));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(2);
+    }
+
+    @Test
+    void getProgress_semScheduleReconhecivel_streakZero() {
+        Workout semSchedule = Workout.builder().id(2L).user(user).name("Treino B").code("B")
+                .schedule("")
+                .exercises(new ArrayList<>()).tags(new ArrayList<>()).build();
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(semSchedule));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(0);
+    }
+
+    @Test
+    void getProgress_semSessoes_streakZero() {
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(treinoTodoDia()));
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of());
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(0);
+    }
+
+    @Test
+    void getProgress_diaNaoAgendadoNoMeio_naoQuebraStreak() {
+        LocalDate today = LocalDate.now();
+        // Só o dia da semana de hoje está agendado — os 6 dias entre hoje e
+        // há 7 dias (mesmo dia da semana) ficam de fora do schedule e não devem quebrar.
+        Workout w = Workout.builder().id(2L).user(user).name("Treino B").code("B")
+                .schedule(abbrevFor(today.getDayOfWeek()))
+                .exercises(new ArrayList<>()).tags(new ArrayList<>()).build();
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(w));
+
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.atTime(10, 0)).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(7).atTime(10, 0)).build()
+        ));
+
+        assertThat(workoutService.getProgress("ana@test.com").getCurrentStreak()).isEqualTo(2);
     }
 }

@@ -21,6 +21,7 @@ export interface ProgressData {
   volumePerWorkout: number[];   // volume de cada treino (para o gráfico de barras)
   workoutLabels: string[];      // nome de cada treino (mesmo índice que volumePerWorkout)
   exercises: ExerciseProgress[]; // exercícios ordenados por delta decrescente
+  currentStreak: number;        // dias consecutivos treinados nos dias agendados
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────

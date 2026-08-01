@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bell, Settings, Flame, Trophy, Target, ChevronRight, ChevronDown, LogOut, Sparkles, User, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
+import { useProgress } from "@/hooks/useProgress";
 
 type Section = "dados" | "objetivos" | "unidades" | null;
 
@@ -12,6 +13,8 @@ const OBJETIVOS = ["Hipertrofia", "Força", "Resistência", "Emagrecimento", "Sa
 export default function PerfilPage() {
   const { user, logout } = useAuth();
   const { workouts } = useWorkouts();
+  const { data: progress } = useProgress();
+  const streak = progress?.currentStreak ?? 0;
 
   const [open, setOpen] = useState<Section>(null);
   const [nome, setNome] = useState(user?.name ?? "");
@@ -44,7 +47,7 @@ export default function PerfilPage() {
   }
 
   const conquistas = [
-    { icon: <Flame size={16} color="var(--accent)" />, t: "12 dias streak", s: "Em andamento", done: true },
+    { icon: <Flame size={16} color="var(--accent)" />, t: `${streak} dias streak`, s: streak > 0 ? "Em andamento" : "Comece hoje", done: streak > 0 },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "10 treinos", s: workouts.length >= 10 ? "Conquistado" : `${workouts.length}/10`, done: workouts.length >= 10 },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "50 treinos", s: workouts.length >= 50 ? "Conquistado" : `${workouts.length}/50`, done: workouts.length >= 50 },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "100 treinos", s: workouts.length >= 100 ? "Conquistado" : `${workouts.length}/100`, done: workouts.length >= 100 },
@@ -90,7 +93,7 @@ export default function PerfilPage() {
                 <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 4 }}>{user?.email ?? "—"}</div>
                 <div className="row gap-2" style={{ marginTop: 10 }}>
                   <span className="chip chip-accent">Plano Pro</span>
-                  <span className="chip">12 dias streak 🔥</span>
+                  <span className="chip">{streak} dias streak 🔥</span>
                 </div>
               </div>
               <div className="col gap-2" style={{ alignItems: "flex-end" }}>
@@ -228,8 +231,8 @@ export default function PerfilPage() {
           <div className="card">
             <div className="h-eyebrow" style={{ marginBottom: 14 }}>Conquistas</div>
             <div className="col gap-3">
-              {conquistas.map(a => (
-                <div key={a.t} className="row gap-3">
+              {conquistas.map((a, i) => (
+                <div key={i} className="row gap-3">
                   <div style={{
                     width: 36, height: 36, borderRadius: 9,
                     background: a.done ? "var(--accent-soft)" : "var(--surface-2)",

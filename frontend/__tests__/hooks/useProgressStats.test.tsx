@@ -16,6 +16,7 @@ const PROGRESS_DATA: ProgressData = {
     { name: "Rosca Direta", muscle: "Bíceps", currentWeight: 20, prevWeight: 0, delta: 0, totalSets: 3 },
     { name: "Remada Curvada", muscle: "Costas", currentWeight: 60, prevWeight: 65, delta: -5, totalSets: 4 },
   ],
+  currentStreak: 3,
 };
 
 const NOW = new Date("2026-06-01T12:00:00Z").getTime();

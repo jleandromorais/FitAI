@@ -10,4 +10,9 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     List<WorkoutSession> findAllByUserEmailAndExecutedAtAfterOrderByExecutedAtDesc(
             String email, LocalDateTime after);
+
+    // Sem corte de data — usado pelo cálculo de streak, que precisa olhar
+    // o histórico inteiro (um streak real pode passar dos 90 dias que as
+    // outras consultas limitam).
+    List<WorkoutSession> findAllByUserEmail(String email);
 }
