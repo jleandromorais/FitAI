@@ -177,6 +177,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            title={showPassword ? "Ocultar senha" : "Mostrar senha"}
             style={{
               position: "absolute", right: 12, background: "none", border: "none",
               color: "var(--text-mute)", cursor: "pointer", display: "flex",
@@ -203,6 +204,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
             type="button"
             onClick={() => setShowConfirm(!showConfirm)}
             aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+            title={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
             style={{
               position: "absolute", right: 12, background: "none", border: "none",
               color: "var(--text-mute)", cursor: "pointer", display: "flex",
