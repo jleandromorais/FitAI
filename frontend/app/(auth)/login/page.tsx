@@ -272,11 +272,9 @@ function LoginForm() {
             />
           </div>
 
+          {/* Texto puro de propósito: /termos e /privacidade ainda não existem, não recriar como link clicável sem antes criar essas páginas */}
           <p style={{ fontSize: 11, textAlign: "center", color: "var(--text-mute)" }}>
-            Ao continuar, você concorda com os{" "}
-            <span style={{ color: "var(--accent)", cursor: "pointer" }}>Termos</span>{" "}
-            e{" "}
-            <span style={{ color: "var(--accent)", cursor: "pointer" }}>Política de Privacidade</span>.
+            Ao continuar, você concorda com os Termos e Política de Privacidade.
           </p>
         </div>
       </div>
