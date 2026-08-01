@@ -139,6 +139,11 @@ IMPORTANTE:
 - O campo schedule deve ter os dias sugeridos (ex: "Seg, Qua, Sex")`;
 }
 
+// O modelo gratuito usado é de raciocínio (pensa antes de responder) e roda em
+// infra compartilhada — pode passar de 30s para um treino completo. Precisa
+// alinhar com o timeout do fetch abaixo.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const userEmail = await verifyAuthToken(req);
   if (!userEmail) {
@@ -167,7 +172,7 @@ export async function POST(req: NextRequest) {
         // então precisa de mais margem que um modelo direto pra não truncar o JSON final.
         max_tokens: 8192,
       }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (!res.ok) {
