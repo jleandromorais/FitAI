@@ -26,6 +26,48 @@ export interface GenerateResponse {
   workouts: GeneratedWorkout[];
 }
 
+// Formato compacto que a IA de fato produz: uma série é sempre repetida
+// idêntica setsCount vezes, então pedir o array inteiro (com 3-5 cópias do
+// mesmo objeto) só gasta tokens à toa — o suficiente pra estourar o limite
+// em treinos maiores e cortar o JSON no meio. Expande pro formato completo
+// que o frontend espera depois de parsear.
+interface RawGeneratedExercise {
+  name: string;
+  muscle: string;
+  restSeconds: number;
+  setsCount: number;
+  reps: number;
+  weight: number;
+}
+
+interface RawGeneratedWorkout {
+  name: string;
+  code: string;
+  schedule: string;
+  tags: string[];
+  exercises: RawGeneratedExercise[];
+}
+
+function expandWorkouts(raw: RawGeneratedWorkout[]): GeneratedWorkout[] {
+  return raw.map(w => ({
+    ...w,
+    exercises: w.exercises.map(ex => {
+      const count = Math.min(Math.max(Math.round(ex.setsCount) || 3, 1), 6);
+      return {
+        name: ex.name,
+        muscle: ex.muscle,
+        restSeconds: ex.restSeconds,
+        sets: Array.from({ length: count }, () => ({
+          reps: ex.reps,
+          weight: ex.weight,
+          done: false,
+          prev: 0,
+        })),
+      };
+    }),
+  }));
+}
+
 // Dias fora de 3-6 não têm um split definido em getSplit() — cai no default
 // "adaptado para N dias", e N cru (incluindo NaN) vaza pro prompt da IA
 function parseValidDays(days: string): number {
@@ -106,7 +148,7 @@ REGRAS DE EXERCÍCIOS:
 - Ajustar pesos: Iniciante 40-60% do máximo estimado, Intermediário 65-75%, Avançado 75-85%
 - Peso corporal: se equipamento for "Apenas peso corporal", use weight: 0 e adapte com flexão, barra, etc.
 
-Retorne APENAS um JSON válido, sem markdown, sem texto fora do JSON:
+Retorne APENAS um JSON válido, sem markdown, sem texto fora do JSON. Cada série de um exercício é sempre igual, então informe só a contagem (setsCount) em vez de repetir o objeto:
 {
   "workouts": [
     {
@@ -119,12 +161,9 @@ Retorne APENAS um JSON válido, sem markdown, sem texto fora do JSON:
           "name": "Supino Reto com Barra",
           "muscle": "Peitoral",
           "restSeconds": 90,
-          "sets": [
-            { "reps": 10, "weight": 60, "done": false, "prev": 0 },
-            { "reps": 10, "weight": 60, "done": false, "prev": 0 },
-            { "reps": 10, "weight": 60, "done": false, "prev": 0 },
-            { "reps": 10, "weight": 60, "done": false, "prev": 0 }
-          ]
+          "setsCount": 4,
+          "reps": 10,
+          "weight": 60
         }
       ]
     }
@@ -136,7 +175,8 @@ IMPORTANTE:
 - Cada treino: 5-7 exercícios (${req.duration === "30 min" ? "4-5" : req.duration === "45 min" ? "5-6" : "6-7"} para ${req.duration})
 - Os músculos devem ser APENAS: Peitoral, Costas, Ombros, Bíceps, Tríceps, Pernas, Glúteos, Abdômen ou Panturrilha
 - Use nomes completos dos exercícios em português (ex: "Supino Reto com Barra", "Agachamento Livre com Barra")
-- O campo schedule deve ter os dias sugeridos (ex: "Seg, Qua, Sex")`;
+- O campo schedule deve ter os dias sugeridos (ex: "Seg, Qua, Sex")
+- setsCount é sempre um número (nunca um array) — a quantidade de séries do esquema acima`;
 }
 
 // O plano gratuito do Vercel mata qualquer função em 10s (limite fixo da
@@ -168,7 +208,7 @@ export async function POST(req: NextRequest) {
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: buildPrompt(body) }],
         temperature: 0.7,
-        max_tokens: 4096,
+        max_tokens: 6000,
       }),
       // Deixa uma margem abaixo do limite de 10s do Vercel Hobby pra devolver
       // um erro tratado em vez do function timeout bruto da plataforma.
@@ -193,7 +233,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "IA retornou formato inesperado. Tente novamente." }, { status: 502 });
     }
 
-    return NextResponse.json(parsed as GenerateResponse);
+    const workouts = expandWorkouts(parsed.workouts as RawGeneratedWorkout[]);
+    return NextResponse.json({ workouts } satisfies GenerateResponse);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro inesperado.";
     return NextResponse.json({ error: message }, { status: 502 });

@@ -39,7 +39,9 @@ function makeGroqResponse(text: string, ok = true) {
   });
 }
 
-const VALID_WORKOUT_JSON = JSON.stringify({
+// Formato compacto que a rota realmente pede à IA: setsCount/reps/weight em
+// vez do array de sets repetidos — a rota expande isso antes de responder.
+const RAW_WORKOUT_JSON = JSON.stringify({
   workouts: [
     {
       name: "Treino A — Peito",
@@ -47,12 +49,7 @@ const VALID_WORKOUT_JSON = JSON.stringify({
       schedule: "Seg, Qui",
       tags: ["Hipertrofia"],
       exercises: [
-        {
-          name: "Supino Reto",
-          muscle: "Peitoral",
-          restSeconds: 90,
-          sets: [{ reps: 10, weight: 60, done: false, prev: 0 }],
-        },
+        { name: "Supino Reto", muscle: "Peitoral", restSeconds: 90, setsCount: 4, reps: 10, weight: 60 },
       ],
     },
   ],
@@ -97,8 +94,8 @@ describe("POST /api/generate-workout", () => {
     expect(body.error).toContain("GROQ_API_KEY");
   });
 
-  it("retorna workouts gerados quando autenticado e Groq responde corretamente", async () => {
-    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+  it("expande setsCount/reps/weight em um array de sets antes de responder", async () => {
+    global.fetch = makeGroqResponse(RAW_WORKOUT_JSON);
     const token = await signToken("ana@test.com");
 
     const req = makeRequest(VALID_BODY, token);
@@ -108,10 +105,33 @@ describe("POST /api/generate-workout", () => {
     const body = await res.json();
     expect(body.workouts).toHaveLength(1);
     expect(body.workouts[0].name).toBe("Treino A — Peito");
+
+    const exercise = body.workouts[0].exercises[0];
+    expect(exercise.sets).toHaveLength(4);
+    expect(exercise.sets[0]).toEqual({ reps: 10, weight: 60, done: false, prev: 0 });
+    expect(exercise.sets[3]).toEqual({ reps: 10, weight: 60, done: false, prev: 0 });
+    expect(exercise.setsCount).toBeUndefined();
+  });
+
+  it("limita setsCount fora do intervalo 1-6 (protege contra a IA devolver um valor absurdo)", async () => {
+    const raw = JSON.stringify({
+      workouts: [{
+        name: "Treino A", code: "A", schedule: "Seg", tags: [],
+        exercises: [{ name: "Supino", muscle: "Peitoral", restSeconds: 90, setsCount: 99, reps: 10, weight: 60 }],
+      }],
+    });
+    global.fetch = makeGroqResponse(raw);
+    const token = await signToken("ana@test.com");
+
+    const req = makeRequest(VALID_BODY, token);
+    const res = await POST(req);
+    const body = await res.json();
+
+    expect(body.workouts[0].exercises[0].sets).toHaveLength(6);
   });
 
   it("remove blocos ```json``` da resposta antes de parsear", async () => {
-    const withMarkdown = "```json\n" + VALID_WORKOUT_JSON + "\n```";
+    const withMarkdown = "```json\n" + RAW_WORKOUT_JSON + "\n```";
     global.fetch = makeGroqResponse(withMarkdown);
     const token = await signToken("ana@test.com");
 
@@ -149,7 +169,7 @@ describe("POST /api/generate-workout", () => {
   });
 
   it("faz a requisição ao Groq com o prompt correto", async () => {
-    global.fetch = makeGroqResponse(VALID_WORKOUT_JSON);
+    global.fetch = makeGroqResponse(RAW_WORKOUT_JSON);
     const token = await signToken("ana@test.com");
 
     const req = makeRequest({ level: "Intermediário", goal: "Emagrecimento", days: "4", equipment: "Halteres", duration: "45min" }, token);
