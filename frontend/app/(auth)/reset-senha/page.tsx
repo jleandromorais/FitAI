@@ -3,8 +3,21 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateEmail, validatePassword } from "@/lib/validation";
+import EffortLines from "@/components/ui/EffortLines";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
+
+const MailSentIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 7 9-7" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><path d="M8 12.5l2.5 2.5L16 9.5" />
+  </svg>
+);
 
 // ── Etapa 1: solicitar o token de reset ──────────────────────────────────────
 
@@ -38,12 +51,12 @@ function ForgotStep() {
 
   if (sent) {
     return (
-      <div style={{ textAlign: "center", padding: "20px 0" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+      <div style={{ textAlign: "center", padding: "12px 0" }}>
+        <div className="auth-status-icon"><MailSentIcon /></div>
+        <h2 className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>
           Verifique seu e-mail
         </h2>
-        <p style={{ color: "var(--text-dim)", fontSize: 14 }}>
+        <p style={{ color: "var(--text-dim)", fontSize: 14, lineHeight: 1.55 }}>
           Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.
         </p>
       </div>
@@ -53,24 +66,27 @@ function ForgotStep() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
+        <h2 className="h-display" style={{ fontSize: 24, marginBottom: 8 }}>
           Esqueceu a senha?
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.55 }}>
-          Informe seu e-mail e receba um link para redefinir sua senha.
+          Sem drama — informe seu e-mail e mandamos um link pra redefinir.
         </p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input
-          className="input"
-          type="email"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleSubmit()}
-          autoFocus
-        />
+        <div className="input-with-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></svg>
+          <input
+            className="input"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            autoFocus
+          />
+        </div>
 
         {error && <p style={{ fontSize: 13, color: "var(--danger)", textAlign: "center" }}>{error}</p>}
 
@@ -88,6 +104,8 @@ function ResetStep({ token, email }: { token: string; email: string }) {
   const router                        = useRouter();
   const [password, setPassword]       = useState("");
   const [confirm, setConfirm]         = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [success, setSuccess]         = useState(false);
@@ -118,9 +136,9 @@ function ResetStep({ token, email }: { token: string; email: string }) {
 
   if (success) {
     return (
-      <div style={{ textAlign: "center", padding: "20px 0" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+      <div style={{ textAlign: "center", padding: "12px 0" }}>
+        <div className="auth-status-icon auth-status-icon-gain"><CheckIcon /></div>
+        <h2 className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>
           Senha redefinida!
         </h2>
         <p style={{ color: "var(--text-dim)", fontSize: 14 }}>
@@ -133,31 +151,69 @@ function ResetStep({ token, email }: { token: string; email: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>
+        <h2 className="h-display" style={{ fontSize: 24, marginBottom: 8 }}>
           Nova senha
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-dim)" }}>
-          Defina uma nova senha para <strong style={{ color: "var(--text)" }}>{email}</strong>.
+          {email
+            ? <>Defina uma nova senha para <strong style={{ color: "var(--text)" }}>{email}</strong>.</>
+            : "Escolha uma senha nova pra continuar."}
         </p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input
-          className="input"
-          type="password"
-          placeholder="Nova senha (mín. 6 caracteres)"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          autoFocus
-        />
-        <input
-          className="input"
-          type="password"
-          placeholder="Confirme a nova senha"
-          value={confirm}
-          onChange={e => setConfirm(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleReset()}
-        />
+        <div className="input-with-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input
+            className="input"
+            type={showPassword ? "text" : "password"}
+            placeholder="Nova senha (mín. 6 caracteres)"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{ paddingRight: 44 }}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            style={{
+              position: "absolute", right: 12, background: "none", border: "none",
+              color: "var(--text-mute)", cursor: "pointer", display: "flex",
+            }}
+          >
+            {showPassword
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            }
+          </button>
+        </div>
+        <div className="input-with-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input
+            className="input"
+            type={showConfirm ? "text" : "password"}
+            placeholder="Confirme a nova senha"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleReset()}
+            style={{ paddingRight: 44 }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+            style={{
+              position: "absolute", right: 12, background: "none", border: "none",
+              color: "var(--text-mute)", cursor: "pointer", display: "flex",
+            }}
+          >
+            {showConfirm
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            }
+          </button>
+        </div>
 
         {error && <p style={{ fontSize: 13, color: "var(--danger)", textAlign: "center" }}>{error}</p>}
 
@@ -177,8 +233,13 @@ function ResetSenhaForm() {
   const tokenFromUrl     = searchParams.get("token");
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: "32px 16px" }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
+    <div style={{ position: "relative", display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: "32px 16px", overflow: "hidden" }}>
+      <div className="auth-side-glow">
+        <div className="auth-brand-glow" />
+        <EffortLines />
+      </div>
+
+      <div className="anim-up" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 400 }}>
 
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40, justifyContent: "center" }}>
@@ -194,7 +255,7 @@ function ResetSenhaForm() {
         </div>
 
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={() => router.push("/login")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-mute)" }}>
+          <button type="button" onClick={() => router.push("/login")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-mute)" }}>
             ← Voltar ao login
           </button>
         </div>

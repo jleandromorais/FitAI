@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 import EffortLines from "@/components/ui/EffortLines";
+import RepCounter from "@/components/ui/RepCounter";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
@@ -29,6 +30,18 @@ function LoginForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // O botão do Google exige uma largura fixa em px (não aceita "100%"), então
+  // recalcula com base no viewport pra não estourar em telas estreitas.
+  const [googleWidth, setGoogleWidth] = useState(420);
+  useEffect(() => {
+    function updateGoogleWidth() {
+      setGoogleWidth(Math.max(200, Math.min(400, window.innerWidth - 64)));
+    }
+    updateGoogleWidth();
+    window.addEventListener("resize", updateGoogleWidth);
+    return () => window.removeEventListener("resize", updateGoogleWidth);
+  }, []);
 
   async function handleSubmit() {
     setError(null);
@@ -79,7 +92,7 @@ function LoginForm() {
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
 
       {/* ── Coluna esquerda: branding ── */}
-      <div className="auth-brand hidden lg:flex">
+      <div className="auth-brand">
         <div className="auth-brand-glow" />
         <EffortLines />
 
@@ -104,14 +117,9 @@ function LoginForm() {
             Treinos personalizados com inteligência artificial para você evoluir todos os dias.
           </p>
 
-          {/* Stats decorativos */}
-          <div style={{ display: "flex", gap: 32, marginTop: 40 }}>
-            {[["+12k", "Usuários ativos"], ["94%", "Taxa de adesão"], ["3.2x", "Mais resultados"]].map(([v, l]) => (
-              <div key={l}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "var(--accent)" }}>{v}</div>
-                <div style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 2 }}>{l}</div>
-              </div>
-            ))}
+          {/* Assinatura: contador de repetição ao vivo */}
+          <div style={{ marginTop: 44 }}>
+            <RepCounter />
           </div>
         </div>
 
@@ -123,7 +131,7 @@ function LoginForm() {
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
         padding: "48px 32px",
       }}>
-        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className="anim-up" style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 24 }}>
 
           {/* Header */}
           <div>
@@ -138,15 +146,26 @@ function LoginForm() {
           </div>
 
           {/* Tabs */}
-          <div className="tabs">
-            <div className={`tab${tab === "entrar" ? " active" : ""}`}
-              onClick={() => { setTab("entrar"); setError(null); }}>
+          <div className="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
+            <div className={`auth-tab-pill${tab === "criar" ? " pos-1" : ""}`} />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "entrar"}
+              className={`auth-tab${tab === "entrar" ? " active" : ""}`}
+              onClick={() => { setTab("entrar"); setError(null); }}
+            >
               Entrar
-            </div>
-            <div className={`tab${tab === "criar" ? " active" : ""}`}
-              onClick={() => { setTab("criar"); setError(null); }}>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "criar"}
+              className={`auth-tab${tab === "criar" ? " active" : ""}`}
+              onClick={() => { setTab("criar"); setError(null); }}
+            >
               Criar conta
-            </div>
+            </button>
           </div>
 
           {/* Campos */}
@@ -169,10 +188,15 @@ function LoginForm() {
                 <input className="input" type={showPassword ? "text" : "password"} placeholder="••••••••"
                   value={password} onChange={e => setPassword(e.target.value)}
                   style={{ paddingRight: 44 }} />
-                <button onClick={() => setShowPassword(!showPassword)} style={{
-                  position: "absolute", right: 12, background: "none", border: "none",
-                  color: "var(--text-mute)", cursor: "pointer", display: "flex",
-                }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  style={{
+                    position: "absolute", right: 12, background: "none", border: "none",
+                    color: "var(--text-mute)", cursor: "pointer", display: "flex",
+                  }}
+                >
                   {showPassword
                     ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -181,7 +205,7 @@ function LoginForm() {
               </div>
               {tab === "entrar" && (
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => router.push("/reset-senha")} style={{ fontSize: 12, color: "var(--text-mute)", background: "none", border: "none", cursor: "pointer" }}>
+                  <button type="button" onClick={() => router.push("/reset-senha")} style={{ fontSize: 12, color: "var(--text-mute)", background: "none", border: "none", cursor: "pointer" }}>
                     Esqueci a senha
                   </button>
                 </div>
@@ -194,10 +218,15 @@ function LoginForm() {
                 <input className="input" type={showConfirm ? "text" : "password"} placeholder="Confirme sua senha"
                   value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   style={{ paddingRight: 44 }} />
-                <button onClick={() => setShowConfirm(!showConfirm)} style={{
-                  position: "absolute", right: 12, background: "none", border: "none",
-                  color: "var(--text-mute)", cursor: "pointer", display: "flex",
-                }}>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                  style={{
+                    position: "absolute", right: 12, background: "none", border: "none",
+                    color: "var(--text-mute)", cursor: "pointer", display: "flex",
+                  }}
+                >
                   {showConfirm
                     ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -237,7 +266,7 @@ function LoginForm() {
               theme="filled_black"
               shape="rectangular"
               size="large"
-              width="420"
+              width={String(googleWidth)}
             />
           </div>
 
