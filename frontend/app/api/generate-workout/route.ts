@@ -139,10 +139,10 @@ IMPORTANTE:
 - O campo schedule deve ter os dias sugeridos (ex: "Seg, Qua, Sex")`;
 }
 
-// O modelo gratuito usado é de raciocínio (pensa antes de responder) e roda em
-// infra compartilhada — pode passar de 30s para um treino completo. Precisa
-// alinhar com o timeout do fetch abaixo.
-export const maxDuration = 60;
+// O plano gratuito do Vercel mata qualquer função em 10s (limite fixo da
+// plataforma, este export não consegue elevar isso) — por isso o provedor
+// precisa ser rápido por padrão, não só ter tokens grátis.
+export const maxDuration = 10;
 
 export async function POST(req: NextRequest) {
   const userEmail = await verifyAuthToken(req);
@@ -150,34 +150,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY não configurada." }, { status: 500 });
+    return NextResponse.json({ error: "GROQ_API_KEY não configurada." }, { status: 500 });
   }
 
   try {
     const body: GenerateRequest = await req.json();
 
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b:free",
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: buildPrompt(body) }],
         temperature: 0.7,
-        // Modelo de raciocínio — os tokens de "pensamento" também contam nesse limite,
-        // então precisa de mais margem que um modelo direto pra não truncar o JSON final.
-        max_tokens: 8192,
+        max_tokens: 4096,
       }),
-      signal: AbortSignal.timeout(55000),
+      // Deixa uma margem abaixo do limite de 10s do Vercel Hobby pra devolver
+      // um erro tratado em vez do function timeout bruto da plataforma.
+      signal: AbortSignal.timeout(9000),
     });
 
     if (!res.ok) {
       const err = await res.text();
-      return NextResponse.json({ error: `OpenRouter API error: ${err}` }, { status: 502 });
+      return NextResponse.json({ error: `Groq API error: ${err}` }, { status: 502 });
     }
 
     const data = await res.json();
