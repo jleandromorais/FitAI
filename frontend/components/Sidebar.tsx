@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
@@ -97,22 +97,19 @@ export default function Sidebar() {
       <div className="sidebar-bottom">
         <div className="side-user">
           <div className="avatar">{initials}</div>
-          <div className="flex-1">
-            <div title={displayName} style={{ ...truncateStyle, fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
-              {displayName}
-            </div>
-            <div title={displayEmail} style={{ ...truncateStyle, fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
-              {displayEmail}
-            </div>
-          </div>
           <button
             type="button"
             onClick={() => router.push("/perfil")}
-            title="Configurações"
-            aria-label="Configurações"
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, flexShrink: 0 }}
+            aria-label={`Ver perfil${displayName ? ` de ${displayName}` : ""}${displayEmail ? `, ${displayEmail}` : ""}`}
+            className="flex-1 side-user-link"
+            style={{ background: "none", border: "none", minWidth: 0, textAlign: "left", cursor: "pointer" }}
           >
-            <Settings size={16} color="var(--text-mute)" />
+            <span title={displayName} style={{ ...truncateStyle, display: "block", fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
+              {displayName}
+            </span>
+            <span title={displayEmail} style={{ ...truncateStyle, display: "block", fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
+              {displayEmail}
+            </span>
           </button>
           <button
             type="button"
