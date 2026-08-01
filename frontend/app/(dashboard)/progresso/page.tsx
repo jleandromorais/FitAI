@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Dumbbell } from "lucide-react";
+import { Loader2, Dumbbell, AlertTriangle, TrendingUp } from "lucide-react";
 import { useProgress } from "@/hooks/useProgress";
 import { useSessions } from "@/hooks/useSessions";
 import { useProgressStats } from "@/hooks/useProgressStats";
@@ -52,7 +52,7 @@ export default function ProgressoPage() {
           </div>
         </div>
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><AlertTriangle size={22} /></div>
           <div className="h-display" style={{ fontSize: 18, marginBottom: 8 }}>
             Não foi possível carregar o progresso
           </div>
@@ -81,7 +81,7 @@ export default function ProgressoPage() {
           </div>
         </div>
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📈</div>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><TrendingUp size={26} /></div>
           <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>Sem dados ainda</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
             Execute pelo menos um treino para ver sua evolução aqui.
@@ -111,17 +111,24 @@ export default function ProgressoPage() {
         </div>
 
         {/* Abas */}
-        <div className="tabs">
+        <div className="tabs" role="tablist">
           {[["forca", "Força"], ["volume", "Volume"], ["prs", "Recordes"]].map(([id, l]) => (
-            <div key={id} className={`tab${tab === id ? " active" : ""}`} onClick={() => setTab(id)}>
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={`tab${tab === id ? " active" : ""}`}
+              onClick={() => setTab(id)}
+            >
               {l}
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
       {/* ── Cards de stats globais (sempre visíveis) ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="grid-cols-3" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card">
           <div className="stat-label">Volume total</div>
           <div style={{ marginTop: 10 }}>

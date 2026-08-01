@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Sparkles, Plus, Play, Edit2, Trash2, Loader2, Search, X } from "lucide-react";
+import { Sparkles, Plus, Play, Edit2, Trash2, Loader2, Search, X, Dumbbell } from "lucide-react";
 import { useWorkouts, Workout } from "@/hooks/useWorkouts";
 import NovoTreinoModal from "@/components/NovoTreinoModal";
 import EditarTreinoModal from "@/components/EditarTreinoModal";
@@ -100,7 +100,7 @@ export default function TreinosPage() {
       {/* Estado vazio */}
       {!loading && !error && workouts.length === 0 && (
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🏋️</div>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><Dumbbell size={26} /></div>
           <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>Nenhum treino ainda</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 24 }}>Crie seu primeiro treino ou deixe a IA montar um para você.</p>
           <Link href="/ai-gen" className="btn btn-primary">
@@ -125,7 +125,7 @@ export default function TreinosPage() {
 
       {/* Grid de treinos */}
       {!loading && filtered.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+        <div className="grid-cols-2" style={{ gap: 20 }}>
           {filtered.map(w => (
             <div key={w.id} className="card" style={{ padding: 24 }}>
 
@@ -170,8 +170,8 @@ export default function TreinosPage() {
               </div>
 
               {/* Stats do treino */}
-              <div style={{
-                display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12,
+              <div className="grid-cols-4" style={{
+                gap: 12,
                 marginBottom: 20, padding: "14px 0",
                 borderTop: "1px solid var(--border-soft)", borderBottom: "1px solid var(--border-soft)",
               }}>

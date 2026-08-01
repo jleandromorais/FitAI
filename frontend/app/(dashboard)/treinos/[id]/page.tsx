@@ -90,7 +90,7 @@ export default function TreinoDetalhe() {
           )}
 
           {/* Resumo em 3 stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 32 }}>
+          <div className="grid-cols-3" style={{ gap: 16, marginBottom: 32 }}>
             {[
               [sessionResult.durationMinutes, "min"],
               [sessionResult.setsCompleted, "séries feitas"],

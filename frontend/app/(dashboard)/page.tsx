@@ -89,7 +89,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🏋️</div>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><Dumbbell size={28} /></div>
           <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>Nenhum treino cadastrado</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
             Crie seu primeiro treino ou deixe a IA montar um plano sob medida.
@@ -136,7 +136,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Cards de stats ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card">
           <div className="stat-label">Treinos</div>
           <div style={{ marginTop: 10 }}>
@@ -230,7 +230,7 @@ export default function Dashboard() {
               <h3 className="h-display" style={{ fontSize: 18 }}>Meus treinos</h3>
               <Link href="/treinos" style={{ fontSize: 13, color: "var(--text-dim)" }}>Ver tudo</Link>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
+            <div className="grid-cols-2" style={{ gap: 12 }}>
               {workouts.slice(0, 4).map(w => (
                 <Link key={w.id} href={`/treinos/${w.id}`} className="card card-tight" style={{ display: "block" }}>
                   <div className="row gap-3">

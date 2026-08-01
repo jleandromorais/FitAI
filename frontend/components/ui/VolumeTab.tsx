@@ -44,7 +44,7 @@ export default function VolumeTab({
   return (
     <div className="col-stack">
       {/* Stats rápidos */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+      <div className="grid-cols-4" style={{ gap: 16 }}>
         {[
           { label: "Volume total", val: fmtVol(data?.totalVolume ?? 0), unit: "kg", icon: <TrendingUp size={16} color="var(--accent)" /> },
           { label: "Esta semana", val: fmtVol(weekVolume), unit: "kg", icon: <Flame size={16} color="var(--accent)" /> },

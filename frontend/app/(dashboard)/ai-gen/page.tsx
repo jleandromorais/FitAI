@@ -208,7 +208,7 @@ export default function AiGenPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 20 }}>
+                  <div className="grid-cols-2" style={{ gap: 8, marginBottom: 20 }}>
                     {generatedWorkouts.map(w => (
                       <div key={w.code} style={{
                         background: "var(--surface-2)", padding: "12px 14px",

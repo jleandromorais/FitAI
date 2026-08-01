@@ -514,6 +514,21 @@ body {
   align-items: start;
 }
 
+/* Grids de N colunas iguais usados em cards de stats/listas pelo dashboard —
+   nenhum tinha regra pra telas estreitas antes; sem isso, colunas fixas
+   (repeat(4,1fr) etc) ficam ilegíveis/espremidas em qualquer celular. */
+.grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-cols-3, .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .grid-cols-2, .grid-cols-3, .grid-cols-4 { grid-template-columns: 1fr; }
+}
+
 .col-stack {
   display: flex;
   flex-direction: column;

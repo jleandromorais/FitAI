@@ -99,9 +99,9 @@ export default function PerfilPage() {
               </div>
             </div>
 
-            <div style={{
+            <div className="grid-cols-3" style={{
               marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border-soft)",
-              display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24,
+              gap: 24,
             }}>
               <div>
                 <div className="h-eyebrow">Lifetime · Treinos</div>

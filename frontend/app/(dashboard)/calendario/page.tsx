@@ -144,7 +144,7 @@ export default function CalendarioPage() {
       </div>
 
       {/* Stats do mês */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card">
           <div className="h-eyebrow">Dias com treino</div>
           <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>

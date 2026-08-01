@@ -13,7 +13,7 @@ export default function RecordesTab({ prs }: RecordesTabProps) {
     return (
       <div className="col-stack">
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🏆</div>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><Trophy size={26} /></div>
           <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>
             Sem recordes ainda
           </div>

@@ -68,7 +68,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
             </div>
 
             {/* Cards de stats do exercício seleccionado */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            <div className="grid-cols-3" style={{ gap: 16 }}>
               <div className="card">
                 <div className="h-eyebrow">Atual</div>
                 <div className="h-display" style={{ fontSize: 26, marginTop: 8 }}>
