@@ -740,7 +740,7 @@ body {
 .pulse { animation: pulse 2s ease infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-up, .dot-anim, .pulse, .rep-counter-dot.current {
+  .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot {
     animation: none !important;
   }
 }

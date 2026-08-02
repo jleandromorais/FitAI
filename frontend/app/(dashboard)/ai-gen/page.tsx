@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
@@ -14,6 +14,21 @@ const INITIAL: Message[] = [
     text: "Olá! Sou a IA do FitAI. Para montar seu treino ideal, preciso entender alguns pontos. Qual é seu nível?",
     chips: ["Iniciante", "Intermediário", "Avançado"],
   },
+];
+
+// Mensagens rotativas durante a geração — não refletem progresso real do
+// backend (a IA responde tudo de uma vez), só reduzem a sensação de espera
+// morta enquanto o request está em andamento. Cadência (5 msgs × 1800ms =
+// 9s) casa com o AbortSignal.timeout(9000) de app/api/generate-workout/route.ts;
+// se um dos dois mudar, ajuste o outro. Ao chegar na última mensagem, o
+// carrossel para de girar de propósito (assentar em "Finalizando..." em vez
+// de repetir do início).
+const LOADING_MESSAGES = [
+  "Montando seu treino com IA...",
+  "Selecionando os melhores exercícios...",
+  "Ajustando séries e repetições...",
+  "Organizando a divisão da semana...",
+  "Finalizando os detalhes...",
 ];
 
 const FLOW: { key: keyof GenerateRequest; q: string; chips: string[] }[] = [
@@ -32,6 +47,21 @@ export default function AiGenPage() {
   const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+
+  useEffect(() => {
+    if (!generating) return;
+    const id = setInterval(() => {
+      setLoadingMsgIndex(i => {
+        if (i >= LOADING_MESSAGES.length - 1) {
+          clearInterval(id);
+          return i;
+        }
+        return i + 1;
+      });
+    }, 1800);
+    return () => clearInterval(id);
+  }, [generating]);
 
   async function pick(answer: string) {
     const next: Message[] = [...messages, { who: "me", text: answer }];
@@ -58,6 +88,7 @@ export default function AiGenPage() {
     } else {
       setMessages(next);
       setGenerating(true);
+      setLoadingMsgIndex(0);
       setError(null);
 
       try {
@@ -102,6 +133,7 @@ export default function AiGenPage() {
     setAnswers({});
     setGeneratedWorkouts([]);
     setGenerating(false);
+    setLoadingMsgIndex(0);
     setError(null);
   }
 
@@ -163,12 +195,14 @@ export default function AiGenPage() {
                 <div style={{ background: "var(--surface-2)", padding: "14px 18px", borderRadius: "4px 16px 16px 16px" }}>
                   <div className="row gap-2" style={{ alignItems: "center" }}>
                     {[0, 1, 2].map(i => (
-                      <span key={i} style={{
+                      <span key={i} className="ai-gen-loading-dot" style={{
                         width: 6, height: 6, borderRadius: "50%", background: "var(--accent)",
-                        display: "inline-block", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+                        display: "inline-block", animationDelay: `${i * 0.2}s`,
                       }} />
                     ))}
-                    <span style={{ marginLeft: 8, fontSize: 13, color: "var(--text-dim)" }}>Montando seu treino com IA...</span>
+                    <span key={loadingMsgIndex} className="anim-up" style={{ marginLeft: 8, fontSize: 13, color: "var(--text-dim)" }}>
+                      {LOADING_MESSAGES[loadingMsgIndex]}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -249,6 +283,7 @@ export default function AiGenPage() {
           0%, 80%, 100% { transform: translateY(0); }
           40% { transform: translateY(-6px); }
         }
+        .ai-gen-loading-dot { animation: bounce 1.2s ease-in-out infinite; }
       `}</style>
     </div>
   );
