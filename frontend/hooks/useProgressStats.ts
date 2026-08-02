@@ -44,11 +44,15 @@ export function useProgressStats(
   const selectedEx = exercisesWithLoad[exIdx] ?? data?.exercises[0];
   const loadHistory = useMemo(() => (selectedEx ? buildLoadHistory(selectedEx) : []), [selectedEx]);
 
-  // PRs: exercícios com maior delta positivo (ganho de carga)
+  // PRs: exercícios com maior delta positivo (ganho de carga) — exige
+  // prevWeight > 0 (mesma regra de exercisesWithLoad/topExercisesByVolume)
+  // pra não contar a primeira vez que um exercício é feito como "recorde":
+  // sem sessão anterior pra comparar, delta = currentWeight (prevWeight=0),
+  // o que não é um ganho de carga de verdade.
   const prs = useMemo(() => {
     if (!data) return [];
     return [...data.exercises]
-      .filter(e => e.delta > 0 && e.currentWeight > 0)
+      .filter(e => e.delta > 0 && e.currentWeight > 0 && e.prevWeight > 0)
       .sort((a, b) => b.delta - a.delta)
       .slice(0, 8);
   }, [data]);

@@ -15,6 +15,9 @@ const PROGRESS_DATA: ProgressData = {
     { name: "Agachamento", muscle: "Pernas", currentWeight: 100, prevWeight: 90, delta: 10, totalSets: 4 },
     { name: "Rosca Direta", muscle: "Bíceps", currentWeight: 20, prevWeight: 0, delta: 0, totalSets: 3 },
     { name: "Remada Curvada", muscle: "Costas", currentWeight: 60, prevWeight: 65, delta: -5, totalSets: 4 },
+    // Primeira vez feito (sem sessão anterior): prevWeight=0 faz delta = currentWeight
+    // inteiro, o que parece um "recorde" mas não é — não há nada pra comparar.
+    { name: "Leg Press", muscle: "Pernas", currentWeight: 60, prevWeight: 0, delta: 60, totalSets: 3 },
   ],
   currentStreak: 3,
 };
@@ -52,9 +55,13 @@ describe("useProgressStats", () => {
     expect(result.current.loadHistory).toEqual([60, 70]); // Supino Reto: prevWeight=60, currentWeight=70
   });
 
-  it("prs contém apenas exercícios com delta positivo, ordenados decrescente", () => {
+  it("prs contém apenas exercícios com delta positivo E histórico anterior real, ordenados decrescente", () => {
     const { result } = renderHook(() => useProgressStats(PROGRESS_DATA, [], 0, NOW));
-    expect(result.current.prs.map(p => p.name)).toEqual(["Supino Reto", "Agachamento"]);
+    const names = result.current.prs.map(p => p.name);
+    expect(names).toEqual(["Supino Reto", "Agachamento"]);
+    // "Leg Press" tem delta=60 (maior que os dois acima!) mas prevWeight=0 —
+    // é a primeira vez feito, não um ganho de carga real. Não deve aparecer.
+    expect(names).not.toContain("Leg Press");
   });
 
   it("volumeStats calcula volume da semana e média por sessão", () => {
