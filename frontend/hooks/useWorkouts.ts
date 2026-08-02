@@ -39,14 +39,16 @@ export function useWorkouts() {
 
   function fetchWorkouts() {
     return api.get<Workout[]>("/workouts")
-      .then(setWorkouts)
+      .then(data => { setWorkouts(data); setError(null); })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Erro ao carregar treinos."))
       .finally(() => setLoading(false));
   }
 
-  // Recarga manual (ex: após criar/editar um treino) — mostra o loading de novo.
+  // Recarga manual (ex: após criar/editar um treino) — mostra o loading de novo
+  // e limpa um error anterior imediatamente, sem esperar o novo fetch resolver.
   async function load() {
     setLoading(true);
+    setError(null);
     await fetchWorkouts();
   }
 
@@ -82,7 +84,7 @@ export function useWorkout(id: string) {
 
   useEffect(() => {
     api.get<Workout>(`/workouts/${id}`)
-      .then(setWorkout)
+      .then(data => { setWorkout(data); setError(null); })
       .catch(err => setError(err instanceof Error ? err.message : "Erro."))
       .finally(() => setLoading(false));
   }, [id]);

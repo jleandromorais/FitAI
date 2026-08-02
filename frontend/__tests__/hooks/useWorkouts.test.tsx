@@ -125,6 +125,40 @@ describe("useWorkouts", () => {
     expect(result.current.workouts).toHaveLength(0);
   });
 
+  it("reload limpa o error imediatamente (antes do novo fetch resolver), e mostra loading", async () => {
+    mockApi.get.mockRejectedValueOnce(new Error("Servidor indisponível"));
+    const { result } = renderHook(() => useWorkouts());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe("Servidor indisponível");
+
+    let resolveReload!: (data: typeof WORKOUT_FIXTURE[]) => void;
+    mockApi.get.mockReturnValue(new Promise(r => { resolveReload = r; }));
+
+    act(() => { result.current.reload(); });
+
+    // limpo de imediato — não precisa esperar o fetch terminar pra sumir o "Erro" estagnado
+    expect(result.current.loading).toBe(true);
+    expect(result.current.error).toBeNull();
+
+    await act(async () => { resolveReload([WORKOUT_FIXTURE]); });
+    expect(result.current.workouts).toEqual([WORKOUT_FIXTURE]);
+  });
+
+  it("reload após uma falha não-Error também limpa o error de fallback quando o novo fetch tem sucesso", async () => {
+    mockApi.get.mockRejectedValueOnce("timeout string cru").mockResolvedValueOnce([WORKOUT_FIXTURE]);
+
+    const { result } = renderHook(() => useWorkouts());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe("Erro ao carregar treinos.");
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.workouts).toEqual([WORKOUT_FIXTURE]);
+  });
+
   it("reload recarrega os treinos", async () => {
     mockApi.get.mockResolvedValueOnce([]).mockResolvedValueOnce([WORKOUT_FIXTURE]);
 
@@ -184,6 +218,20 @@ describe("useWorkout", () => {
       exercises: exerciciosNovos,
     }));
     expect(result.current.workout?.exercises).toEqual(exerciciosNovos);
+  });
+
+  it("trocar de id após uma falha limpa o error anterior quando o novo id carrega com sucesso", async () => {
+    mockApi.get.mockRejectedValueOnce(new Error("Treino não encontrado"));
+    const { result, rerender } = renderHook(({ id }) => useWorkout(id), { initialProps: { id: "999" } });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe("Treino não encontrado");
+
+    mockApi.get.mockResolvedValueOnce(WORKOUT_FIXTURE);
+    rerender({ id: "1" });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBeNull();
+    expect(result.current.workout).toEqual(WORKOUT_FIXTURE);
   });
 
   it("saveExercises não faz nada quando workout é null", async () => {

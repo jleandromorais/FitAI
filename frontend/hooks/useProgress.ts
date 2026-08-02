@@ -33,7 +33,7 @@ export function useProgress() {
 
   useEffect(() => {
     api.get<ProgressData>("/workouts/progress")
-      .then(setData)
+      .then(fetched => { setData(fetched); setError(null); })
       .catch(err => {
         // Mostra o erro real para facilitar o diagnóstico
         const msg = err instanceof Error ? err.message : String(err);
