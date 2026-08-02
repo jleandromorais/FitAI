@@ -113,8 +113,9 @@ export default function CalendarioPage() {
   // Volume total de todos os treinos (dado real do backend)
   const totalVolume = workouts.reduce((s, w) => s + (w.volume ?? 0), 0);
 
-  // Atividade recente: últimos 4 treinos cadastrados
-  const recentWorkouts = [...workouts].slice(0, 4);
+  // O card ao lado do calendário é rotulado "Seus treinos" (lista completa),
+  // não "atividade recente" — não deve ter um cap artificial de itens.
+  const recentWorkouts = workouts;
 
   // Células do calendário: espaços vazios antes do 1.º dia + dias do mês
   const offset = firstDayOfMonth(year, month);
