@@ -10,10 +10,26 @@ type Section = "dados" | "objetivos" | "unidades" | null;
 
 const OBJETIVOS = ["Hipertrofia", "Força", "Resistência", "Emagrecimento", "Saúde geral"];
 
+// Rótulo de status para as conquistas: distingue "ainda carregando" e "falha ao
+// carregar" do estado real (zerado ou não), que antes eram visualmente idênticos.
+function statusLabel(loading: boolean, error: string | null, ready: string) {
+  if (loading) return "Carregando…";
+  if (error) return "Erro ao carregar";
+  return ready;
+}
+
+// Mesma distinção para os números grandes (Treinos/Volume/Horas): "…" enquanto
+// carrega, "Erro" se a busca falhou, valor real (incluindo "—" de zero) caso contrário.
+function statValue(loading: boolean, error: string | null, ready: string) {
+  if (loading) return "…";
+  if (error) return "Erro";
+  return ready;
+}
+
 export default function PerfilPage() {
   const { user, logout } = useAuth();
-  const { workouts } = useWorkouts();
-  const { data: progress } = useProgress();
+  const { workouts, loading: workoutsLoading, error: workoutsError } = useWorkouts();
+  const { data: progress, loading: progressLoading, error: progressError } = useProgress();
   const streak = progress?.currentStreak ?? 0;
 
   const [open, setOpen] = useState<Section>(null);
@@ -29,6 +45,7 @@ export default function PerfilPage() {
 
   const totalVolume = workouts.reduce((sum, w) => sum + (w.volume ?? 0), 0);
   const totalHoras = workouts.reduce((sum, w) => sum + (w.duration ?? 0), 0) / 60;
+  const workoutsReady = !workoutsLoading && !workoutsError;
 
   function formatVolume(v: number) {
     if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
@@ -47,11 +64,11 @@ export default function PerfilPage() {
   }
 
   const conquistas = [
-    { icon: <Flame size={16} color="var(--accent)" />, t: `${streak} dias streak`, s: streak > 0 ? "Em andamento" : "Comece hoje", done: streak > 0 },
-    { icon: <Trophy size={16} color="var(--accent)" />, t: "10 treinos", s: workouts.length >= 10 ? "Conquistado" : `${workouts.length}/10`, done: workouts.length >= 10 },
-    { icon: <Trophy size={16} color="var(--accent)" />, t: "50 treinos", s: workouts.length >= 50 ? "Conquistado" : `${workouts.length}/50`, done: workouts.length >= 50 },
-    { icon: <Trophy size={16} color="var(--accent)" />, t: "100 treinos", s: workouts.length >= 100 ? "Conquistado" : `${workouts.length}/100`, done: workouts.length >= 100 },
-    { icon: <Target size={16} color="var(--accent)" />, t: "Primeiro treino", s: workouts.length >= 1 ? "Conquistado" : "Pendente", done: workouts.length >= 1 },
+    { icon: <Flame size={16} color="var(--accent)" />, t: (progressLoading || progressError) ? "Streak" : `${streak} dias streak`, s: statusLabel(progressLoading, progressError, streak > 0 ? "Em andamento" : "Comece hoje"), done: streak > 0 },
+    { icon: <Trophy size={16} color="var(--accent)" />, t: "10 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 10 ? "Conquistado" : `${workouts.length}/10`), done: workouts.length >= 10 },
+    { icon: <Trophy size={16} color="var(--accent)" />, t: "50 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 50 ? "Conquistado" : `${workouts.length}/50`), done: workouts.length >= 50 },
+    { icon: <Trophy size={16} color="var(--accent)" />, t: "100 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 100 ? "Conquistado" : `${workouts.length}/100`), done: workouts.length >= 100 },
+    { icon: <Target size={16} color="var(--accent)" />, t: "Primeiro treino", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 1 ? "Conquistado" : "Pendente"), done: workouts.length >= 1 },
   ];
 
   const settingRow = (label: string, icon: React.ReactNode, key: Section, children: React.ReactNode) => (
@@ -93,7 +110,9 @@ export default function PerfilPage() {
                 <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 4 }}>{user?.email ?? "—"}</div>
                 <div className="row gap-2" style={{ marginTop: 10 }}>
                   <span className="chip chip-accent">Plano Pro</span>
-                  <span className="chip">{streak} dias streak 🔥</span>
+                  <span className="chip">
+                    {progressLoading ? "…" : progressError ? "Erro ao carregar streak" : `${streak} dias streak 🔥`}
+                  </span>
                 </div>
               </div>
               <div className="col gap-2" style={{ alignItems: "flex-end" }}>
@@ -108,18 +127,22 @@ export default function PerfilPage() {
             }}>
               <div>
                 <div className="h-eyebrow">Lifetime · Treinos</div>
-                <div className="h-display" style={{ fontSize: 28, marginTop: 8 }}>{workouts.length || "—"}</div>
+                <div className="h-display" style={{ fontSize: 28, marginTop: 8 }}>
+                  {statValue(workoutsLoading, workoutsError, String(workouts.length || "—"))}
+                </div>
               </div>
               <div>
                 <div className="h-eyebrow">Lifetime · Volume</div>
                 <div className="h-display" style={{ fontSize: 28, marginTop: 8 }}>
-                  {totalVolume > 0 ? formatVolume(totalVolume) : "—"}<span className="stat-unit">{totalVolume > 0 ? "kg" : ""}</span>
+                  {statValue(workoutsLoading, workoutsError, totalVolume > 0 ? formatVolume(totalVolume) : "—")}
+                  <span className="stat-unit">{workoutsReady && totalVolume > 0 ? "kg" : ""}</span>
                 </div>
               </div>
               <div>
                 <div className="h-eyebrow">Lifetime · Horas</div>
                 <div className="h-display" style={{ fontSize: 28, marginTop: 8 }}>
-                  {totalHoras > 0 ? Math.round(totalHoras) : "—"}<span className="stat-unit">{totalHoras > 0 ? "h" : ""}</span>
+                  {statValue(workoutsLoading, workoutsError, totalHoras > 0 ? String(Math.round(totalHoras)) : "—")}
+                  <span className="stat-unit">{workoutsReady && totalHoras > 0 ? "h" : ""}</span>
                 </div>
               </div>
             </div>
