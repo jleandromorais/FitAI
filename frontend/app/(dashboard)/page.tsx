@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, TrendingUp, Loader2 } from "lucide-react";
+import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, TrendingUp, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Sparkline } from "@/components/ui/Charts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
@@ -50,7 +50,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] ?? "atleta";
 
-  const { workouts, loading, error } = useWorkouts();
+  const { workouts, loading, error, reload } = useWorkouts();
   const { data: progress } = useProgress();
   const { sessions } = useSessions(7);
 
@@ -75,7 +75,35 @@ export default function Dashboard() {
     );
   }
 
-  if (!loading && (error || workouts.length === 0)) {
+  // Erro (ex: token ainda não pronto logo após login OAuth, falha de rede) é
+  // um estado diferente de "genuinamente sem treinos" — mostrar a mesma tela
+  // de "crie seu primeiro treino" quando o fetch falhou engana um usuário que
+  // já tem treinos reais, sugerindo que ele recrie tudo do zero.
+  if (!loading && error) {
+    return (
+      <div className="anim-up">
+        <div className="page-head">
+          <div>
+            <div className="h-eyebrow" style={{ marginBottom: 8 }}>
+              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+            </div>
+            <h1 className="page-title">Bom dia, {firstName} 👋</h1>
+          </div>
+        </div>
+
+        <div className="card" style={{ textAlign: "center", padding: 60 }}>
+          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><AlertCircle size={28} color="var(--danger)" /></div>
+          <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>Não foi possível carregar seus treinos</div>
+          <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>{error}</p>
+          <button className="btn btn-primary btn-lg" onClick={() => reload()}>
+            <RefreshCw size={16} /> Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && workouts.length === 0) {
     return (
       <div className="anim-up">
         <div className="page-head">

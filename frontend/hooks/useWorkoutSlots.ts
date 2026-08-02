@@ -96,8 +96,9 @@ export function useWorkoutSlots() {
 
   function addCustomExercise(name: string, group: string) {
     const slot = slots[activeSlotIdx];
+    const resolvedGroup = group || slot.groups[0] || "Outros";
     setSlots(prev => prev.map((s, i) => i !== activeSlotIdx ? s : {
-      ...s, exercises: [...s.exercises, { id: uid(), name, muscle: group || slot.groups[0] || "Outros", group, sets: [makeSet()], tips: "" }],
+      ...s, exercises: [...s.exercises, { id: uid(), name, muscle: resolvedGroup, group: resolvedGroup, sets: [makeSet()], tips: "" }],
     }));
   }
 

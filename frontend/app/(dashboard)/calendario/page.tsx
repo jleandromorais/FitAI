@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Dumbbell, Check } from "lucide-react";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useSessions } from "@/hooks/useSessions";
+import { useProgress } from "@/hooks/useProgress";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes
@@ -53,6 +54,7 @@ function firstDayOfMonth(year: number, month: number): number {
 export default function CalendarioPage() {
   const { workouts, loading } = useWorkouts();
   const { sessions } = useSessions(365);
+  const { data: progress } = useProgress();
 
   // Navegação de mês
   const [mesOffset, setMesOffset] = useState(0);
@@ -107,11 +109,12 @@ export default function CalendarioPage() {
   }, [workouts, year, month]);
 
   // ── Stats derivadas ────────────────────────────────────────────────────────
-  const trainedCount = Object.keys(trainedDays).length;
-  const workingDays  = daysInMonth(year, month);
+  const workingDays = daysInMonth(year, month);
 
-  // Volume total de todos os treinos (dado real do backend)
-  const totalVolume = workouts.reduce((s, w) => s + (w.volume ?? 0), 0);
+  // Prefere o volume real agregado do backend (progress.totalVolume) — mesmo
+  // padrão do Dashboard (app/(dashboard)/page.tsx). Fallback pro somatório dos
+  // templates de treino só se progress ainda não carregou.
+  const totalVolume = progress?.totalVolume ?? workouts.reduce((s, w) => s + (w.volume ?? 0), 0);
 
   // O card ao lado do calendário é rotulado "Seus treinos" (lista completa),
   // não "atividade recente" — não deve ter um cap artificial de itens.
@@ -149,7 +152,7 @@ export default function CalendarioPage() {
         <div className="card">
           <div className="h-eyebrow">Dias com treino</div>
           <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>
-            {doneDays.size > 0 ? doneDays.size : trainedCount}
+            {doneDays.size}
             <span className="stat-unit">/{workingDays} dias</span>
           </div>
           {doneDays.size > 0 && (
@@ -175,7 +178,7 @@ export default function CalendarioPage() {
         <div className="card">
           <div className="h-eyebrow">Frequência</div>
           <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>
-            {workingDays > 0 ? Math.round((trainedCount / workingDays) * 100) : 0}
+            {workingDays > 0 ? Math.round((doneDays.size / workingDays) * 100) : 0}
             <span className="stat-unit">%</span>
           </div>
         </div>

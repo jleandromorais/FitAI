@@ -20,7 +20,8 @@ export function useExerciseRows(initial: ExerciseRow[] = []) {
   }, []);
 
   const addCustomExercise = useCallback((name: string, group: string) => {
-    setExercises(prev => [...prev, { id: uid(), name, muscle: group, group, tips: "", sets: [makeSet()] }]);
+    const resolvedGroup = group || "Outros";
+    setExercises(prev => [...prev, { id: uid(), name, muscle: resolvedGroup, group: resolvedGroup, tips: "", sets: [makeSet()] }]);
   }, []);
 
   const removeExercise = useCallback((id: string) => {

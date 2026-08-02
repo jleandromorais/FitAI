@@ -67,7 +67,10 @@ export default function PerfilPage() {
     ? user.name.split(" ").slice(0, 2).map(w => w[0].toUpperCase()).join("")
     : "?";
 
-  const totalVolume = workouts.reduce((sum, w) => sum + (w.volume ?? 0), 0);
+  // Prefere o volume real agregado do backend (progress.totalVolume) — mesmo
+  // padrão do Dashboard (app/(dashboard)/page.tsx). O somatório de w.volume dos
+  // templates de treino conta cada treino 1x só, não o histórico de sessões real.
+  const totalVolume = progress?.totalVolume ?? workouts.reduce((sum, w) => sum + (w.volume ?? 0), 0);
   const totalHoras = workouts.reduce((sum, w) => sum + (w.duration ?? 0), 0) / 60;
   const workoutsReady = !workoutsLoading && !workoutsError;
 

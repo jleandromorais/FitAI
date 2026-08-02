@@ -128,7 +128,7 @@ export default function ExerciseCatalog({ exercises, availableGroups, onAdd, onA
         {showCustomOption && (
           <button
             className="btn btn-secondary"
-            onClick={() => { onAddCustom(query.trim(), activeGroup); setQuery(""); }}
+            onClick={() => { onAddCustom(query.trim(), activeGroup === ALL_GROUPS_OPTION ? "" : activeGroup); setQuery(""); }}
             style={{ marginTop: 4 }}
           >
             <Plus size={14} /> Adicionar &ldquo;{query.trim()}&rdquo; como personalizado
