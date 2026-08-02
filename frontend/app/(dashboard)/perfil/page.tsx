@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Settings, Flame, Trophy, Target, ChevronRight, ChevronDown, LogOut, Sparkles, User, Save } from "lucide-react";
+import { Bell, Settings, Flame, Trophy, Target, ChevronRight, ChevronDown, LogOut, Sparkles, User, Save, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useProgress } from "@/hooks/useProgress";
@@ -28,9 +28,33 @@ function statValue(loading: boolean, error: string | null, ready: string) {
 
 export default function PerfilPage() {
   const { user, logout } = useAuth();
-  const { workouts, loading: workoutsLoading, error: workoutsError } = useWorkouts();
-  const { data: progress, loading: progressLoading, error: progressError } = useProgress();
+  const { workouts, loading: workoutsLoading, error: workoutsError, reload: reloadWorkouts } = useWorkouts();
+  const { data: progress, loading: progressLoading, error: progressError, reload: reloadProgress } = useProgress();
   const streak = progress?.currentStreak ?? 0;
+  const hasError = Boolean(workoutsError || progressError);
+
+  // `reload()` clears `error` immediately (see useWorkouts/useProgress), so
+  // `hasError` alone would flip false the instant retry is clicked — hiding
+  // the banner (and its button) before the new fetch even resolves. `retrying`
+  // keeps the banner visible with a disabled/loading button state until both
+  // hooks have settled, so a slow or failing retry doesn't look like a no-op.
+  // Cleared during render (padrão recomendado pelo React) em vez de useEffect,
+  // mesmo truque do auto-close do menu mobile em Sidebar.tsx.
+  const [retrying, setRetrying] = useState(false);
+  const stillLoading = workoutsLoading || progressLoading;
+  const [lastStillLoading, setLastStillLoading] = useState(stillLoading);
+  if (stillLoading !== lastStillLoading) {
+    setLastStillLoading(stillLoading);
+    if (!stillLoading && retrying) setRetrying(false);
+  }
+
+  // Recriada a cada render de propósito: precisa ler workoutsError/progressError
+  // frescos no momento do clique, não memoizar com deps vazias.
+  function retry() {
+    setRetrying(true);
+    if (workoutsError) reloadWorkouts();
+    if (progressError) reloadProgress();
+  }
 
   const [open, setOpen] = useState<Section>(null);
   const [nome, setNome] = useState(user?.name ?? "");
@@ -146,6 +170,20 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
+
+            {(hasError || retrying) && (
+              <div role="alert" style={{
+                marginTop: 16, padding: "10px 14px", borderRadius: 10,
+                background: "rgba(255,59,48,0.1)", border: "1px solid rgba(255,59,48,0.3)",
+                display: "flex", alignItems: "center", gap: 10, fontSize: 13,
+              }}>
+                <AlertCircle size={16} color="var(--danger)" />
+                <span style={{ color: "var(--danger)" }}>Algumas informações não puderam ser carregadas.</span>
+                <button className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }} onClick={retry} disabled={retrying}>
+                  <RefreshCw size={12} /> {retrying ? "Tentando…" : "Tentar novamente"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Conta */}

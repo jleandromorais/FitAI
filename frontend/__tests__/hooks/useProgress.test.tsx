@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { useProgress } from "@/hooks/useProgress";
 import type { ProgressData } from "@/hooks/useProgress";
 
@@ -64,5 +64,38 @@ describe("useProgress", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.error).toBe("timeout string cru");
+  });
+
+  it("reload limpa o error imediatamente (antes do novo fetch resolver), e mostra loading", async () => {
+    mockApi.get.mockRejectedValueOnce(new Error("Servidor indisponível"));
+    const { result } = renderHook(() => useProgress());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBe("Servidor indisponível");
+
+    let resolveReload!: (data: ProgressData) => void;
+    mockApi.get.mockReturnValue(new Promise(r => { resolveReload = r; }));
+
+    act(() => { result.current.reload(); });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.error).toBeNull();
+
+    await act(async () => { resolveReload(PROGRESS_FIXTURE); });
+    expect(result.current.data).toEqual(PROGRESS_FIXTURE);
+  });
+
+  it("reload recarrega os dados com sucesso", async () => {
+    const updated: ProgressData = { ...PROGRESS_FIXTURE, currentStreak: 7 };
+    mockApi.get.mockResolvedValueOnce(PROGRESS_FIXTURE).mockResolvedValueOnce(updated);
+
+    const { result } = renderHook(() => useProgress());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.data?.currentStreak).toBe(3);
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(result.current.data?.currentStreak).toBe(7);
   });
 });

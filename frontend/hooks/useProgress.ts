@@ -31,8 +31,8 @@ export function useProgress() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
-  useEffect(() => {
-    api.get<ProgressData>("/workouts/progress")
+  function fetchProgress() {
+    return api.get<ProgressData>("/workouts/progress")
       .then(fetched => { setData(fetched); setError(null); })
       .catch(err => {
         // Mostra o erro real para facilitar o diagnóstico
@@ -41,7 +41,19 @@ export function useProgress() {
         setError(msg);
       })
       .finally(() => setLoading(false));
+  }
+
+  // Recarga manual (ex: botão de "tentar novamente") — mostra o loading de novo
+  // e limpa um error anterior imediatamente, sem esperar o novo fetch resolver.
+  async function reload() {
+    setLoading(true);
+    setError(null);
+    await fetchProgress();
+  }
+
+  useEffect(() => {
+    fetchProgress();
   }, []);
 
-  return { data, loading, error };
+  return { data, loading, error, reload };
 }

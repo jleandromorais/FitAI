@@ -226,10 +226,16 @@ describe("useWorkout", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe("Treino não encontrado");
 
-    mockApi.get.mockResolvedValueOnce(WORKOUT_FIXTURE);
+    // Promise controlada: `loading` já estava `false` antes do rerender (o
+    // hook não reseta loading=true numa troca de id, só na montagem — quirk
+    // pré-existente, fora do escopo deste fix), então resolver manualmente
+    // garante que a asserção só roda depois do 2º fetch de fato completar.
+    let resolveSecondFetch!: (w: typeof WORKOUT_FIXTURE) => void;
+    mockApi.get.mockReturnValueOnce(new Promise(r => { resolveSecondFetch = r; }));
     rerender({ id: "1" });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => { resolveSecondFetch(WORKOUT_FIXTURE); });
+
     expect(result.current.error).toBeNull();
     expect(result.current.workout).toEqual(WORKOUT_FIXTURE);
   });

@@ -9,21 +9,23 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { name: "Leandro Silva", email: "leandro@example.com" }, logout: mockLogout }),
 }));
 
+const mockReloadWorkouts = vi.fn();
 let mockWorkouts: Workout[] = [];
 let mockWorkoutsLoading = false;
 let mockWorkoutsError: string | null = null;
 vi.mock("@/hooks/useWorkouts", () => ({
-  useWorkouts: () => ({ workouts: mockWorkouts, loading: mockWorkoutsLoading, error: mockWorkoutsError }),
+  useWorkouts: () => ({ workouts: mockWorkouts, loading: mockWorkoutsLoading, error: mockWorkoutsError, reload: mockReloadWorkouts }),
 }));
 
 // data começa/segue null até o primeiro fetch bem-sucedido — mesmo contrato de
 // frontend/hooks/useProgress.ts (useState<ProgressData | null>(null)), não um
 // valor "zerado" fabricado, para não mascarar a null-safety de `progress?.currentStreak ?? 0`.
+const mockReloadProgress = vi.fn();
 let mockProgress: ProgressData | null = null;
 let mockProgressLoading = false;
 let mockProgressError: string | null = null;
 vi.mock("@/hooks/useProgress", () => ({
-  useProgress: () => ({ data: mockProgress, loading: mockProgressLoading, error: mockProgressError }),
+  useProgress: () => ({ data: mockProgress, loading: mockProgressLoading, error: mockProgressError, reload: mockReloadProgress }),
 }));
 
 const ZERO_PROGRESS: ProgressData = {
@@ -46,6 +48,8 @@ function statCard(label: string) {
 describe("PerfilPage", () => {
   beforeEach(() => {
     mockLogout.mockClear();
+    mockReloadWorkouts.mockClear();
+    mockReloadProgress.mockClear();
     mockWorkouts = [];
     mockWorkoutsLoading = false;
     mockWorkoutsError = null;
@@ -232,6 +236,115 @@ describe("PerfilPage", () => {
       render(<PerfilPage />);
       fireEvent.click(screen.getByText("Sair da conta"));
       expect(mockLogout).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("retry no estado de erro", () => {
+    it("não mostra o banner de retry quando não há erro", () => {
+      mockProgress = ZERO_PROGRESS;
+      render(<PerfilPage />);
+      expect(screen.queryByText("Algumas informações não puderam ser carregadas.")).not.toBeInTheDocument();
+    });
+
+    it("não mostra o banner de retry durante o loading (sem erro ainda)", () => {
+      mockWorkoutsLoading = true;
+      mockProgressLoading = true;
+      render(<PerfilPage />);
+      expect(screen.queryByText("Algumas informações não puderam ser carregadas.")).not.toBeInTheDocument();
+    });
+
+    it("mostra o banner quando só workouts falha, e retry chama apenas reload de workouts", () => {
+      mockWorkoutsError = "Erro de rede";
+      render(<PerfilPage />);
+
+      expect(screen.getByText("Algumas informações não puderam ser carregadas.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+
+      expect(mockReloadWorkouts).toHaveBeenCalledTimes(1);
+      expect(mockReloadProgress).not.toHaveBeenCalled();
+    });
+
+    it("mostra o banner quando só progress falha, e retry chama apenas reload de progress", () => {
+      mockProgressError = "Erro de rede";
+      render(<PerfilPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+
+      expect(mockReloadProgress).toHaveBeenCalledTimes(1);
+      expect(mockReloadWorkouts).not.toHaveBeenCalled();
+    });
+
+    it("quando os dois hooks falham, retry chama os dois reloads", () => {
+      mockWorkoutsError = "Erro de rede";
+      mockProgressError = "Erro de rede";
+      render(<PerfilPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+
+      expect(mockReloadWorkouts).toHaveBeenCalledTimes(1);
+      expect(mockReloadProgress).toHaveBeenCalledTimes(1);
+    });
+
+    it("mantém o banner visível com botão desabilitado 'Tentando…' enquanto o retry está em andamento (reload() já limpou o error, mas ainda está loading)", () => {
+      mockWorkoutsError = "Erro de rede";
+      const { rerender } = render(<PerfilPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+
+      // simula o que reload() de fato faz: limpa error, liga loading, antes do fetch resolver
+      mockWorkoutsError = null;
+      mockWorkoutsLoading = true;
+      rerender(<PerfilPage />);
+
+      expect(screen.getByText("Algumas informações não puderam ser carregadas.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Tentando/ })).toBeDisabled();
+    });
+
+    it("esconde o banner depois que o retry tem sucesso", () => {
+      mockWorkoutsError = "Erro de rede";
+      const { rerender } = render(<PerfilPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+      mockWorkoutsError = null;
+      mockWorkoutsLoading = true;
+      rerender(<PerfilPage />);
+      expect(screen.getByText("Algumas informações não puderam ser carregadas.")).toBeInTheDocument();
+
+      mockWorkoutsLoading = false; // sucesso: error já ficou null desde o início do reload
+      rerender(<PerfilPage />);
+
+      expect(screen.queryByText("Algumas informações não puderam ser carregadas.")).not.toBeInTheDocument();
+    });
+
+    it("falha parcial: se só um dos dois se recupera, o banner permanece e um novo clique só re-tenta o que ainda falha", () => {
+      mockWorkoutsError = "Erro de rede";
+      mockProgressError = "Erro de rede";
+      const { rerender } = render(<PerfilPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
+      expect(mockReloadWorkouts).toHaveBeenCalledTimes(1);
+      expect(mockReloadProgress).toHaveBeenCalledTimes(1);
+
+      // simula reload() começando pros dois
+      mockWorkoutsError = null;
+      mockProgressError = null;
+      mockWorkoutsLoading = true;
+      mockProgressLoading = true;
+      rerender(<PerfilPage />);
+
+      // resultado: workouts se recupera, progress falha de novo
+      mockWorkoutsLoading = false;
+      mockProgressLoading = false;
+      mockProgressError = "Erro de rede (de novo)";
+      rerender(<PerfilPage />);
+
+      expect(screen.getByText("Algumas informações não puderam ser carregadas.")).toBeInTheDocument();
+      const retryBtn = screen.getByRole("button", { name: "Tentar novamente" });
+      expect(retryBtn).not.toBeDisabled();
+
+      fireEvent.click(retryBtn);
+      expect(mockReloadWorkouts).toHaveBeenCalledTimes(1); // não de novo — já recuperado
+      expect(mockReloadProgress).toHaveBeenCalledTimes(2); // de novo — ainda em erro
     });
   });
 });
