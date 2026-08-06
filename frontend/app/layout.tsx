@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import GoogleProvider from "@/components/GoogleProvider";
@@ -23,8 +23,28 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FitAI",
-  description: "Continue de onde parou no seu treino.",
+  title: {
+    default: "FitAI — treinos personalizados com IA",
+    template: "%s · FitAI",
+  },
+  description:
+    "Monte treinos com inteligência artificial, registre suas séries e acompanhe sua evolução de volume, força e recordes.",
+  applicationName: "FitAI",
+  keywords: ["treino", "academia", "musculação", "hipertrofia", "IA", "evolução"],
+  openGraph: {
+    title: "FitAI — treinos personalizados com IA",
+    description: "Continue de onde parou no seu treino.",
+    siteName: "FitAI",
+    locale: "pt_BR",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f0c0a",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -35,9 +55,9 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`h-full antialiased ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`h-full bg-background font-sans text-foreground antialiased ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>
+      <body className="bg-background text-foreground">
         <GoogleProvider>
           <AuthProvider>{children}</AuthProvider>
         </GoogleProvider>
