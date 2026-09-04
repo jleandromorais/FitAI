@@ -10,9 +10,17 @@ interface AuthUser {
   email: string;
 }
 
+interface AuthSessionData {
+  token: string;
+  refreshToken: string;
+  name: string;
+  email: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
+  login: (data: AuthSessionData) => void;
   logout: () => void;
   refreshAccessToken: () => Promise<boolean>;
 }
@@ -20,6 +28,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
+  login: () => {},
   logout: () => {},
   refreshAccessToken: async () => false,
 });
@@ -50,6 +59,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
   const [token, setToken] = useState<string | null>(() => readStoredToken(user !== null));
   const router = useRouter();
+
+  // Persiste a sessão E atualiza o estado do contexto na mesma chamada.
+  // As páginas de login/registro escreviam direto no localStorage/cookie e só
+  // navegavam depois (router.push) — como o AuthProvider vive no layout raiz e
+  // não remonta numa navegação client-side, o estado "user" ficava preso em
+  // null (o valor lido no primeiro mount, antes do login) até um reload real
+  // forçar readStoredUser() a rodar de novo. Sidebar/Dashboard mostravam o
+  // fallback genérico ("Usuário"/"atleta") até isso acontecer.
+  const login = useCallback((data: AuthSessionData) => {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    const newUser = { name: data.name, email: data.email };
+    localStorage.setItem("user", JSON.stringify(newUser));
+    document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
+    setToken(data.token);
+    setUser(newUser);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
@@ -115,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, token, logout, refreshAccessToken }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

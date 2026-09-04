@@ -6,22 +6,17 @@ import Image from "next/image";
 import { GoogleLogin } from "@react-oauth/google";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import heroStrongman from "@/img/hero-strongman.png";
 import heroVictory from "@/img/hero-victory.png";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
-function saveSession(data: { token: string; refreshToken: string; name: string; email: string }) {
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("refreshToken", data.refreshToken);
-  localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
-  document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
-}
-
 // Componente separado para usar useSearchParams dentro do Suspense
 function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const { t } = useLanguage();
   // Se o middleware redirecionou de uma rota protegida, volta para lá após login
   const searchParams = useSearchParams();
@@ -63,7 +58,7 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || t.login.erroAutenticar);
-      saveSession(data);
+      login(data);
       router.push(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t.login.erroInesperado);
@@ -84,7 +79,7 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || t.login.falhaGoogleLogin);
-      saveSession(data);
+      login(data);
       router.push(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t.login.erroInesperado);

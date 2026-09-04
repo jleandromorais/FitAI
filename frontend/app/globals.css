@@ -36,6 +36,18 @@
   --radius-lg:    26px;
 }
 
+/* Moldura de Brasa — presente em toda página, sempre ancorada ao viewport
+   (fixed, não ao body inteiro, senão só apareceria no topo/fundo da página
+   ao rolar). Referência: borda de cor viva ao redor do site inteiro. */
+.brand-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  border: 3px solid var(--accent);
+  box-shadow: inset 0 0 40px 6px rgba(255,109,41,0.28);
+}
+
 /* ─── RESET ──────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
