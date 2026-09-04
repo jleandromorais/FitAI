@@ -28,9 +28,9 @@
   --font-body:    var(--font-inter), 'Inter', system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), 'JetBrains Mono', monospace;
 
-  --radius:       14px;
-  --radius-sm:    9px;
-  --radius-lg:    20px;
+  --radius:       18px;
+  --radius-sm:    11px;
+  --radius-lg:    26px;
 }
 
 /* ─── RESET ──────────────────────────────────────────────────────── */
@@ -276,9 +276,10 @@ body {
 }
 .page-title {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 36px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 .page-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
@@ -304,10 +305,11 @@ body {
 }
 .stat-num {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
+  letter-spacing: -0.01em;
 }
 .stat-unit {
   font-size: 13px;
@@ -342,8 +344,9 @@ body {
 }
 .card:hover { border-color: #3d332a; }
 .card.card-accent {
-  border-color: rgba(255,90,46,0.25);
-  background: radial-gradient(140% 100% at 100% 0%, var(--accent-soft), transparent 60%), var(--surface);
+  border-color: rgba(255,90,46,0.3);
+  background: radial-gradient(140% 100% at 100% 0%, rgba(255,90,46,0.16), transparent 60%), var(--surface);
+  box-shadow: 0 8px 32px -12px rgba(255,90,46,0.35);
 }
 .card.card-tight { padding: 14px 16px; }
 .card.card-gain {
@@ -381,31 +384,38 @@ body {
 .card-gain .live-dot { background: var(--gain); }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(255,90,46,0); }
-  50%      { box-shadow: 0 0 28px rgba(255,90,46,0.22); }
+  0%, 100% { box-shadow: 0 8px 32px -12px rgba(255,90,46,0.35); }
+  50%      { box-shadow: 0 12px 48px -8px rgba(255,90,46,0.55); }
 }
-.card-accent.glow-live { animation: glowPulse 3.2s ease-in-out infinite; }
+.card-accent.glow-live { animation: glowPulse 2.8s ease-in-out infinite; }
 
 /* ─── BUTTONS ─────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 16px;
+  padding: 9px 18px;
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s, box-shadow 0.2s;
   white-space: nowrap;
   font-family: var(--font-body);
   user-select: none;
   text-decoration: none;
 }
 .btn:active { transform: scale(0.97); }
-.btn-primary { background: var(--accent); color: #16100c; }
-.btn-primary:hover { background: var(--accent-hover); }
+/* Pill + glow reservados pro CTA primário — é o único botão com "presença
+   de luz própria" no sistema, igual ao acento único (Brasa) só ter um dono. */
+.btn-primary {
+  background: var(--accent);
+  color: #16100c;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px -4px rgba(255,90,46,0.5);
+}
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 6px 24px -4px rgba(255,90,46,0.65); }
 .btn-secondary { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
 .btn-secondary:hover { color: var(--text); border-color: #3a3a3a; }
 .btn-ghost { background: transparent; color: var(--text-dim); }
