@@ -784,8 +784,8 @@ body {
 .auth-hero-figure {
   position: absolute;
   bottom: -8px;
-  right: -28px;
-  height: min(78vh, 660px);
+  right: -40px;
+  height: min(98vh, 880px);
   width: auto;
   filter: invert(1);
   mix-blend-mode: screen;
