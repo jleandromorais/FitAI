@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, Loader2, AlertCircle, RefreshCw, Check } from "lucide-react";
 import { Sparkline } from "@/components/ui/Charts";
 import { HudCorners } from "@/components/ui/HudCorners";
 import { useAuth } from "@/contexts/AuthContext";
@@ -227,41 +227,45 @@ export default function Dashboard() {
       </div>
 
       {/* ── Cards de stats ── */}
+      {/* Volume total lidera (o dado que mais conta pro "track truth" do
+          produto — ver PRODUCT.md) em vez dos 4 tiles do mesmo tamanho e peso
+          disputando atenção igual. Os outros 3 ficam quietos ao redor, texto
+          menor, sem sparkline — apoiam, não competem. */}
       <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
-        <div className="card">
-          <div className="stat-label">Treinos</div>
-          <div style={{ marginTop: 10 }}>
-            {/* Mono só enquanto ainda está a contar — assentado, volta pra Space
-                Grotesk (o `.stat-num` por defeito), igual ao resto do sistema. */}
-            <span className="stat-num" style={workoutsCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedWorkoutsCount}</span>
-            <span className="stat-unit"> planos</span>
-          </div>
-        </div>
-
-        <div className="card">
+        <div className="card card-accent" style={{ gridColumn: "span 2" }}>
           <div className="stat-label">Volume total</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num" style={volumeCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{volumeDisplay}</span>
+            <span className="stat-num" style={{ fontSize: 40, ...(volumeCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{volumeDisplay}</span>
             <span className="stat-unit"> kg</span>
           </div>
           <div style={{ marginTop: 14, marginLeft: -4 }}>
-            <Sparkline data={volumeSparkline} width={220} height={36} pulse pulseDelayMs={skipIntro ? 0 : 800} />
+            <Sparkline data={volumeSparkline} width={300} height={40} pulse pulseDelayMs={skipIntro ? 0 : 800} />
           </div>
         </div>
 
-        <div className="card">
-          <div className="stat-label">Total de séries</div>
-          <div style={{ marginTop: 10 }}>
-            <span className="stat-num" style={setsCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedSets}</span>
-            <span className="stat-unit"> séries</span>
+        <div className="col gap-2" style={{ gridColumn: "span 2" }}>
+          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+            <div className="stat-label">Treinos</div>
+            <div>
+              {/* Mono só enquanto ainda está a contar — assentado, volta pra Space
+                  Grotesk (o `.stat-num` por defeito), igual ao resto do sistema. */}
+              <span className="stat-num" style={{ fontSize: 20, ...(workoutsCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedWorkoutsCount}</span>
+              <span className="stat-unit"> planos</span>
+            </div>
           </div>
-        </div>
-
-        <div className="card">
-          <div className="stat-label">Média / treino</div>
-          <div style={{ marginTop: 10 }}>
-            <span className="stat-num" style={avgCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedAvg}</span>
-            <span className="stat-unit"> séries</span>
+          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+            <div className="stat-label">Total de séries</div>
+            <div>
+              <span className="stat-num" style={{ fontSize: 20, ...(setsCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedSets}</span>
+              <span className="stat-unit"> séries</span>
+            </div>
+          </div>
+          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+            <div className="stat-label">Média / treino</div>
+            <div>
+              <span className="stat-num" style={{ fontSize: 20, ...(avgCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedAvg}</span>
+              <span className="stat-unit"> séries</span>
+            </div>
           </div>
         </div>
       </div>
@@ -299,22 +303,27 @@ export default function Dashboard() {
                 ) : sessionsError ? (
                   <p style={{ fontSize: 12, color: "var(--text-mute)" }}>Não foi possível confirmar as sessões desta semana.</p>
                 ) : (
-                  <div className="col gap-2">
+                  // Mesma linguagem visual do dia "treinado" no /calendario
+                  // (gain-soft + borda --accent) — em vez de uma barra de
+                  // progresso genérica por dia, que não significava nada
+                  // além de "ligado/desligado".
+                  <div className="row gap-1" style={{ justifyContent: "space-between" }}>
                     {WEEK_DAYS.map(d => {
                       const active = trainedDays.has(d);
                       return (
-                        <div key={d} className="row between" style={{ fontSize: 12 }}>
-                          <span style={{ color: "var(--text-mute)", width: 32 }}>{d}</span>
-                          <div className="bar-track flex-1" style={{ marginLeft: 12 }}>
-                            <div className="bar-fill" style={{ transform: active ? "scaleX(1)" : "scaleX(0)" }} />
-                          </div>
-                          <span style={{
-                            color: active ? "var(--accent)" : "var(--text-mute)",
-                            width: 28, textAlign: "right",
-                            fontFamily: "var(--font-mono)", fontSize: 11,
+                        <div key={d} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                          <div style={{
+                            width: 24, height: 24, borderRadius: "50%",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: active ? "var(--gain-soft)" : "transparent",
+                            border: active ? "1.5px solid var(--accent)" : "1px dashed var(--border-soft)",
                           }}>
-                            {active ? "✓" : "–"}
-                          </span>
+                            {active
+                              ? <Check size={11} color="var(--accent)" strokeWidth={3} />
+                              : <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{d[0]}</span>
+                            }
+                          </div>
+                          <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{d}</span>
                         </div>
                       );
                     })}
