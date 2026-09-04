@@ -695,10 +695,60 @@ body {
   animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Figura em grafite (traço a lápis, fundo branco) recolorida pela própria
-   Brasa: multiply apaga o branco (vira a cor de baixo) e mantém o traço
-   escuro — o "homem forte" passa a ser feito de luz de brasa, não uma foto
-   de banco de imagens colada em cima do tema escuro. Mask esconde a borda
+/* Foguinho animado (skill motion-design: 3 camadas de movimento, nunca só
+   opacidade). Primária: o corpo do ícone balança (skew+scaleY, nunca linear
+   — flicker orgânico). Secundária: glow pulsa via filter (não é a mesma
+   propriedade da primária). Ambiente: 2 fagulhas pequenas sobem e apagam,
+   com atraso/duração diferentes uma da outra pra não sincronizar (regra do
+   próprio skill contra padrões repetitivos óbvios). Só usar quando o dado
+   for real (streak > 0) — nunca decorativo num ícone "apagado". */
+.flame-icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.flame-icon {
+  transform-origin: 50% 90%;
+  animation: flameSway 1900ms ease-in-out infinite,
+             flameGlow 1900ms ease-in-out infinite;
+}
+@keyframes flameSway {
+  0%   { transform: skewX(-3deg) scaleY(1); }
+  25%  { transform: skewX(2deg) scaleY(1.05); }
+  50%  { transform: skewX(-1deg) scaleY(0.96); }
+  75%  { transform: skewX(3deg) scaleY(1.02); }
+  100% { transform: skewX(-3deg) scaleY(1); }
+}
+@keyframes flameGlow {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(255,90,46,0.4)); }
+  50%      { filter: drop-shadow(0 0 5px rgba(255,90,46,0.85)); }
+}
+.flame-icon-wrap::before,
+.flame-icon-wrap::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  left: 55%;
+  bottom: 35%;
+  opacity: 0;
+  pointer-events: none;
+  animation: emberRise 2200ms ease-out infinite;
+}
+.flame-icon-wrap::before { width: 2.5px; height: 2.5px; animation-delay: 0ms; }
+.flame-icon-wrap::after  { width: 2px; height: 2px; left: 40%; animation-delay: 900ms; animation-duration: 1700ms; }
+@keyframes emberRise {
+  0%   { transform: translate(-50%, 0) scale(1); opacity: 0; }
+  15%  { opacity: 0.9; }
+  100% { transform: translate(-50%, -13px) scale(0.4); opacity: 0; }
+}
+
+/* Figura em grafite (traço a lápis, fundo branco). Fundo escuro (Combustão)
+   exige inverter + screen, não multiply: multiply apaga branco mostrando a
+   cor de baixo, mas mantém o traço ESCURO como está — contra um --bg quase
+   preto isso desaparece (preto sobre preto). invert() troca o traço pra
+   claro e o fundo branco pra preto; screen então apaga o preto (transparente
+   de verdade) e deixa o traço brilhando com a cor de baixo (a Brasa) —
+   visível independente de quão escuro o fundo estiver. Mask esconde a borda
    retangular do PNG pra fundir com o painel em vez de parecer um adesivo. */
 .auth-hero-figure {
   position: absolute;
@@ -706,7 +756,8 @@ body {
   right: -12px;
   height: min(58vh, 480px);
   width: auto;
-  mix-blend-mode: multiply;
+  filter: invert(1);
+  mix-blend-mode: screen;
   opacity: 0.94;
   pointer-events: none;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%),
@@ -828,7 +879,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
-  .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up {
+  .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up, .flame-icon {
     animation: none !important;
+  }
+  .flame-icon-wrap::before, .flame-icon-wrap::after {
+    display: none;
   }
 }

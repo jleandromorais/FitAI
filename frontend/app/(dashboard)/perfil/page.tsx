@@ -91,7 +91,14 @@ export default function PerfilPage() {
   }
 
   const conquistas = [
-    { icon: <Flame size={16} color="var(--accent)" />, t: (progressLoading || progressError) ? "Streak" : `${streak} dias streak`, s: statusLabel(progressLoading, progressError, streak > 0 ? "Em andamento" : "Comece hoje"), done: streak > 0 },
+    {
+      icon: streak > 0
+        ? <span className="flame-icon-wrap"><Flame size={16} color="var(--accent)" className="flame-icon" /></span>
+        : <Flame size={16} color="var(--accent)" />,
+      t: (progressLoading || progressError) ? "Streak" : `${streak} dias streak`,
+      s: statusLabel(progressLoading, progressError, streak > 0 ? "Em andamento" : "Comece hoje"),
+      done: streak > 0,
+    },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "10 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 10 ? "Conquistado" : `${workouts.length}/10`), done: workouts.length >= 10 },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "50 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 50 ? "Conquistado" : `${workouts.length}/50`), done: workouts.length >= 50 },
     { icon: <Trophy size={16} color="var(--accent)" />, t: "100 treinos", s: statusLabel(workoutsLoading, workoutsError, workouts.length >= 100 ? "Conquistado" : `${workouts.length}/100`), done: workouts.length >= 100 },
@@ -136,8 +143,21 @@ export default function PerfilPage() {
                 <div className="h-display" style={{ fontSize: 24 }}>{user?.name ?? "—"}</div>
                 <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 4 }}>{user?.email ?? "—"}</div>
                 <div className="row gap-2" style={{ marginTop: 10 }}>
-                  <span className="chip chip-accent">
-                    {progressLoading ? "…" : progressError ? "Erro ao carregar streak" : `${streak} dias streak 🔥`}
+                  <span className="chip chip-accent row gap-2" style={{ alignItems: "center" }}>
+                    {progressLoading
+                      ? "…"
+                      : progressError
+                        ? "Erro ao carregar streak"
+                        : (
+                          <>
+                            {streak} dias streak
+                            {streak > 0 && (
+                              <span className="flame-icon-wrap">
+                                <Flame size={13} color="var(--accent)" className="flame-icon" fill="var(--accent)" />
+                              </span>
+                            )}
+                          </>
+                        )}
                   </span>
                 </div>
               </div>
