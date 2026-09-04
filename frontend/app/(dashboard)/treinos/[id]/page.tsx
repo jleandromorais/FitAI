@@ -35,6 +35,12 @@ export default function TreinoDetalhe() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Dispara a animação de "sucesso" só no instante em que uma série passa de
+  // não-feita pra feita (nunca ao desmarcar) — limpa sozinha no fim da
+  // animação via onAnimationEnd, então nunca volta a tocar em re-renders
+  // seguintes com o mesmo s.done === true.
+  const [poppingKey, setPoppingKey] = useState<string | null>(null);
+
   // ── Estilos da tabela ────────────────────────────────────────────────────────
   const th: React.CSSProperties = {
     padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 700,
@@ -425,13 +431,18 @@ export default function TreinoDetalhe() {
                         {/* Botão de confirmar série */}
                         <td style={{ ...td, textAlign: "right" }}>
                           <button
-                            onClick={() => toggleSet(exIdx, setIdx)}
+                            className={poppingKey === `${exIdx}-${setIdx}` ? "set-confirm-btn just-done" : "set-confirm-btn"}
+                            onClick={() => {
+                              if (!s.done) setPoppingKey(`${exIdx}-${setIdx}`);
+                              toggleSet(exIdx, setIdx);
+                            }}
+                            onAnimationEnd={() => setPoppingKey(k => k === `${exIdx}-${setIdx}` ? null : k)}
                             style={{
                               width: 34, height: 34, borderRadius: 9, border: "none",
                               background: s.done ? "var(--accent)" : "var(--surface-2)",
                               color: s.done ? "#000" : "var(--text-mute)",
                               display: "inline-flex", alignItems: "center", justifyContent: "center",
-                              cursor: "pointer", transition: "all 0.2s",
+                              cursor: "pointer", transition: "background 0.2s, color 0.2s, transform 0.2s",
                               transform: s.done ? "scale(1.05)" : "scale(1)",
                             }}
                           >

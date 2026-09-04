@@ -742,6 +742,37 @@ body {
   100% { transform: translate(-50%, -13px) scale(0.4); opacity: 0; }
 }
 
+/* Confirmar série (treino ao vivo) — a interação mais frequente do app.
+   skill motion-design, padrão "Success State": primária = pop de escala com
+   overshoot (ease-out-back, nunca linear); secundária = cor de fundo/ícone
+   já transicionava, mantido; ambiente = anel expandindo uma vez. Só toca no
+   instante em que a série passa de não-feita pra feita — ver poppingKey em
+   treinos/[id]/page.tsx. */
+.set-confirm-btn {
+  position: relative;
+}
+.set-confirm-btn.just-done {
+  animation: setConfirmPop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes setConfirmPop {
+  0%   { transform: scale(1); }
+  55%  { transform: scale(1.22); }
+  100% { transform: scale(1.05); }
+}
+.set-confirm-btn.just-done::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  animation: setConfirmRing 480ms ease-out both;
+}
+@keyframes setConfirmRing {
+  0%   { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
 /* Figura em grafite (traço a lápis, fundo branco). Fundo escuro (Combustão)
    exige inverter + screen, não multiply: multiply apaga branco mostrando a
    cor de baixo, mas mantém o traço ESCURO como está — contra um --bg quase
@@ -753,8 +784,8 @@ body {
 .auth-hero-figure {
   position: absolute;
   bottom: -8px;
-  right: -12px;
-  height: min(58vh, 480px);
+  right: -28px;
+  height: min(78vh, 660px);
   width: auto;
   filter: invert(1);
   mix-blend-mode: screen;
@@ -879,10 +910,11 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
-  .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up, .flame-icon {
+  .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up, .flame-icon,
+  .set-confirm-btn.just-done {
     animation: none !important;
   }
-  .flame-icon-wrap::before, .flame-icon-wrap::after {
+  .flame-icon-wrap::before, .flame-icon-wrap::after, .set-confirm-btn.just-done::after {
     display: none;
   }
 }
