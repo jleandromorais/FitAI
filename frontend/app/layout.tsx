@@ -38,6 +38,10 @@ export default function RootLayout({
       className={`h-full antialiased ${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        {/* Moldura de brasa fixa na borda do viewport — presente em toda
+            página, acompanha o scroll. Referência direta: bordas coloridas
+            vivas nos sites de agência que o usuário pediu pra seguir. */}
+        <div className="brand-frame" aria-hidden="true" />
         <GoogleProvider>
           <AuthProvider>{children}</AuthProvider>
         </GoogleProvider>

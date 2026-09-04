@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, Loader2, AlertCircle, RefreshCw, Check } from "lucide-react";
 import { Sparkline } from "@/components/ui/Charts";
+import heroStrongman from "@/img/hero-strongman.png";
 import { HudCorners } from "@/components/ui/HudCorners";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
@@ -145,7 +147,7 @@ export default function Dashboard() {
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
               {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </div>
-            <h1 className="page-title">{greeting}, {firstName} 👋</h1>
+            <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
           </div>
         </div>
 
@@ -171,7 +173,7 @@ export default function Dashboard() {
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
               {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </div>
-            <h1 className="page-title">{greeting}, {firstName} 👋</h1>
+            <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
             <div className="page-sub">Vamos começar sua jornada.</div>
           </div>
         </div>
@@ -217,7 +219,7 @@ export default function Dashboard() {
           <div className="h-eyebrow" style={{ marginBottom: 8 }}>
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
           </div>
-          <h1 className="page-title">{greeting}, {firstName} 👋</h1>
+          <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
           <div className="page-sub">
             {workouts.length > 0
               ? `Você tem ${workouts.length} treino${workouts.length !== 1 ? "s" : ""} cadastrado${workouts.length !== 1 ? "s" : ""}. Hora de mover ferro.`
@@ -277,9 +279,10 @@ export default function Dashboard() {
 
           {/* Hero: treino em destaque */}
           <div className="card card-accent tech-grid glow-live"
-            style={{ padding: 28, position: "relative", animationDelay: skipIntro ? "0s" : "800ms" }}>
+            style={{ padding: 28, position: "relative", overflow: "hidden", animationDelay: skipIntro ? "0s" : "800ms" }}>
+            <Image src={heroStrongman} alt="" aria-hidden="true" className="dashboard-hero-figure" />
             <HudCorners />
-            <div className="row gap-4">
+            <div className="row gap-4" style={{ position: "relative", zIndex: 1 }}>
               <div style={{ flex: 1 }}>
                 <div className="h-eyebrow" style={{ color: "var(--accent)" }}>{isScheduledToday ? "Treino de hoje" : "Treino em destaque"}</div>
                 <h2 className="h-display" style={{ fontSize: 36, margin: "12px 0 16px" }}>{featured.name}</h2>

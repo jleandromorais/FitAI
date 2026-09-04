@@ -47,6 +47,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Moldura de Brasa — presente em toda página, sempre ancorada ao viewport
+   (fixed, não ao body inteiro, senão só apareceria no topo/fundo da página
+   ao rolar). Referência: borda de cor viva ao redor do site inteiro. */
+.brand-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  border: 3px solid var(--accent);
+  box-shadow: inset 0 0 40px 6px rgba(255,90,46,0.28);
+}
+
 /* ─── SHELL ───────────────────────────────────────────────────────── */
 .shell {
   display: flex;
@@ -806,6 +818,29 @@ body {
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%),
               linear-gradient(to left, black 70%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* Mesma técnica do login (invert+screen), escala menor pra caber dentro do
+   card hero do dashboard — presença atmosférica, nunca competindo com o
+   texto (por isso a máscara esconde a maior parte, só uma "aparição" no
+   canto). */
+.dashboard-hero-figure {
+  position: absolute;
+  bottom: -20px;
+  right: 4%;
+  height: 130%;
+  width: auto;
+  filter: invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 85%, transparent 100%),
+                        linear-gradient(to left, black 60%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 85%, transparent 100%),
+              linear-gradient(to left, black 60%, transparent 100%);
   mask-composite: intersect;
 }
 
