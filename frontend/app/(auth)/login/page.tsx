@@ -21,7 +21,10 @@ function LoginForm() {
   // Se o middleware redirecionou de uma rota protegida, volta para lá após login
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
-  const [tab, setTab] = useState<"entrar" | "criar">("entrar");
+  // Permite que links externos (ex: landing page) cheguem já na aba certa
+  const [tab, setTab] = useState<"entrar" | "criar">(
+    () => (searchParams.get("tab") === "criar" ? "criar" : "entrar")
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
