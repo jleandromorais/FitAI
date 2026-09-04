@@ -300,7 +300,7 @@ export default function TreinoDetalhe() {
           {/* Barra de progresso inline */}
           <div style={{ flex: 1, maxWidth: 300 }}>
             <div className="bar-track" style={{ height: 6 }}>
-              <div className="bar-fill" style={{ width: `${progress}%`, transition: "width 0.3s" }} />
+              <div className="bar-fill" style={{ transform: `scaleX(${progress / 100})` }} />
             </div>
           </div>
 
@@ -495,7 +495,7 @@ export default function TreinoDetalhe() {
               </div>
             </div>
             <div className="bar-track" style={{ marginTop: 14, height: 6 }}>
-              <div className="bar-fill" style={{ width: `${progress}%`, transition: "width 0.3s" }} />
+              <div className="bar-fill" style={{ transform: `scaleX(${progress / 100})` }} />
             </div>
           </div>
 

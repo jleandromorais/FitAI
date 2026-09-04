@@ -279,11 +279,11 @@ export default function AiGenPage() {
       </div>
 
       <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-6px); }
+        @keyframes loadingDotPulse {
+          0%, 60%, 100% { transform: scale(0.6); opacity: 0.35; }
+          30% { transform: scale(1); opacity: 1; }
         }
-        .ai-gen-loading-dot { animation: bounce 1.2s ease-in-out infinite; }
+        .ai-gen-loading-dot { animation: loadingDotPulse 1.2s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
       `}</style>
     </div>
   );

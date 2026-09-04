@@ -235,7 +235,7 @@ export default function Dashboard() {
                       <div key={d} className="row between" style={{ fontSize: 12 }}>
                         <span style={{ color: "var(--text-mute)", width: 32 }}>{d}</span>
                         <div className="bar-track flex-1" style={{ marginLeft: 12 }}>
-                          <div className="bar-fill" style={{ width: active ? "100%" : "0%" }} />
+                          <div className="bar-fill" style={{ transform: active ? "scaleX(1)" : "scaleX(0)" }} />
                         </div>
                         <span style={{
                           color: active ? "var(--accent)" : "var(--text-mute)",
@@ -335,7 +335,7 @@ export default function Dashboard() {
                       <span className="h-mono" style={{ color: "var(--text-mute)" }}>{r.value}%</span>
                     </div>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${r.value}%` }} />
+                      <div className="bar-fill" style={{ transform: `scaleX(${r.value / 100})` }} />
                     </div>
                   </div>
                 ))}

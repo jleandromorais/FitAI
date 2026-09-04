@@ -151,7 +151,7 @@ export default function VolumeTab({
                       </span>
                     </div>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(volume / maxMuscleVol) * 100}%` }} />
+                      <div className="bar-fill" style={{ transform: `scaleX(${volume / maxMuscleVol})` }} />
                     </div>
                   </div>
                 ))}
@@ -176,7 +176,7 @@ export default function VolumeTab({
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500 }}>{ex.name}</div>
                       <div className="bar-track" style={{ marginTop: 4 }}>
-                        <div className="bar-fill" style={{ width: `${(ex.vol / maxExVol) * 100}%` }} />
+                        <div className="bar-fill" style={{ transform: `scaleX(${ex.vol / maxExVol})` }} />
                       </div>
                     </div>
                     <div className="h-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
