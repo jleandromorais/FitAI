@@ -93,7 +93,7 @@ function LoginForm() {
 
       {/* ── Coluna esquerda: branding ── */}
       <div className="auth-brand">
-        <div className="auth-brand-glow" />
+        <div className="auth-brand-ember" />
         <EffortLines />
 
         <div className="auth-brand-content">
@@ -105,20 +105,29 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Frase */}
+        {/* Frase — headline em escala máxima, entrada em stagger por palavra
+            (mesma curva do fadeUp que o resto do sistema já usa, só mais
+            lenta/perceptível numa peça de tamanho "hero"). */}
         <div className="auth-brand-content">
           <h1 style={{
-            fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 700,
-            color: "var(--text)", lineHeight: 1.15, marginBottom: 20,
+            fontFamily: "var(--font-display)", fontSize: "clamp(44px, 6.5vw, 88px)",
+            fontWeight: 700, color: "var(--text)", lineHeight: 1.02,
+            letterSpacing: "-0.02em", marginBottom: 24,
           }}>
-            Cada série te leva<br />mais <span className="flame-word">perto do limite.</span>
+            <span className="word-up" style={{ animationDelay: "0.05s" }}>Cada</span>{" "}
+            <span className="word-up" style={{ animationDelay: "0.12s" }}>série</span>{" "}
+            <span className="word-up" style={{ animationDelay: "0.19s" }}>te</span>{" "}
+            <span className="word-up" style={{ animationDelay: "0.26s" }}>leva</span>
+            <br />
+            <span className="word-up" style={{ animationDelay: "0.33s" }}>mais</span>{" "}
+            <span className="flame-word word-up" style={{ animationDelay: "0.42s" }}>perto do limite.</span>
           </h1>
-          <p style={{ color: "var(--text-dim)", fontSize: 16, lineHeight: 1.65, maxWidth: 420 }}>
+          <p className="word-up" style={{ animationDelay: "0.56s", color: "var(--text-dim)", fontSize: 16, lineHeight: 1.65, maxWidth: 420 }}>
             Treinos personalizados com inteligência artificial para você evoluir todos os dias.
           </p>
 
           {/* Assinatura: contador de repetição ao vivo */}
-          <div style={{ marginTop: 44 }}>
+          <div className="word-up" style={{ animationDelay: "0.68s", marginTop: 48 }}>
             <RepCounter />
           </div>
         </div>

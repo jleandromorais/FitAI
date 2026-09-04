@@ -635,6 +635,31 @@ body {
   pointer-events: none;
 }
 
+/* Brasa Máxima — versão em camadas do glow, pro painel de entrada (login).
+   Núcleo pequeno e vivo perto da base + halo grande subindo + vinheta escura
+   no topo pra dar contraste ao headline gigante. Ainda um único acento
+   (Brasa) em graus de opacidade — não introduz cor nova. */
+.auth-brand-ember {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 15% 105%, rgba(255,122,82,0.38), transparent 70%),
+    radial-gradient(90% 70% at 10% 115%, rgba(255,90,46,0.28), transparent 68%),
+    linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%);
+  filter: blur(2px);
+  animation: emberPulse 6s ease-in-out infinite;
+}
+@keyframes emberPulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+
+.word-up {
+  display: inline-block;
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .auth-brand-content { position: relative; z-index: 2; }
 
 .flame-word {
@@ -740,7 +765,8 @@ body {
 .pulse { animation: pulse 2s ease infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot {
+  .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
+  .auth-brand-ember, .word-up {
     animation: none !important;
   }
 }

@@ -136,15 +136,10 @@ export default function PerfilPage() {
                 <div className="h-display" style={{ fontSize: 24 }}>{user?.name ?? "—"}</div>
                 <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 4 }}>{user?.email ?? "—"}</div>
                 <div className="row gap-2" style={{ marginTop: 10 }}>
-                  <span className="chip chip-accent">Plano Pro</span>
-                  <span className="chip">
+                  <span className="chip chip-accent">
                     {progressLoading ? "…" : progressError ? "Erro ao carregar streak" : `${streak} dias streak 🔥`}
                   </span>
                 </div>
-              </div>
-              <div className="col gap-2" style={{ alignItems: "flex-end" }}>
-                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>Renovação em 12 dias</div>
-                <button className="btn btn-secondary btn-sm">Gerenciar plano</button>
               </div>
             </div>
 
@@ -282,13 +277,22 @@ export default function PerfilPage() {
 
         {/* Right col */}
         <div className="col-stack">
-          <div className="card card-accent">
-            <Sparkles size={20} color="var(--accent)" />
-            <div className="h-display" style={{ fontSize: 18, marginTop: 12, marginBottom: 6 }}>Convide amigos</div>
-            <div style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.5, marginBottom: 16 }}>
-              Ganhe 1 mês Pro para cada amigo que assinar.
+          {/* Único momento "peak" desta coluna — copy honesta (sem Plano Pro/
+              recompensa fabricados): convite social puro, não referral pago. */}
+          <div className="card card-accent" style={{ padding: 24 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: "var(--accent-soft)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 16,
+            }}>
+              <Sparkles size={22} color="var(--accent)" />
             </div>
-            <button className="btn btn-primary btn-block btn-sm">Convidar</button>
+            <div className="h-display" style={{ fontSize: 26, marginBottom: 8 }}>Convide amigos</div>
+            <div style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.55, marginBottom: 20 }}>
+              Treinar acompanhado ajuda a manter a consistência. Compartilhe o FitAI com quem também tá na jornada.
+            </div>
+            <button className="btn btn-primary btn-block btn-lg">Compartilhar</button>
           </div>
 
           {/* Conquistas */}
