@@ -221,7 +221,7 @@ export default function CalendarioPage() {
               return (
                 <div key={day} style={{
                   aspectRatio: "1", borderRadius: 8,
-                  background: done ? "rgba(0,255,136,0.08)" : trained ? "var(--surface-2)" : "transparent",
+                  background: done ? "var(--gain-soft)" : trained ? "var(--surface-2)" : "transparent",
                   border: done
                     ? "1.5px solid var(--accent)"
                     : isToday

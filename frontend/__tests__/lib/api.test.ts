@@ -135,4 +135,67 @@ describe("api", () => {
       );
     });
   });
+
+  // access token expira em 24h (ver JWT_EXPIRATION no backend); sem isto, um
+  // utilizador com sessão aberta há mais de um dia via 401 em toda página até
+  // fazer login de novo manualmente.
+  describe("refresh automático em 401", () => {
+    // Stateful (não um mock fixo): setItem precisa refletir no getItem
+    // seguinte, senão o teste não percebe que a requisição repetida já usa
+    // o token novo gravado por refreshAccessToken().
+    function stubLocalStorage(initial: Record<string, string | null>) {
+      const store: Record<string, string | null> = { ...initial };
+      vi.stubGlobal("localStorage", {
+        getItem: vi.fn((key: string) => store[key] ?? null),
+        setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
+        removeItem: vi.fn((key: string) => { store[key] = null; }),
+      });
+    }
+
+    it("renova o token e repete a requisição original quando o refresh funciona", async () => {
+      stubLocalStorage({ token: "token-expirado", refreshToken: "refresh-valido" });
+
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: 401, text: () => Promise.resolve(""), json: () => Promise.resolve({}) })
+        .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(""), json: () => Promise.resolve({ token: "token-novo", refreshToken: "refresh-novo", name: "Ana", email: "ana@fitai.dev" }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(""), json: () => Promise.resolve([{ id: 1 }]) });
+      global.fetch = fetchMock;
+
+      const result = await api.get("/workouts");
+
+      expect(result).toEqual([{ id: 1 }]);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock.mock.calls[1][0]).toBe(`${BASE_URL}/auth/refresh`);
+      // a requisição repetida já vai com o token novo, não o expirado
+      expect(fetchMock.mock.calls[2][1].headers).toMatchObject({ Authorization: "Bearer token-novo" });
+    });
+
+    it("limpa a sessão e avisa o AuthContext quando o refresh também falha", async () => {
+      stubLocalStorage({ token: "token-expirado", refreshToken: "refresh-tambem-expirado" });
+
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: 401, text: () => Promise.resolve(""), json: () => Promise.resolve({}) })
+        .mockResolvedValueOnce({ ok: false, status: 401, text: () => Promise.resolve(""), json: () => Promise.resolve({}) });
+      global.fetch = fetchMock;
+
+      const onExpired = vi.fn();
+      window.addEventListener("fitai:session-expired", onExpired);
+
+      await expect(api.get("/workouts")).rejects.toThrow();
+
+      expect(onExpired).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledTimes(2); // original + tentativa de refresh, sem repetir de novo
+
+      window.removeEventListener("fitai:session-expired", onExpired);
+    });
+
+    it("não tenta renovar quando não há refresh token guardado", async () => {
+      stubLocalStorage({ token: "token-expirado", refreshToken: null });
+      global.fetch = mockFetch(401, {}, false);
+
+      await expect(api.get("/workouts")).rejects.toThrow();
+
+      expect(fetch).toHaveBeenCalledTimes(1); // nunca chega a chamar /auth/refresh
+    });
+  });
 });

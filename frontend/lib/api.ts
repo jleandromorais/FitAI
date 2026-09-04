@@ -7,8 +7,51 @@ function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
+// Troca o refresh token por um access token novo — mesma chamada que
+// AuthContext.refreshAccessToken() faz, mas aqui é usada automaticamente
+// quando uma requisição volta 401 (access token expirado, 24h por defeito),
+// já que este módulo não tem acesso ao contexto React pra chamar aquela
+// função diretamente. Escreve direto no localStorage/cookie, igual ao
+// AuthContext, pra manter as duas fontes de verdade em sincronia.
+async function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  const storedRefresh = localStorage.getItem("refreshToken");
+  if (!storedRefresh) return null;
+
+  try {
+    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: storedRefresh }),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
+    document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
+    return data.token as string;
+  } catch {
+    return null;
+  }
+}
+
+// Limpa a sessão local e avisa o AuthContext (via evento, já que este módulo
+// não tem acesso ao router) pra fazer logout de verdade e mandar pro /login.
+function clearSessionAndNotify() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  document.cookie = "token=; path=/; max-age=0";
+  window.dispatchEvent(new Event("fitai:session-expired"));
+}
+
 // Função central de requisição. Todas as chamadas da API passam por aqui.
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// `isRetry` evita um segundo refresh (e um loop infinito) se a requisição
+// repetida com o token novo também vier 401.
+async function request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = getToken();
 
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -21,6 +64,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options.headers,
     },
   });
+
+  // 401 é o access token expirado/inválido — tenta renovar e repetir a
+  // requisição original uma vez antes de desistir e tratar como erro normal.
+  if (res.status === 401 && !isRetry) {
+    const newToken = await refreshAccessToken();
+    if (newToken) return request<T>(path, options, true);
+    clearSessionAndNotify();
+  }
 
   // Tratamento de erro HTTP (4xx / 5xx).
   if (!res.ok) {

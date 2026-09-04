@@ -1,20 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, TrendingUp, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Play, Timer, Dumbbell, Target, Sparkles, Trophy, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Sparkline } from "@/components/ui/Charts";
+import { HudCorners } from "@/components/ui/HudCorners";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useProgress } from "@/hooks/useProgress";
+import { useProgressStats } from "@/hooks/useProgressStats";
 import { useSessions } from "@/hooks/useSessions";
-import { useMemo } from "react";
+import { useCountUp } from "@/hooks/useCountUp";
+import { useEffect, useMemo, useState } from "react";
 import type { Workout } from "@/hooks/useWorkouts";
+
+// Só anima a contagem uma vez por sessão de navegador — a 2ª visita ao
+// dashboard na mesma aba entra direto no valor final, sem repetir o "boot".
+const DASHBOARD_INTRO_SEEN_KEY = "fitai:dashboard-intro-seen";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers de cálculo
 // ─────────────────────────────────────────────────────────────────────────────
 
 const WEEK_DAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]; // alinhado a Date.getDay() (0=Dom)
+
+// Treino agendado (campo `schedule`, ex: "Seg, Qua") para o dia da semana atual —
+// mesma normalização usada em calendario/page.tsx, pra manter os dois em sincronia.
+function findScheduledToday(workouts: Workout[]): Workout | undefined {
+  const todayName = DAY_NAMES[new Date().getDay()];
+  return workouts.find(w => {
+    if (!w.schedule) return false;
+    const days = w.schedule.split(/[,·\s]+/).map(d => d.trim());
+    return days.some(d => todayName.toLowerCase().startsWith(d.toLowerCase().slice(0, 3)));
+  });
+}
 
 function calcMuscleDistribution(workouts: Workout[]) {
   const counts: Record<string, number> = {};
@@ -42,6 +61,12 @@ function buildVolumeSparkline(volumePerWorkout: number[]): number[] {
   return volumePerWorkout.slice(-12);
 }
 
+function greetingFor(hour: number): string {
+  if (hour < 12) return "Bom dia";
+  if (hour < 20) return "Boa tarde";
+  return "Boa noite";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,24 +77,54 @@ export default function Dashboard() {
 
   const { workouts, loading, error, reload } = useWorkouts();
   const { data: progress } = useProgress();
-  const { sessions } = useSessions(7);
+  const { sessions, loading: sessionsLoading, error: sessionsError } = useSessions(7);
+  // Lazy initializer é a forma pura de ler Date.now() no render (mesmo padrão de progresso/page.tsx).
+  const [now] = useState(() => Date.now());
+  const { prs } = useProgressStats(progress, sessions, 0, now);
+  const greeting = greetingFor(new Date(now).getHours());
 
   const stats = useMemo(() => {
     if (workouts.length === 0) return null;
 
     const totalVolume = progress?.totalVolume ?? workouts.reduce((sum, w) => sum + (w.volume ?? 0), 0);
     const totalSets   = progress?.totalSetsCompleted ?? workouts.reduce((sum, w) => sum + (w.totalSets ?? 0), 0);
-    const featured    = [...workouts].sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))[0];
+    const scheduledToday = findScheduledToday(workouts);
+    const featured    = scheduledToday ?? [...workouts].sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))[0];
     const muscleDistribution = calcMuscleDistribution(workouts);
     const volumeSparkline    = buildVolumeSparkline(progress?.volumePerWorkout ?? []);
 
-    return { totalVolume, totalSets, featured, muscleDistribution, volumeSparkline };
+    return { totalVolume, totalSets, featured, isScheduledToday: Boolean(scheduledToday), muscleDistribution, volumeSparkline };
   }, [workouts, progress]);
+
+  // Hooks não podem ser condicionais: chamados aqui, antes dos returns antecipados
+  // abaixo, com fallback 0 quando `stats` ainda é null (loading/vazio/erro).
+  const [skipIntro] = useState(
+    () => typeof window !== "undefined" && sessionStorage.getItem(DASHBOARD_INTRO_SEEN_KEY) === "true"
+  );
+  useEffect(() => {
+    if (typeof window !== "undefined") sessionStorage.setItem(DASHBOARD_INTRO_SEEN_KEY, "true");
+  }, []);
+
+  // Escalonados (~70ms entre si) pra não disparar os 4 juntos — leitura de
+  // "boot sequence", não de flash único. `skip` pula tudo na 2ª visita da sessão.
+  const workoutsCount = useCountUp(workouts.length, { skip: skipIntro, delayMs: 0 });
+  const volumeCount   = useCountUp(stats?.totalVolume ?? 0, { skip: skipIntro, delayMs: 70 });
+  const setsCount     = useCountUp(stats?.totalSets ?? 0, { skip: skipIntro, delayMs: 140 });
+  const avgCount      = useCountUp(workouts.length > 0 ? (stats?.totalSets ?? 0) / workouts.length : 0, { skip: skipIntro, delayMs: 210 });
+  const animatedWorkoutsCount = Math.round(workoutsCount.value);
+  const animatedVolume = volumeCount.value;
+  const animatedSets = Math.round(setsCount.value);
+  const animatedAvg = Math.round(avgCount.value);
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 400 }}
+      >
         <Loader2 size={36} color="var(--accent)" style={{ animation: "spin 1s linear infinite" }} />
+        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>A carregar os teus treinos…</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -77,9 +132,12 @@ export default function Dashboard() {
 
   // Erro (ex: token ainda não pronto logo após login OAuth, falha de rede) é
   // um estado diferente de "genuinamente sem treinos" — mostrar a mesma tela
-  // de "crie seu primeiro treino" quando o fetch falhou engana um usuário que
-  // já tem treinos reais, sugerindo que ele recrie tudo do zero.
+  // de "crie seu primeiro treino" quando o fetch falhou engana um usuário
+  // que já tem treinos reais, sugerindo que ele recrie tudo do zero.
   if (!loading && error) {
+    // A mensagem técnica (`error`) não é copy curada — pode vir crua do
+    // backend ou de uma falha de rede em inglês. Fica só nos logs.
+    console.error("[Dashboard] erro ao carregar treinos:", error);
     return (
       <div className="anim-up">
         <div className="page-head">
@@ -87,14 +145,16 @@ export default function Dashboard() {
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
               {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </div>
-            <h1 className="page-title">Bom dia, {firstName} 👋</h1>
+            <h1 className="page-title">{greeting}, {firstName} 👋</h1>
           </div>
         </div>
 
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><AlertCircle size={28} color="var(--danger)" /></div>
+          <div className="auth-status-icon auth-status-icon-danger" style={{ margin: "0 auto 16px" }}><AlertCircle size={28} /></div>
           <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>Não foi possível carregar seus treinos</div>
-          <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>{error}</p>
+          <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
+            Verifique sua conexão e tente novamente. Se o problema persistir, tente entrar na sua conta novamente.
+          </p>
           <button className="btn btn-primary btn-lg" onClick={() => reload()}>
             <RefreshCw size={16} /> Tentar novamente
           </button>
@@ -111,7 +171,7 @@ export default function Dashboard() {
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
               {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </div>
-            <h1 className="page-title">Bom dia, {firstName} 👋</h1>
+            <h1 className="page-title">{greeting}, {firstName} 👋</h1>
             <div className="page-sub">Vamos começar sua jornada.</div>
           </div>
         </div>
@@ -135,15 +195,18 @@ export default function Dashboard() {
     );
   }
 
-  const { totalVolume, totalSets, featured, muscleDistribution, volumeSparkline } = stats!;
+  const { totalVolume, featured, isScheduledToday, muscleDistribution, volumeSparkline } = stats!;
 
   // Dias da semana atual em que o usuário realmente treinou
   const trainedDays = new Set(
-    sessions.map(s => {
-      const d = new Date(s.executedAt).getDay(); // 0=Dom,1=Seg...
-      return ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][d];
-    })
+    sessions.map(s => DAY_NAMES[new Date(s.executedAt).getDay()])
   );
+
+  // O modo k-suffix é decidido pelo valor final (não pelo intermediário da
+  // animação), senão o "k" piscaria entrando e saindo enquanto conta.
+  const volumeDisplay = totalVolume >= 1000
+    ? `${(animatedVolume / 1000).toFixed(1)}k`
+    : animatedVolume.toFixed(0);
 
   return (
     <div className="anim-up">
@@ -154,7 +217,7 @@ export default function Dashboard() {
           <div className="h-eyebrow" style={{ marginBottom: 8 }}>
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
           </div>
-          <h1 className="page-title">Bom dia, {firstName} 👋</h1>
+          <h1 className="page-title">{greeting}, {firstName} 👋</h1>
           <div className="page-sub">
             {workouts.length > 0
               ? `Você tem ${workouts.length} treino${workouts.length !== 1 ? "s" : ""} cadastrado${workouts.length !== 1 ? "s" : ""}. Hora de mover ferro.`
@@ -168,7 +231,9 @@ export default function Dashboard() {
         <div className="card">
           <div className="stat-label">Treinos</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num">{workouts.length}</span>
+            {/* Mono só enquanto ainda está a contar — assentado, volta pra Space
+                Grotesk (o `.stat-num` por defeito), igual ao resto do sistema. */}
+            <span className="stat-num" style={workoutsCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedWorkoutsCount}</span>
             <span className="stat-unit"> planos</span>
           </div>
         </div>
@@ -176,20 +241,18 @@ export default function Dashboard() {
         <div className="card">
           <div className="stat-label">Volume total</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num">
-              {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume.toFixed(0)}
-            </span>
+            <span className="stat-num" style={volumeCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{volumeDisplay}</span>
             <span className="stat-unit"> kg</span>
           </div>
           <div style={{ marginTop: 14, marginLeft: -4 }}>
-            <Sparkline data={volumeSparkline} width={220} height={36} />
+            <Sparkline data={volumeSparkline} width={220} height={36} pulse pulseDelayMs={skipIntro ? 0 : 800} />
           </div>
         </div>
 
         <div className="card">
           <div className="stat-label">Total de séries</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num">{totalSets}</span>
+            <span className="stat-num" style={setsCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedSets}</span>
             <span className="stat-unit"> séries</span>
           </div>
         </div>
@@ -197,9 +260,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="stat-label">Média / treino</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num">
-              {workouts.length > 0 ? Math.round(totalSets / workouts.length) : 0}
-            </span>
+            <span className="stat-num" style={avgCount.done ? undefined : { fontFamily: "var(--font-mono)" }}>{animatedAvg}</span>
             <span className="stat-unit"> séries</span>
           </div>
         </div>
@@ -211,10 +272,12 @@ export default function Dashboard() {
         <div className="col-stack">
 
           {/* Hero: treino em destaque */}
-          <div className="card card-accent" style={{ padding: 28 }}>
+          <div className="card card-accent tech-grid glow-live"
+            style={{ padding: 28, position: "relative", animationDelay: skipIntro ? "0s" : "800ms" }}>
+            <HudCorners />
             <div className="row gap-4">
               <div style={{ flex: 1 }}>
-                <div className="h-eyebrow" style={{ color: "var(--accent)" }}>Treino em destaque</div>
+                <div className="h-eyebrow" style={{ color: "var(--accent)" }}>{isScheduledToday ? "Treino de hoje" : "Treino em destaque"}</div>
                 <h2 className="h-display" style={{ fontSize: 36, margin: "12px 0 16px" }}>{featured.name}</h2>
                 <div className="row gap-4" style={{ color: "var(--text-dim)", fontSize: 14, marginBottom: 24 }}>
                   <div className="row gap-2"><Timer size={16} /> {featured.duration} min</div>
@@ -227,27 +290,36 @@ export default function Dashboard() {
               </div>
               {/* Dias programados */}
               <div style={{ width: 200 }}>
-                <div className="h-eyebrow" style={{ marginBottom: 12 }}>Treinado esta semana</div>
-                <div className="col gap-2">
-                  {WEEK_DAYS.map(d => {
-                    const active = trainedDays.has(d);
-                    return (
-                      <div key={d} className="row between" style={{ fontSize: 12 }}>
-                        <span style={{ color: "var(--text-mute)", width: 32 }}>{d}</span>
-                        <div className="bar-track flex-1" style={{ marginLeft: 12 }}>
-                          <div className="bar-fill" style={{ transform: active ? "scaleX(1)" : "scaleX(0)" }} />
+                <h3 className="h-eyebrow" style={{ marginBottom: 12 }}>Treinado esta semana</h3>
+                {/* Estados próprios (não os de `useWorkouts`): sem isto, um fetch de
+                    sessões ainda em curso ou falhado renderizava "–" em todos os dias,
+                    indistinguível de uma semana genuinamente sem treinos. */}
+                {sessionsLoading ? (
+                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>A verificar sessões…</p>
+                ) : sessionsError ? (
+                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>Não foi possível confirmar as sessões desta semana.</p>
+                ) : (
+                  <div className="col gap-2">
+                    {WEEK_DAYS.map(d => {
+                      const active = trainedDays.has(d);
+                      return (
+                        <div key={d} className="row between" style={{ fontSize: 12 }}>
+                          <span style={{ color: "var(--text-mute)", width: 32 }}>{d}</span>
+                          <div className="bar-track flex-1" style={{ marginLeft: 12 }}>
+                            <div className="bar-fill" style={{ transform: active ? "scaleX(1)" : "scaleX(0)" }} />
+                          </div>
+                          <span style={{
+                            color: active ? "var(--accent)" : "var(--text-mute)",
+                            width: 28, textAlign: "right",
+                            fontFamily: "var(--font-mono)", fontSize: 11,
+                          }}>
+                            {active ? "✓" : "–"}
+                          </span>
                         </div>
-                        <span style={{
-                          color: active ? "var(--accent)" : "var(--text-mute)",
-                          width: 28, textAlign: "right",
-                          fontFamily: "var(--font-mono)", fontSize: 11,
-                        }}>
-                          {active ? "✓" : "–"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -283,11 +355,15 @@ export default function Dashboard() {
 
         {/* Coluna direita */}
         <div className="col-stack">
-          {/* Sugestão da IA */}
-          <div className="card card-accent">
-            <div className="row gap-2" style={{ marginBottom: 12 }}>
+          {/* Sugestão da IA — card simples, sem cantos HUD/grelha/ponto "ao vivo":
+              o texto aqui é uma regra local (workouts.length), não uma chamada
+              real à IA — vestir isso de "dado computado ao vivo" seria fabricar
+              um sinal que o card não tem. Esse vocabulário fica reservado ao
+              hero e ao card de PRs, que mostram dado genuinamente real. */}
+          <div className="card">
+            <div className="row gap-2" style={{ marginBottom: 12, alignItems: "center" }}>
               <Sparkles size={16} color="var(--accent)" />
-              <div className="h-eyebrow" style={{ color: "var(--accent)" }}>Sugestão da IA</div>
+              <h3 className="h-eyebrow" style={{ color: "var(--accent)", margin: 0 }}>Sugestão da IA</h3>
             </div>
             <div style={{ fontSize: 14, lineHeight: 1.55, marginBottom: 16 }}>
               {workouts.length < 3
@@ -302,30 +378,32 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Maior volume */}
-          <div className="card">
+          {/* Recordes pessoais — usa a mesma regra de PR de progresso/page.tsx (delta > 0, com sessão anterior pra comparar) */}
+          <div className="card card-gain" style={{ position: "relative" }}>
+            <HudCorners color="var(--gain)" size={11} inset={8} />
             <div className="row between" style={{ marginBottom: 14 }}>
-              <div className="h-eyebrow">Maior volume</div>
-              <Trophy size={16} color="var(--accent)" />
+              <h3 className="h-eyebrow" style={{ color: "var(--gain)", margin: 0 }}>Recordes recentes</h3>
+              <Trophy size={16} color="var(--gain)" />
             </div>
-            <div className="h-display" style={{ fontSize: 28 }}>
-              {featured.volume >= 1000
-                ? `${(featured.volume / 1000).toFixed(1)}k`
-                : featured.volume?.toFixed(0) ?? "–"} kg
-            </div>
-            <div style={{ fontSize: 13, color: "var(--text-dim)", marginTop: 4 }}>{featured.name}</div>
-            {featured.tags?.length > 0 && (
-              <div className="row gap-2" style={{ marginTop: 14 }}>
-                {featured.tags.map(t => (
-                  <span key={t} className="chip chip-accent">{t}</span>
+            {prs.length > 0 ? (
+              <div className="col gap-3">
+                {prs.slice(0, 3).map(pr => (
+                  <div key={pr.name} className="row between" style={{ fontSize: 13 }}>
+                    <span>{pr.name}</span>
+                    <span className="h-mono" style={{ color: "var(--gain)" }}>+{pr.delta.toFixed(1)} kg</span>
+                  </div>
                 ))}
               </div>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
+                Ainda sem recordes registrados — treine o mesmo exercício duas vezes pra ver o seu primeiro PR aqui.
+              </p>
             )}
           </div>
 
           {/* Foco muscular */}
           <div className="card">
-            <div className="h-eyebrow" style={{ marginBottom: 14 }}>Foco muscular</div>
+            <h3 className="h-eyebrow" style={{ marginBottom: 14 }}>Foco muscular</h3>
             {muscleDistribution.length > 0 ? (
               <div className="col gap-3">
                 {muscleDistribution.map(r => (
@@ -345,21 +423,6 @@ export default function Dashboard() {
                 Adicione exercícios para ver a distribuição muscular.
               </p>
             )}
-          </div>
-
-          {/* Volume trend */}
-          <div className="card">
-            <div className="row between" style={{ marginBottom: 12 }}>
-              <div className="h-eyebrow">Volume acumulado</div>
-              <TrendingUp size={16} color="var(--accent)" />
-            </div>
-            <div className="h-display" style={{ fontSize: 22 }}>
-              {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume.toFixed(0)}
-              <span className="stat-unit"> kg</span>
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Sparkline data={volumeSparkline} width={280} height={48} />
-            </div>
           </div>
         </div>
       </div>

@@ -70,24 +70,26 @@ export function useProgressStats(
     return { weekVolume, avgVolume, sessionVolumes };
   }, [sessions, now]);
 
+  // Volume real (peso × reps das séries feitas, vindo do backend) — nunca uma
+  // estimativa de reps assumida. Ver ExerciseProgressDto.volume no backend.
   const muscleBreakdown = useMemo<MuscleVolumeEntry[]>(() => {
     if (!data) return [];
     const muscleVol: Record<string, number> = {};
     for (const ex of data.exercises) {
       const m = ex.muscle?.split(" ")?.[0] ?? "Outros";
-      const vol = ex.currentWeight * 10 * ex.totalSets;
-      muscleVol[m] = (muscleVol[m] ?? 0) + vol;
+      muscleVol[m] = (muscleVol[m] ?? 0) + (ex.volume ?? 0);
     }
     return Object.entries(muscleVol)
       .map(([muscle, volume]) => ({ muscle, volume }))
+      .filter(m => m.volume > 0)
       .sort((a, b) => b.volume - a.volume);
   }, [data]);
 
   const topExercisesByVolume = useMemo<ExerciseVolumeEntry[]>(() => {
     if (!data) return [];
     return [...data.exercises]
-      .filter(e => e.prevWeight > 0)
-      .map(e => ({ ...e, vol: e.currentWeight * 10 * e.totalSets }))
+      .filter(e => e.prevWeight > 0 && e.volume > 0)
+      .map(e => ({ ...e, vol: e.volume }))
       .sort((a, b) => b.vol - a.vol)
       .slice(0, 8);
   }, [data]);

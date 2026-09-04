@@ -4,8 +4,11 @@ import { Dumbbell } from "lucide-react";
 import { LineChart } from "@/components/ui/Charts";
 import { ExerciseProgress, ProgressData } from "@/hooks/useProgress";
 
+// Verde-Conquista pra ganho de carga: é um "recorde" no mesmo sentido que a
+// aba de Recordes (DESIGN.md, "A Regra do Verde-Sinal") — Brasa é reservada
+// pra CTAs/energia, não pra este sinal de sucesso.
 function deltaColor(d: number): string {
-  if (d > 0) return "var(--accent)";
+  if (d > 0) return "var(--gain)";
   if (d < 0) return "var(--danger)";
   return "var(--text-mute)";
 }
@@ -30,7 +33,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
               <div className="row between" style={{ marginBottom: 18 }}>
                 <div>
                   <div className="h-eyebrow">{selectedEx.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-dim)", marginTop: 2 }}>
                     {selectedEx.muscle}
                   </div>
                   <div className="row gap-3" style={{ alignItems: "baseline", marginTop: 8 }}>
@@ -41,7 +44,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                     {/* Delta: positivo = ganho, negativo = perda, zero = sem histórico */}
                     {selectedEx.delta !== 0 && (
                       <span className="chip" style={{
-                        background: selectedEx.delta > 0 ? "var(--accent-soft)" : "rgba(255,60,60,0.1)",
+                        background: selectedEx.delta > 0 ? "var(--gain-soft)" : "rgba(255,77,77,0.1)",
                         color: deltaColor(selectedEx.delta),
                         border: `1px solid ${deltaColor(selectedEx.delta)}`,
                       }}>
@@ -109,10 +112,16 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
         <div className="h-eyebrow" style={{ marginBottom: 16 }}>Todos os exercícios</div>
         <div className="col gap-3" style={{ maxHeight: 480, overflowY: "auto" }}>
           {data.exercises.length > 0 ? data.exercises.filter(e => e.prevWeight > 0).map(ex => (
-            <div
+            // <button>, não <div onClick>: sem isto, quem navega por teclado
+            // nunca conseguia ver o gráfico de nenhum exercício além do que
+            // carrega por defeito (índice 0).
+            <button
               key={ex.name}
+              type="button"
+              disabled={ex.currentWeight === 0}
               className="row between"
               style={{
+                border: "none", textAlign: "left", font: "inherit", width: "100%",
                 cursor: ex.currentWeight > 0 ? "pointer" : "default",
                 padding: "8px 10px", borderRadius: 8,
                 // Destaque no exercício seleccionado
@@ -126,8 +135,8 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
               }}
             >
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500 }}>{ex.name}</div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{ex.name}</div>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
                   {ex.muscle}
                 </div>
                 {/* Delta de carga vs sessão anterior */}
@@ -137,10 +146,10 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                   </div>
                 )}
               </div>
-              <div className="h-mono" style={{ fontSize: 14, fontWeight: 600 }}>
+              <div className="h-mono" style={{ fontSize: 14, fontWeight: 600 }} title={ex.currentWeight === 0 ? "Exercício de peso corporal — sem carga registada" : undefined}>
                 {ex.currentWeight > 0 ? `${ex.currentWeight}kg` : "PC"}
               </div>
-            </div>
+            </button>
           )) : (
             <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
               Nenhum exercício encontrado.

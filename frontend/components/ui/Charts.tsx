@@ -92,22 +92,34 @@ export function BarChart({ data, height = 180, label }: BarChartProps) {
   );
 }
 
-interface SparklineProps { data: number[]; width?: number; height?: number; color?: string; label?: string; }
+interface SparklineProps { data: number[]; width?: number; height?: number; color?: string; label?: string; pulse?: boolean; pulseDelayMs?: number; }
 
-export function Sparkline({ data, width = 100, height = 30, color = 'var(--accent)', label }: SparklineProps) {
+export function Sparkline({ data, width = 100, height = 30, color = 'var(--accent)', label, pulse, pulseDelayMs = 0 }: SparklineProps) {
   if (data.length < 2) return null; // precisa de ao menos 2 pontos pra traçar uma linha
 
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
   const stepX = width / (data.length - 1);
-  const path = data.map((v, i) =>
-    `${i === 0 ? 'M' : 'L'}${i * stepX},${(1 - (v - min) / range) * height}`
-  ).join(' ');
+  const toPoint = (v: number, i: number): [number, number] => [i * stepX, (1 - (v - min) / range) * height];
+  const path = data.map((v, i) => {
+    const [x, y] = toPoint(v, i);
+    return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+  }).join(' ');
+  const [lastX, lastY] = toPoint(data[data.length - 1], data.length - 1);
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}
+    <svg width={width} height={height} style={{ display: 'block', overflow: 'visible' }}
       role="img" aria-label={label ?? "Mini-gráfico de tendência"}>
       <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      {pulse && (
+        <>
+          {/* Halo pulsante no ponto mais recente — sinaliza "dado ao vivo", reaproveita
+              o mesmo motivo do dot atual do RepCounter (glow + pulse), não uma animação nova. */}
+          <circle cx={lastX} cy={lastY} r="5" fill={color} opacity="0.35" className="pulse"
+            style={pulseDelayMs ? { animationDelay: `${pulseDelayMs}ms` } : undefined} />
+          <circle cx={lastX} cy={lastY} r="2" fill={color} />
+        </>
+      )}
     </svg>
   );
 }

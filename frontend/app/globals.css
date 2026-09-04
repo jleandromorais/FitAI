@@ -151,11 +151,11 @@ body {
   color: var(--accent);
   cursor: pointer;
   background: var(--accent-soft);
-  border: 1px solid rgba(0,255,136,0.15);
+  border: 1px solid rgba(255,90,46,0.15);
   transition: background 0.15s;
   user-select: none;
 }
-.side-item-cta:hover { background: rgba(0,255,136,0.14); }
+.side-item-cta:hover { background: rgba(255,90,46,0.14); }
 
 .sidebar-bottom {
   margin-top: auto;
@@ -351,6 +351,41 @@ body {
   background: radial-gradient(140% 100% at 100% 0%, var(--gain-soft), transparent 60%), var(--surface);
 }
 
+/* Textura de grelha técnica — reforça leitura "painel de sistema" sem introduzir
+   cor nova: usa só os tokens de borda que o sistema já possui. */
+.card.tech-grid {
+  background-image:
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+.card.tech-grid.card-accent {
+  background-image:
+    radial-gradient(140% 100% at 100% 0%, var(--accent-soft), transparent 60%),
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size: auto, 24px 24px, 24px 24px;
+  background-position: 0 0, -1px -1px, -1px -1px;
+}
+
+/* Selo "ao vivo" — ponto pulsante junto de um eyebrow, sinaliza dado computado
+   em tempo real (usado na IA e em números que acabaram de chegar do backend). */
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.card-gain .live-dot { background: var(--gain); }
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,90,46,0); }
+  50%      { box-shadow: 0 0 28px rgba(255,90,46,0.22); }
+}
+.card-accent.glow-live { animation: glowPulse 3.2s ease-in-out infinite; }
+
 /* ─── BUTTONS ─────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -419,7 +454,7 @@ body {
 .chip.chip-accent {
   background: var(--accent-soft);
   color: var(--accent);
-  border-color: rgba(0,255,136,0.2);
+  border-color: rgba(255,90,46,0.2);
   cursor: default;
 }
 
@@ -645,7 +680,7 @@ body {
   pointer-events: none;
   background:
     radial-gradient(60% 50% at 15% 105%, rgba(255,122,82,0.38), transparent 70%),
-    radial-gradient(90% 70% at 10% 115%, rgba(255,90,46,0.28), transparent 68%),
+    radial-gradient(130% 75% at 60% 112%, rgba(255,90,46,0.3), transparent 70%),
     linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%);
   filter: blur(2px);
   animation: emberPulse 6s ease-in-out infinite;
@@ -658,6 +693,28 @@ body {
 .word-up {
   display: inline-block;
   animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Figura em grafite (traço a lápis, fundo branco) recolorida pela própria
+   Brasa: multiply apaga o branco (vira a cor de baixo) e mantém o traço
+   escuro — o "homem forte" passa a ser feito de luz de brasa, não uma foto
+   de banco de imagens colada em cima do tema escuro. Mask esconde a borda
+   retangular do PNG pra fundir com o painel em vez de parecer um adesivo. */
+.auth-hero-figure {
+  position: absolute;
+  bottom: -8px;
+  right: -12px;
+  height: min(58vh, 480px);
+  width: auto;
+  mix-blend-mode: multiply;
+  opacity: 0.94;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%),
+                        linear-gradient(to left, black 70%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%),
+              linear-gradient(to left, black 70%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .auth-brand-content { position: relative; z-index: 2; }
@@ -742,6 +799,11 @@ body {
   color: var(--gain);
   border-color: rgba(143, 232, 90, 0.25);
 }
+.auth-status-icon-danger {
+  background: rgba(255, 77, 77, 0.1);
+  color: var(--danger);
+  border-color: rgba(255, 77, 77, 0.25);
+}
 
 /* ─── ANIMATIONS ──────────────────────────────────────────────────── */
 @keyframes fadeUp {
@@ -766,7 +828,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
-  .auth-brand-ember, .word-up {
+  .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up {
     animation: none !important;
   }
 }

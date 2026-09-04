@@ -376,7 +376,7 @@ export default function TreinoDetalhe() {
                       <tr key={setIdx} style={{
                         borderTop: "1px solid var(--border-soft)",
                         // Linha esverdeada quando a série está feita
-                        background: s.done ? "rgba(0,255,136,0.05)" : "transparent",
+                        background: s.done ? "var(--gain-soft)" : "transparent",
                         transition: "background 0.2s",
                       }}>
                         <td style={{ ...td, color: "var(--text-mute)", fontFamily: "var(--font-mono)" }}>{setIdx + 1}</td>

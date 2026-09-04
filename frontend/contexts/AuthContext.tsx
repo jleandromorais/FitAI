@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
@@ -100,6 +100,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout();
       return false;
     }
+  }, [logout]);
+
+  // lib/api.ts tenta renovar sozinho num 401 (token expirado); se o refresh
+  // também falhar (refresh token expirado/inválido), ele dispara este evento
+  // em vez de mexer no router diretamente — só o AuthContext sabe fazer
+  // logout "de verdade" (limpar tudo de novo + mandar pro /login).
+  useEffect(() => {
+    function handleSessionExpired() {
+      logout();
+    }
+    window.addEventListener("fitai:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("fitai:session-expired", handleSessionExpired);
   }, [logout]);
 
   return (

@@ -6,11 +6,7 @@ import { LineChart, BarChart } from "@/components/ui/Charts";
 import { ProgressData } from "@/hooks/useProgress";
 import { SessionHistory } from "@/hooks/useSessions";
 import { ExerciseVolumeEntry, MuscleVolumeEntry } from "@/hooks/useProgressStats";
-
-/** Formata volume: 1500 → "1.5k", 850 → "850" */
-function fmtVol(v: number): string {
-  return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0);
-}
+import { fmtVol } from "@/lib/format";
 
 interface VolumeTabProps {
   data: ProgressData | null;
@@ -76,7 +72,7 @@ export default function VolumeTab({
                     {fmtVol(sessionVolumes[sessionVolumes.length - 1])}<span className="stat-unit">kg</span>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)", textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "right" }}>
                   Últimas {sessionVolumes.length} sessões
                 </div>
               </div>
@@ -95,7 +91,7 @@ export default function VolumeTab({
               <BarChart data={data.volumePerWorkout} height={200} />
               <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
                 {data.workoutLabels.map((l, i) => (
-                  <div key={i} style={{ fontSize: 11, color: "var(--text-mute)" }}>
+                  <div key={i} style={{ fontSize: 11, color: "var(--text-dim)" }}>
                     <span style={{ fontWeight: 700, color: "var(--accent)" }}>{l.split("—")[0]?.trim()}</span>
                     {" · "}{fmtVol(data.volumePerWorkout[i])}kg
                   </div>
@@ -119,7 +115,7 @@ export default function VolumeTab({
                       }}>{s.workoutCode}</div>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{s.workoutName}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 1 }}>
+                        <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 1 }}>
                           {new Date(s.executedAt).toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
                           {s.durationMinutes ? ` · ${s.durationMinutes} min` : ""}
                         </div>
@@ -146,7 +142,7 @@ export default function VolumeTab({
                   <div key={muscle}>
                     <div className="row between" style={{ fontSize: 13, marginBottom: 6 }}>
                       <span>{muscle}</span>
-                      <span className="h-mono" style={{ color: "var(--text-mute)", fontSize: 11 }}>
+                      <span className="h-mono" style={{ color: "var(--text-dim)", fontSize: 11 }}>
                         {fmtVol(volume)}kg
                       </span>
                     </div>
@@ -179,7 +175,7 @@ export default function VolumeTab({
                         <div className="bar-fill" style={{ transform: `scaleX(${ex.vol / maxExVol})` }} />
                       </div>
                     </div>
-                    <div className="h-mono" style={{ fontSize: 12, color: "var(--text-mute)" }}>
+                    <div className="h-mono" style={{ fontSize: 12, color: "var(--text-dim)" }}>
                       {ex.currentWeight}kg
                     </div>
                   </div>

@@ -12,6 +12,7 @@ export interface ExerciseProgress {
   prevWeight: number;
   delta: number;        // ganho de carga vs sessão anterior
   totalSets: number;
+  volume: number;       // peso × reps das séries feitas — real, vindo do backend (não estimado)
 }
 
 export interface ProgressData {

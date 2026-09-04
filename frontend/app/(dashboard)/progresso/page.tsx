@@ -9,11 +9,7 @@ import ForcaTab from "@/components/ui/ForcaTab";
 import VolumeTab from "@/components/ui/VolumeTab";
 import RecordesTab from "@/components/ui/RecordesTab";
 import Link from "next/link";
-
-/** Formata volume: 1500 → "1.5k", 850 → "850" */
-function fmtVol(v: number): string {
-  return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0);
-}
+import { fmtVol } from "@/lib/format";
 
 export default function ProgressoPage() {
   const { data, loading, error } = useProgress();
@@ -35,8 +31,13 @@ export default function ProgressoPage() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 400 }}
+      >
         <Loader2 size={36} color="var(--accent)" style={{ animation: "spin 1s linear infinite" }} />
+        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>A carregar o teu progresso…</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -44,6 +45,9 @@ export default function ProgressoPage() {
 
   // ── Erro ───────────────────────────────────────────────────────────────────
   if (error) {
+    // A mensagem técnica (`error`) não é copy curada — pode vir crua do
+    // backend ou de uma falha de rede em inglês. Fica só nos logs.
+    console.error("[Progresso] erro ao carregar progresso:", error);
     return (
       <div className="anim-up">
         <div className="page-head">
@@ -52,13 +56,12 @@ export default function ProgressoPage() {
           </div>
         </div>
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
-          <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><AlertTriangle size={22} /></div>
+          <div className="auth-status-icon auth-status-icon-danger" style={{ margin: "0 auto 16px" }}><AlertTriangle size={22} /></div>
           <div className="h-display" style={{ fontSize: 18, marginBottom: 8 }}>
             Não foi possível carregar o progresso
           </div>
-          <p style={{ color: "var(--danger)", fontSize: 13, marginBottom: 8 }}>{error}</p>
-          <p style={{ color: "var(--text-mute)", fontSize: 12, marginBottom: 24 }}>
-            Verifique se o backend está a correr e reinicie-o se necessário.
+          <p style={{ color: "var(--text-dim)", fontSize: 13, marginBottom: 24 }}>
+            Verifica a tua conexão e tenta novamente.
           </p>
           <button className="btn btn-secondary" onClick={() => window.location.reload()}>
             Tentar novamente
@@ -68,10 +71,12 @@ export default function ProgressoPage() {
     );
   }
 
-  // ── Estado vazio: nenhum treino ou nenhuma sessão feita ainda ──────────────
-  const hasSessions = data && data.exercises.some(e => e.prevWeight > 0);
-
-  if (!data || !hasSessions) {
+  // ── Estado vazio: nenhum treino cadastrado ainda ───────────────────────────
+  // Gateado em totalWorkouts (não em prevWeight): um utilizador que acabou de
+  // fazer o primeiro treino já tem dados reais (totalVolume, totalSets) — só
+  // ainda não tem um SEGUNDO ponto de comparação por exercício. Mostrar "sem
+  // dados" logo depois do treino #1 é o pior momento possível pra essa mensagem.
+  if (!data || data.totalWorkouts === 0) {
     return (
       <div className="anim-up">
         <div className="page-head">
@@ -110,14 +115,17 @@ export default function ProgressoPage() {
           </div>
         </div>
 
-        {/* Abas */}
+        {/* Abas — aria-controls/id ligam cada botão ao seu painel, senão um
+            leitor de ecrã não sabe qual conteúdo pertence a qual aba. */}
         <div className="tabs" role="tablist">
           {[["forca", "Força"], ["volume", "Volume"], ["prs", "Recordes"]].map(([id, l]) => (
             <button
               key={id}
+              id={`tab-${id}`}
               type="button"
               role="tab"
               aria-selected={tab === id}
+              aria-controls={`panel-${id}`}
               className={`tab${tab === id ? " active" : ""}`}
               onClick={() => setTab(id)}
             >
@@ -158,29 +166,37 @@ export default function ProgressoPage() {
       </div>
 
       {tab === "forca" && (
-        <ForcaTab
-          data={data}
-          exercisesWithLoad={exercisesWithLoad}
-          selectedEx={selectedEx}
-          loadHistory={loadHistory}
-          exIdx={exIdx}
-          onSelectExercise={setExIdx}
-        />
+        <div role="tabpanel" id="panel-forca" aria-labelledby="tab-forca">
+          <ForcaTab
+            data={data}
+            exercisesWithLoad={exercisesWithLoad}
+            selectedEx={selectedEx}
+            loadHistory={loadHistory}
+            exIdx={exIdx}
+            onSelectExercise={setExIdx}
+          />
+        </div>
       )}
 
       {tab === "volume" && (
-        <VolumeTab
-          data={data}
-          sessions={sessions}
-          weekVolume={volumeStats.weekVolume}
-          avgVolume={volumeStats.avgVolume}
-          sessionVolumes={volumeStats.sessionVolumes}
-          muscleBreakdown={muscleBreakdown}
-          topExercisesByVolume={topExercisesByVolume}
-        />
+        <div role="tabpanel" id="panel-volume" aria-labelledby="tab-volume">
+          <VolumeTab
+            data={data}
+            sessions={sessions}
+            weekVolume={volumeStats.weekVolume}
+            avgVolume={volumeStats.avgVolume}
+            sessionVolumes={volumeStats.sessionVolumes}
+            muscleBreakdown={muscleBreakdown}
+            topExercisesByVolume={topExercisesByVolume}
+          />
+        </div>
       )}
 
-      {tab === "prs" && <RecordesTab prs={prs} />}
+      {tab === "prs" && (
+        <div role="tabpanel" id="panel-prs" aria-labelledby="tab-prs">
+          <RecordesTab prs={prs} />
+        </div>
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

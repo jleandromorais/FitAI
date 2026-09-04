@@ -2,9 +2,11 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { GoogleLogin } from "@react-oauth/google";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
+import heroStrongman from "@/img/hero-strongman.png";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
@@ -95,6 +97,13 @@ function LoginForm() {
       <div className="auth-brand">
         <div className="auth-brand-ember" />
         <EffortLines />
+        <Image
+          src={heroStrongman}
+          alt=""
+          aria-hidden="true"
+          className="auth-hero-figure"
+          priority
+        />
 
         <div className="auth-brand-content">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
