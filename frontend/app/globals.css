@@ -3,22 +3,25 @@
 /* ─── TOKENS ─────────────────────────────────────────────────────── */
 /* Direção "Combustão": carvão quente em vez de preto-terminal, laranja-brasa
    como identidade (energia/esforço), verde reservado como sinal semântico
-   de conquista (streak, meta batida) — não mais a cor da marca. */
+   de conquista (streak, meta batida) — não mais a cor da marca.
+   Paleta atualizada pra bater com a referência da Arounda Agency: bg/accent
+   quase iguais aos anteriores, brown (#453027) vira a base da rampa de
+   superfície/borda, texto passa a branco puro + cinza neutro. */
 :root {
-  --bg:           #12100e;
-  --surface:      #1c1815;
-  --surface-2:    #241f1a;
-  --surface-3:    #2c261f;
-  --border:       #332b23;
-  --border-soft:  #241f1a;
+  --bg:           #161316;
+  --surface:      #1e1819;
+  --surface-2:    #281e1c;
+  --surface-3:    #312420;
+  --border:       #3b2a23;
+  --border-soft:  #281e1c;
 
-  --text:         #f5f1ea;
-  --text-dim:     #a89e8f;
-  --text-mute:    #6b6053;
+  --text:         #ffffff;
+  --text-dim:     #bababa;
+  --text-mute:    #706f70;
 
-  --accent:       #ff5a2e;
-  --accent-hover: #ff7a52;
-  --accent-soft:  rgba(255,90,46,0.1);
+  --accent:       #ff6d29;
+  --accent-hover: #ff8d58;
+  --accent-soft:  rgba(255,109,41,0.1);
   --danger:       #ff4d4d;
 
   --gain:         #8fe85a;
@@ -91,7 +94,7 @@ body {
   height: 34px;
   border-radius: 9px;
   background: var(--accent);
-  color: #16100c;
+  color: #161316;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 16px;
@@ -151,11 +154,11 @@ body {
   color: var(--accent);
   cursor: pointer;
   background: var(--accent-soft);
-  border: 1px solid rgba(255,90,46,0.15);
+  border: 1px solid rgba(255,109,41,0.15);
   transition: background 0.15s;
   user-select: none;
 }
-.side-item-cta:hover { background: rgba(255,90,46,0.14); }
+.side-item-cta:hover { background: rgba(255,109,41,0.14); }
 
 .sidebar-bottom {
   margin-top: auto;
@@ -188,8 +191,8 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4a2418, #1f100a);
-  border: 1px solid rgba(255,90,46,0.3);
+  background: linear-gradient(135deg, #58453d, #241c1b);
+  border: 1px solid rgba(255,109,41,0.3);
   color: var(--accent);
   font-family: var(--font-mono);
   font-weight: 600;
@@ -208,7 +211,7 @@ body {
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 20px;
-  border: 1px solid rgba(255,90,46,0.25);
+  border: 1px solid rgba(255,109,41,0.25);
 }
 
 /* ─── SIDEBAR MOBILE (hambúrguer + overlay abaixo de 768px) ──────────── */
@@ -342,11 +345,11 @@ body {
   padding: 20px;
   transition: border-color 0.2s;
 }
-.card:hover { border-color: #3d332a; }
+.card:hover { border-color: #3f2d25; }
 .card.card-accent {
-  border-color: rgba(255,90,46,0.3);
-  background: radial-gradient(140% 100% at 100% 0%, rgba(255,90,46,0.16), transparent 60%), var(--surface);
-  box-shadow: 0 8px 32px -12px rgba(255,90,46,0.35);
+  border-color: rgba(255,109,41,0.3);
+  background: radial-gradient(140% 100% at 100% 0%, rgba(255,109,41,0.16), transparent 60%), var(--surface);
+  box-shadow: 0 8px 32px -12px rgba(255,109,41,0.35);
 }
 .card.card-tight { padding: 14px 16px; }
 .card.card-gain {
@@ -384,8 +387,8 @@ body {
 .card-gain .live-dot { background: var(--gain); }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 8px 32px -12px rgba(255,90,46,0.35); }
-  50%      { box-shadow: 0 12px 48px -8px rgba(255,90,46,0.55); }
+  0%, 100% { box-shadow: 0 8px 32px -12px rgba(255,109,41,0.35); }
+  50%      { box-shadow: 0 12px 48px -8px rgba(255,109,41,0.55); }
 }
 .card-accent.glow-live { animation: glowPulse 2.8s ease-in-out infinite; }
 
@@ -411,11 +414,11 @@ body {
    de luz própria" no sistema, igual ao acento único (Brasa) só ter um dono. */
 .btn-primary {
   background: var(--accent);
-  color: #16100c;
+  color: #161316;
   border-radius: 999px;
-  box-shadow: 0 4px 20px -4px rgba(255,90,46,0.5);
+  box-shadow: 0 4px 20px -4px rgba(255,109,41,0.5);
 }
-.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 6px 24px -4px rgba(255,90,46,0.65); }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 6px 24px -4px rgba(255,109,41,0.65); }
 .btn-secondary { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
 .btn-secondary:hover { color: var(--text); border-color: #3a3a3a; }
 .btn-ghost { background: transparent; color: var(--text-dim); }
@@ -460,11 +463,11 @@ body {
   user-select: none;
 }
 .chip:hover { color: var(--text); border-color: #3a3a3a; }
-.chip.active { background: var(--accent); color: #16100c; border-color: var(--accent); }
+.chip.active { background: var(--accent); color: #161316; border-color: var(--accent); }
 .chip.chip-accent {
   background: var(--accent-soft);
   color: var(--accent);
-  border-color: rgba(255,90,46,0.2);
+  border-color: rgba(255,109,41,0.2);
   cursor: default;
 }
 
@@ -675,7 +678,7 @@ body {
   height: 480px;
   left: -160px;
   bottom: -180px;
-  background: radial-gradient(circle, rgba(255,90,46,0.22), transparent 65%);
+  background: radial-gradient(circle, rgba(255,109,41,0.22), transparent 65%);
   filter: blur(4px);
   pointer-events: none;
 }
@@ -690,7 +693,7 @@ body {
   pointer-events: none;
   background:
     radial-gradient(60% 50% at 15% 105%, rgba(255,122,82,0.38), transparent 70%),
-    radial-gradient(130% 75% at 60% 112%, rgba(255,90,46,0.3), transparent 70%),
+    radial-gradient(130% 75% at 60% 112%, rgba(255,109,41,0.3), transparent 70%),
     linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%);
   filter: blur(2px);
   animation: emberPulse 6s ease-in-out infinite;
@@ -729,8 +732,8 @@ body {
   100% { transform: skewX(-3deg) scaleY(1); }
 }
 @keyframes flameGlow {
-  0%, 100% { filter: drop-shadow(0 0 1px rgba(255,90,46,0.4)); }
-  50%      { filter: drop-shadow(0 0 5px rgba(255,90,46,0.85)); }
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(255,109,41,0.4)); }
+  50%      { filter: drop-shadow(0 0 5px rgba(255,109,41,0.85)); }
 }
 .flame-icon-wrap::before,
 .flame-icon-wrap::after {
@@ -857,7 +860,7 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--accent);
   line-height: 1;
-  text-shadow: 0 0 32px rgba(255, 90, 46, 0.35);
+  text-shadow: 0 0 32px rgba(255, 109, 41, 0.35);
 }
 .rep-counter-label {
   font-family: var(--font-mono);
@@ -878,7 +881,7 @@ body {
 .rep-counter-dot.done { background: var(--accent); }
 .rep-counter-dot.current {
   background: var(--accent-hover);
-  box-shadow: 0 0 12px rgba(255, 90, 46, 0.6);
+  box-shadow: 0 0 12px rgba(255, 109, 41, 0.6);
   animation: pulse 0.9s ease infinite;
 }
 .rep-counter-caption {
@@ -907,7 +910,7 @@ body {
   justify-content: center;
   background: var(--accent-soft);
   color: var(--accent);
-  border: 1px solid rgba(255, 90, 46, 0.25);
+  border: 1px solid rgba(255, 109, 41, 0.25);
 }
 .auth-status-icon-gain {
   background: var(--gain-soft);

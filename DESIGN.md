@@ -2,18 +2,18 @@
 name: FitAI
 description: Plataforma de treinos com geração de planos por IA — tema escuro fixo, direção "Combustão"
 colors:
-  bg: "#12100e"
-  surface: "#1c1815"
-  surface-2: "#241f1a"
-  surface-3: "#2c261f"
-  border: "#332b23"
-  border-soft: "#241f1a"
-  text: "#f5f1ea"
-  text-dim: "#a89e8f"
-  text-mute: "#6b6053"
-  accent: "#ff5a2e"
-  accent-hover: "#ff7a52"
-  accent-soft: "rgba(255,90,46,0.1)"
+  bg: "#161316"
+  surface: "#1e1819"
+  surface-2: "#281e1c"
+  surface-3: "#312420"
+  border: "#3b2a23"
+  border-soft: "#281e1c"
+  text: "#ffffff"
+  text-dim: "#bababa"
+  text-mute: "#706f70"
+  accent: "#ff6d29"
+  accent-hover: "#ff8d58"
+  accent-soft: "rgba(255,109,41,0.1)"
   gain: "#8fe85a"
   gain-soft: "rgba(143,232,90,0.1)"
   danger: "#ff4d4d"
@@ -40,7 +40,7 @@ spacing:
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
-    textColor: "#16100c"
+    textColor: "#161316"
     rounded: "{rounded.sm}"
     padding: "8px 16px"
   button-primary-hover:
@@ -86,7 +86,7 @@ components:
 
 **Creative North Star: "Combustão"**
 
-FitAI não é uma app de fitness clínica e branca — é carvão quente em vez de preto-terminal, com uma brasa laranja como identidade de energia e esforço. O fundo nunca é preto puro nem cinza neutro: é um carvão morno (`#12100e`) que sobe em degraus de calor (`surface` → `surface-2` → `surface-3`) para separar camadas, sem nunca recorrer a sombra. A brasa (`--accent`, laranja `#ff5a2e`) é o único acento realmente vivo do sistema — usada com intenção, não espalhada. O verde (`--gain`) é deliberadamente reservado: não é uma segunda cor de marca, é um sinal semântico único para "conquista" (streak, recorde, meta batida) — usá-lo fora desse contexto dilui o único momento em que o sistema muda de linguagem.
+FitAI não é uma app de fitness clínica e branca — é carvão quente em vez de preto-terminal, com uma brasa laranja como identidade de energia e esforço. O fundo nunca é preto puro nem cinza neutro: é um carvão morno (`#161316`) que sobe em degraus de calor (`surface` → `surface-2` → `surface-3`) para separar camadas, sem nunca recorrer a sombra. A brasa (`--accent`, laranja `#ff6d29`) é o único acento realmente vivo do sistema — usada com intenção, não espalhada. O verde (`--gain`) é deliberadamente reservado: não é uma segunda cor de marca, é um sinal semântico único para "conquista" (streak, recorde, meta batida) — usá-lo fora desse contexto dilui o único momento em que o sistema muda de linguagem.
 
 A tipografia reforça a mesma lógica de intensidade contida: Space Grotesk em negrito para números e títulos que devem "pesar" no ecrã (stats, headlines), Inter para o texto corrido do dia a dia, e JetBrains Mono — com `tabular-nums` — para qualquer valor que mude ao vivo (cronómetro, contador de reps, pesos). Esta escolha não é decorativa: no RepCounter da página de autenticação, o número em mono com glow (`text-shadow` laranja) é literalmente o elemento que vende o produto antes do login.
 
@@ -102,22 +102,22 @@ A tipografia reforça a mesma lógica de intensidade contida: Space Grotesk em n
 Paleta reduzida e disciplinada: um fundo quente em degraus, um acento vivo, e um sinal semântico único — nada mais compete por atenção.
 
 ### Primary
-- **Brasa** (`#ff5a2e`): o único acento de marca. CTAs primários, estado ativo da navegação, glows, gráficos por defeito, texto em destaque (`flame-word`). Usado com moderação — nunca como cor de fundo de grandes áreas.
-- **Brasa Clara** (`#ff7a52`): estado hover da Brasa. Nunca usada isolada fora de interações.
+- **Brasa** (`#ff6d29`): o único acento de marca. CTAs primários, estado ativo da navegação, glows, gráficos por defeito, texto em destaque (`flame-word`). Usado com moderação — nunca como cor de fundo de grandes áreas.
+- **Brasa Clara** (`#ff8d58`): estado hover da Brasa. Nunca usada isolada fora de interações.
 
 ### Secondary
 - **Verde-Conquista** (`#8fe85a`): sinal semântico único de sucesso/conquista (streak, recorde pessoal, set concluído). Não é uma segunda cor de marca — reservar exclusivamente para este significado.
 - **Vermelho-Alerta** (`#ff4d4d`): erro, ação destrutiva, danger.
 
 ### Neutral
-- **Carvão Quente** (`#12100e`): fundo base da aplicação (`--bg`).
-- **Cinza Quente** (`#1c1815`): superfície de cards e sidebar (`--surface`), um degrau acima do fundo.
-- **Cinza Levantado** (`#241f1a`): superfície secundária — inputs, badges, hover de itens de navegação (`--surface-2` / `--border-soft`).
-- **Cinza Aceso** (`#2c261f`): superfície terciária — usada nos gráficos de barra para pontos que não são o mais recente (`--surface-3`).
-- **Fuligem** (`#332b23`): borda padrão de cards, inputs e divisores (`--border`).
-- **Alvo Quente** (`#f5f1ea`): texto principal (`--text`).
-- **Cinza Morno** (`#a89e8f`): texto secundário/dimmed (`--text-dim`).
-- **Cinza Apagado** (`#6b6053`): texto terciário/mute — labels, timestamps, separadores (`--text-mute`).
+- **Carvão Quente** (`#161316`): fundo base da aplicação (`--bg`).
+- **Cinza Quente** (`#1e1819`): superfície de cards e sidebar (`--surface`), um degrau acima do fundo.
+- **Cinza Levantado** (`#281e1c`): superfície secundária — inputs, badges, hover de itens de navegação (`--surface-2` / `--border-soft`).
+- **Cinza Aceso** (`#312420`): superfície terciária — usada nos gráficos de barra para pontos que não são o mais recente (`--surface-3`).
+- **Fuligem** (`#3b2a23`): borda padrão de cards, inputs e divisores (`--border`).
+- **Alvo Quente** (`#ffffff`): texto principal (`--text`).
+- **Cinza Morno** (`#bababa`): texto secundário/dimmed (`--text-dim`).
+- **Cinza Apagado** (`#706f70`): texto terciário/mute — labels, timestamps, separadores (`--text-mute`).
 
 ### Named Rules
 **A Regra da Brasa Única.** Só existe um acento vivo no sistema — a Brasa. Antes de introduzir qualquer nova cor "de destaque", pergunta se ela não devia ser apenas Brasa com outra opacidade.
@@ -161,13 +161,13 @@ Ritmo de espaçamento observado: `8 / 12 / 16 / 20 / 28px` para gaps e margens e
 
 O sistema é **flat por defeito** — a profundidade vem de degraus de cor de fundo (`bg` → `surface` → `surface-2` → `surface-3`) e de uma borda de 1px, nunca de sombra ambiente. Sombra é usada apenas como resposta estrutural a um elemento que se sobrepõe ao conteúdo por trás dele.
 
-**Exceção deliberada (2026-09-04):** superfícies que já vestem `card-accent` (o vocabulário de "brasa" — ver Painel de Sistema) ganham uma sombra colorida sutil (`rgba(255,90,46,...)`) mesmo em repouso, e o CTA primário (`.btn-primary`) é a única forma de botão com glow próprio. Isso substitui um "flat sempre" absoluto por "flat por padrão, luz só onde a Brasa já vive" — a regra continua protegendo contra sombra genérica cinza em qualquer superfície neutra.
+**Exceção deliberada (2026-09-04):** superfícies que já vestem `card-accent` (o vocabulário de "brasa" — ver Painel de Sistema) ganham uma sombra colorida sutil (`rgba(255,109,41,...)`) mesmo em repouso, e o CTA primário (`.btn-primary`) é a única forma de botão com glow próprio. Isso substitui um "flat sempre" absoluto por "flat por padrão, luz só onde a Brasa já vive" — a regra continua protegendo contra sombra genérica cinza em qualquer superfície neutra.
 
 ### Shadow Vocabulary
 - **Modal grande** (`box-shadow: 0 32px 80px rgba(0,0,0,0.5)`): wizards de várias etapas (ex: criar treino), sempre com `backdrop-filter: blur(4px)` no scrim por trás.
 - **Modal pequeno/confirmação** (`box-shadow: 0 24px 60px rgba(0,0,0,0.4)`): diálogos de confirmação (ex: eliminar treino).
 - **Drawer mobile** (`box-shadow: 2px 0 24px rgba(0,0,0,0.4)`): sidebar em overlay em ecrãs ≤768px.
-- **Glow de foco vivo** (não é box-shadow tradicional, é `text-shadow`/`box-shadow` pequeno com cor de acento): `.rep-counter-num` (`text-shadow: 0 0 32px rgba(255,90,46,0.35)`) e o dot atual do RepCounter (`box-shadow: 0 0 12px rgba(255,90,46,0.6)` com pulse) — reservado a esse elemento de assinatura, não é um padrão geral de destaque.
+- **Glow de foco vivo** (não é box-shadow tradicional, é `text-shadow`/`box-shadow` pequeno com cor de acento): `.rep-counter-num` (`text-shadow: 0 0 32px rgba(255,109,41,0.35)`) e o dot atual do RepCounter (`box-shadow: 0 0 12px rgba(255,109,41,0.6)` com pulse) — reservado a esse elemento de assinatura, não é um padrão geral de destaque.
 
 ### Named Rules
 **A Regra Flat-por-Defeito.** Cards, botões, chips e inputs neutros em repouso nunca têm `box-shadow`. Sombra estrutural aparece quando um elemento se eleva fisicamente sobre outro (modal sobre página, drawer sobre conteúdo). A única exceção sancionada é a sombra colorida da própria Brasa (`card-accent`, `.btn-primary`) — nunca cinza, nunca em superfície neutra.
@@ -189,8 +189,8 @@ Bordas são quase sempre `1px solid var(--border)` (ou `var(--border-soft)` para
 
 ### Buttons
 - **Shape:** `border-radius: 9px` (`--radius-sm`); padding `8px 16px` (`5px 11px` na variante `sm`, `11px 22px` na `lg`).
-- **Primary:** fundo `Brasa` (`#ff5a2e`), texto quase-preto (`#16100c`) para contraste — não branco.
-- **Hover:** fundo passa a `Brasa Clara` (`#ff7a52`). **Active:** `transform: scale(0.97)` — feedback tátil por movimento, não por sombra.
+- **Primary:** fundo `Brasa` (`#ff6d29`), texto quase-preto (`#161316`) para contraste — não branco.
+- **Hover:** fundo passa a `Brasa Clara` (`#ff8d58`). **Active:** `transform: scale(0.97)` — feedback tátil por movimento, não por sombra.
 - **Secondary:** fundo `Cinza Levantado`, texto `Cinza Morno`, borda `Fuligem` — usado para ações não-primárias no mesmo contexto de um primary.
 - **Ghost:** transparente, texto `Cinza Morno` — ações terciárias.
 - **Danger:** fundo `rgba(255,77,77,0.12)`, texto `Vermelho-Alerta`, borda `rgba(255,77,77,0.2)`.

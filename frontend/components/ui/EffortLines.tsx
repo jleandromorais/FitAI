@@ -55,7 +55,7 @@ export default function EffortLines() {
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(255,90,46,${c.alpha})`;
+        ctx.strokeStyle = `rgba(255,109,41,${c.alpha})`;
         ctx.lineWidth = c.width;
         ctx.stroke();
       }

@@ -138,7 +138,7 @@ export default function TreinosPage() {
                 <div className="row gap-3">
                   <div style={{
                     width: 52, height: 52, borderRadius: 13,
-                    background: "var(--accent-soft)", border: "1px solid rgba(255,90,46,0.2)",
+                    background: "var(--accent-soft)", border: "1px solid rgba(255,109,41,0.2)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--accent)", fontSize: 22,
                   }}>{w.code}</div>

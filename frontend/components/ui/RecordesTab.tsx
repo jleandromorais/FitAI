@@ -49,7 +49,7 @@ export default function RecordesTab({ prs }: RecordesTabProps) {
                 flexShrink: 0,
               }}>
                 {i === 0
-                  ? <Trophy size={22} color="#16100c" />
+                  ? <Trophy size={22} color="#161316" />
                   : <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--gain)", fontSize: 16 }}>
                       {i + 1}
                     </span>

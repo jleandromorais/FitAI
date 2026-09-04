@@ -130,9 +130,10 @@ function LoginForm() {
             fontWeight: 700, color: "var(--text)", lineHeight: 1.02,
             letterSpacing: "-0.02em", marginBottom: 24,
           }}>
-            {t.login.headline.map((word, i) => (
-              <span key={i} className="word-up" style={{ animationDelay: `${0.05 + i * 0.07}s` }}>{word}{" "}</span>
-            ))}
+            {t.login.headline.flatMap((word, i) => [
+              <span key={`w${i}`} className="word-up" style={{ animationDelay: `${0.05 + i * 0.07}s` }}>{word}</span>,
+              " ",
+            ])}
             <br />
             <span className="word-up" style={{ animationDelay: "0.33s" }}>{t.login.headlineLinha2}</span>{" "}
             <span className="flame-word word-up" style={{ animationDelay: "0.42s" }}>{t.login.headlineAccent}</span>
