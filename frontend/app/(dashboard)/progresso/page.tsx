@@ -136,30 +136,32 @@ export default function ProgressoPage() {
       </div>
 
       {/* ── Cards de stats globais (sempre visíveis) ── */}
+      {/* Volume total lidera — é o que "track truth" mede de mais amplo — em
+          vez de 3 tiles do mesmo peso disputando atenção igual. */}
       <div className="grid-cols-3" style={{ gap: 16, marginBottom: 24 }}>
-        <div className="card">
+        <div className="card card-accent">
           <div className="stat-label">Volume total</div>
           <div style={{ marginTop: 10 }}>
-            <span className="stat-num">{fmtVol(data.totalVolume)}</span>
+            <span className="stat-num" style={{ fontSize: 38 }}>{fmtVol(data.totalVolume)}</span>
             <span className="stat-unit"> kg</span>
           </div>
           <div style={{ fontSize: 11, marginTop: 6, fontWeight: 600, color: "var(--accent)" }}>acumulado</div>
         </div>
-        <div className="card">
+        <div className="card card-tight">
           <div className="stat-label">Séries concluídas</div>
-          <div style={{ marginTop: 10 }}>
-            <span className="stat-num">{data.totalSetsCompleted}</span>
+          <div style={{ marginTop: 8 }}>
+            <span className="stat-num" style={{ fontSize: 22 }}>{data.totalSetsCompleted}</span>
           </div>
-          <div style={{ fontSize: 11, marginTop: 6, fontWeight: 600, color: "var(--accent)" }}>
+          <div style={{ fontSize: 11, marginTop: 4, color: "var(--text-mute)" }}>
             em {data.totalWorkouts} treino{data.totalWorkouts !== 1 ? "s" : ""}
           </div>
         </div>
-        <div className="card">
+        <div className="card card-tight">
           <div className="stat-label">Exercícios</div>
-          <div style={{ marginTop: 10 }}>
-            <span className="stat-num">{data.exercises.length}</span>
+          <div style={{ marginTop: 8 }}>
+            <span className="stat-num" style={{ fontSize: 22 }}>{data.exercises.length}</span>
           </div>
-          <div style={{ fontSize: 11, marginTop: 6, fontWeight: 600, color: "var(--accent)" }}>
+          <div style={{ fontSize: 11, marginTop: 4, color: "var(--text-mute)" }}>
             {prs.length} com ganho de carga
           </div>
         </div>

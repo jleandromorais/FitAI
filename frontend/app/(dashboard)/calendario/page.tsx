@@ -148,10 +148,12 @@ export default function CalendarioPage() {
       </div>
 
       {/* Stats do mês */}
+      {/* "Dias com treino" lidera — é literalmente o que a página existe pra
+          mostrar — em vez de 4 tiles do mesmo peso disputando atenção igual. */}
       <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
-        <div className="card">
+        <div className="card card-accent">
           <div className="h-eyebrow">Dias com treino</div>
-          <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>
+          <div className="h-display" style={{ fontSize: 36, marginTop: 8 }}>
             {doneDays.size}
             <span className="stat-unit">/{workingDays} dias</span>
           </div>
@@ -161,23 +163,23 @@ export default function CalendarioPage() {
             </div>
           )}
         </div>
-        <div className="card">
+        <div className="card card-tight">
           <div className="h-eyebrow">Treinos</div>
-          <div className="h-display" style={{ fontSize: 30, marginTop: 8, color: "var(--accent)" }}>
+          <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {workouts.length}
             <span className="stat-unit"> planos</span>
           </div>
         </div>
-        <div className="card">
+        <div className="card card-tight">
           <div className="h-eyebrow">Volume total</div>
-          <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>
+          <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume.toFixed(0)}
             <span className="stat-unit"> kg</span>
           </div>
         </div>
-        <div className="card">
+        <div className="card card-tight">
           <div className="h-eyebrow">Frequência</div>
-          <div className="h-display" style={{ fontSize: 30, marginTop: 8 }}>
+          <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {workingDays > 0 ? Math.round((doneDays.size / workingDays) * 100) : 0}
             <span className="stat-unit">%</span>
           </div>
