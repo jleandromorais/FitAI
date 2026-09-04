@@ -7,6 +7,7 @@ import { ProgressData } from "@/hooks/useProgress";
 import { SessionHistory } from "@/hooks/useSessions";
 import { ExerciseVolumeEntry, MuscleVolumeEntry } from "@/hooks/useProgressStats";
 import { fmtVol } from "@/lib/format";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface VolumeTabProps {
   data: ProgressData | null;
@@ -21,6 +22,7 @@ interface VolumeTabProps {
 export default function VolumeTab({
   data, sessions, weekVolume, avgVolume, sessionVolumes, muscleBreakdown, topExercisesByVolume,
 }: VolumeTabProps) {
+  const { t, locale } = useLanguage();
   const maxMuscleVol = muscleBreakdown[0]?.volume || 1;
   const maxExVol = topExercisesByVolume[0]?.vol || 1;
 
@@ -31,8 +33,8 @@ export default function VolumeTab({
     return (
       <div className="card" style={{ textAlign: "center", padding: 48 }}>
         <TrendingUp size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-        <div style={{ fontSize: 14, color: "var(--text-mute)" }}>Execute treinos para ver o volume acumulado.</div>
-        <Link href="/treinos" className="btn btn-primary" style={{ marginTop: 20 }}>Ir para treinos</Link>
+        <div style={{ fontSize: 14, color: "var(--text-mute)" }}>{t.volumeTab.executeParaVerVolume}</div>
+        <Link href="/treinos" className="btn btn-primary" style={{ marginTop: 20 }}>{t.volumeTab.irParaTreinos}</Link>
       </div>
     );
   }
@@ -42,10 +44,10 @@ export default function VolumeTab({
       {/* Stats rápidos */}
       <div className="grid-cols-4" style={{ gap: 16 }}>
         {[
-          { label: "Volume total", val: fmtVol(data?.totalVolume ?? 0), unit: "kg", icon: <TrendingUp size={16} color="var(--accent)" /> },
-          { label: "Esta semana", val: fmtVol(weekVolume), unit: "kg", icon: <Flame size={16} color="var(--accent)" /> },
-          { label: "Sessões", val: String(sessions.length), unit: "", icon: <BarChart2 size={16} color="var(--accent)" /> },
-          { label: "Média/sessão", val: fmtVol(avgVolume), unit: "kg", icon: <Trophy size={16} color="var(--accent)" /> },
+          { label: t.volumeTab.volumeTotal, val: fmtVol(data?.totalVolume ?? 0), unit: "kg", icon: <TrendingUp size={16} color="var(--accent)" /> },
+          { label: t.volumeTab.estaSemana, val: fmtVol(weekVolume), unit: "kg", icon: <Flame size={16} color="var(--accent)" /> },
+          { label: t.volumeTab.sessoes, val: String(sessions.length), unit: "", icon: <BarChart2 size={16} color="var(--accent)" /> },
+          { label: t.volumeTab.mediaSessao, val: fmtVol(avgVolume), unit: "kg", icon: <Trophy size={16} color="var(--accent)" /> },
         ].map(c => (
           <div key={c.label} className="card">
             <div className="row between" style={{ marginBottom: 10 }}>
@@ -67,13 +69,13 @@ export default function VolumeTab({
             <div className="card">
               <div className="row between" style={{ marginBottom: 16 }}>
                 <div>
-                  <div className="h-eyebrow">Volume por sessão</div>
+                  <div className="h-eyebrow">{t.volumeTab.volumePorSessao}</div>
                   <div className="h-display" style={{ fontSize: 28, marginTop: 6 }}>
                     {fmtVol(sessionVolumes[sessionVolumes.length - 1])}<span className="stat-unit">kg</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "right" }}>
-                  Últimas {sessionVolumes.length} sessões
+                  {t.volumeTab.ultimasSessoes(sessionVolumes.length)}
                 </div>
               </div>
               <LineChart data={sessionVolumes} height={200} yLabel={v => `${fmtVol(v)}kg`} showDots />
@@ -82,7 +84,7 @@ export default function VolumeTab({
             <div className="card">
               <div className="row between" style={{ marginBottom: 16 }}>
                 <div>
-                  <div className="h-eyebrow">Volume por treino</div>
+                  <div className="h-eyebrow">{t.volumeTab.volumePorTreino}</div>
                   <div className="h-display" style={{ fontSize: 28, marginTop: 6 }}>
                     {fmtVol(data.totalVolume)}<span className="stat-unit">kg</span>
                   </div>
@@ -103,7 +105,7 @@ export default function VolumeTab({
           {/* Sessões recentes */}
           {sessions.length > 0 && (
             <div className="card">
-              <div className="h-eyebrow" style={{ marginBottom: 14 }}>Sessões recentes</div>
+              <div className="h-eyebrow" style={{ marginBottom: 14 }}>{t.volumeTab.sessoesRecentes}</div>
               <div className="col gap-3">
                 {sessions.slice(0, 6).map((s, i) => (
                   <div key={i} className="row between">
@@ -116,7 +118,7 @@ export default function VolumeTab({
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{s.workoutName}</div>
                         <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 1 }}>
-                          {new Date(s.executedAt).toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
+                          {new Date(s.executedAt).toLocaleDateString(locale === "en" ? "en-US" : "pt-BR", { day: "numeric", month: "short" })}
                           {s.durationMinutes ? ` · ${s.durationMinutes} min` : ""}
                         </div>
                       </div>
@@ -136,7 +138,7 @@ export default function VolumeTab({
           {/* Volume por grupo muscular */}
           {muscleBreakdown.length > 0 && (
             <div className="card">
-              <div className="h-eyebrow" style={{ marginBottom: 14 }}>Por grupo muscular</div>
+              <div className="h-eyebrow" style={{ marginBottom: 14 }}>{t.volumeTab.porGrupoMuscular}</div>
               <div className="col gap-3">
                 {muscleBreakdown.slice(0, 7).map(({ muscle, volume }) => (
                   <div key={muscle}>
@@ -158,7 +160,7 @@ export default function VolumeTab({
           {/* Top exercícios */}
           {topExercisesByVolume.length > 0 && (
             <div className="card">
-              <div className="h-eyebrow" style={{ marginBottom: 14 }}>Top exercícios</div>
+              <div className="h-eyebrow" style={{ marginBottom: 14 }}>{t.volumeTab.topExercicios}</div>
               <div className="col gap-3">
                 {topExercisesByVolume.map((ex, i) => (
                   <div key={ex.name} className="row gap-3">

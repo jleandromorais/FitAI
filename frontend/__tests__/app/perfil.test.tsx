@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import PerfilPage from "@/app/(dashboard)/perfil/page";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Workout } from "@/hooks/useWorkouts";
 import type { ProgressData } from "@/hooks/useProgress";
 
@@ -45,6 +46,12 @@ function statCard(label: string) {
   return screen.getByText(label).parentElement!;
 }
 
+// Escopa ao card de Conquistas: o card também contém o chip de streak no
+// header do perfil, que tem o mesmo texto "N dias streak" quando streak = 0.
+function conquistasCard() {
+  return screen.getByText("Conquistas").closest(".card") as HTMLElement;
+}
+
 describe("PerfilPage", () => {
   beforeEach(() => {
     mockLogout.mockClear();
@@ -67,9 +74,11 @@ describe("PerfilPage", () => {
       mockProgress = ZERO_PROGRESS;
     });
 
-    it("mostra '0 dias streak' no chip e '—' nos 3 stats de Lifetime", () => {
-      render(<PerfilPage />);
-      expect(screen.getByText("0 dias streak 🔥")).toBeInTheDocument();
+    it("mostra '0 dias streak' no chip (sem ícone de chama, streak zerado) e '—' nos 3 stats de Lifetime", () => {
+      const { container } = render(<PerfilPage />);
+      const chip = container.querySelector(".chip-accent")!;
+      expect(chip).toHaveTextContent("0 dias streak");
+      expect(chip.querySelector(".flame-icon")).not.toBeInTheDocument();
       expect(within(statCard("Lifetime · Treinos")).getByText("—")).toBeInTheDocument();
       expect(within(statCard("Lifetime · Volume")).getByText("—")).toBeInTheDocument();
       expect(within(statCard("Lifetime · Horas")).getByText("—")).toBeInTheDocument();
@@ -77,9 +86,10 @@ describe("PerfilPage", () => {
 
     it("mostra 'Comece hoje' e '0/10' nas conquistas, com o número real no título (não fabricado)", () => {
       render(<PerfilPage />);
-      expect(screen.getByText("Comece hoje")).toBeInTheDocument();
-      expect(screen.getByText("0/10")).toBeInTheDocument();
-      expect(screen.getByText("0 dias streak")).toBeInTheDocument();
+      const card = conquistasCard();
+      expect(within(card).getByText("Comece hoje")).toBeInTheDocument();
+      expect(within(card).getByText("0/10")).toBeInTheDocument();
+      expect(within(card).getByText("0 dias streak")).toBeInTheDocument();
     });
   });
 
@@ -345,6 +355,92 @@ describe("PerfilPage", () => {
       fireEvent.click(retryBtn);
       expect(mockReloadWorkouts).toHaveBeenCalledTimes(1); // não de novo — já recuperado
       expect(mockReloadProgress).toHaveBeenCalledTimes(2); // de novo — ainda em erro
+    });
+  });
+
+  describe("seletor de idioma", () => {
+    // Render sem <LanguageProvider> usa o default do contexto (setLocale
+    // no-op), então esses testes precisam do provider real para exercitar a
+    // troca de fato — é o que valida que o seletor funciona de ponta a ponta.
+    afterEach(() => {
+      localStorage.clear();
+    });
+
+    it("começa com o chip PT ativo e os textos em português", () => {
+      mockProgress = ZERO_PROGRESS;
+      render(<LanguageProvider><PerfilPage /></LanguageProvider>);
+
+      expect(screen.getByRole("button", { name: "PT" })).toHaveClass("chip-accent");
+      expect(screen.getByRole("button", { name: "EN" })).not.toHaveClass("chip-accent");
+      expect(screen.getByText("Sair da conta")).toBeInTheDocument();
+    });
+
+    it("clicar em EN troca os textos da página, ativa o chip EN e persiste no localStorage", () => {
+      mockProgress = ZERO_PROGRESS;
+      render(<LanguageProvider><PerfilPage /></LanguageProvider>);
+
+      fireEvent.click(screen.getByRole("button", { name: "EN" }));
+
+      expect(screen.getByRole("button", { name: "EN" })).toHaveClass("chip-accent");
+      expect(screen.getByRole("button", { name: "PT" })).not.toHaveClass("chip-accent");
+      expect(screen.getByText("Sign out")).toBeInTheDocument();
+      expect(screen.queryByText("Sair da conta")).not.toBeInTheDocument();
+      expect(localStorage.getItem("locale")).toBe("en");
+    });
+
+    it("lê o idioma salvo no localStorage ao montar (persistência entre sessões)", () => {
+      localStorage.setItem("locale", "en");
+      mockProgress = ZERO_PROGRESS;
+      render(<LanguageProvider><PerfilPage /></LanguageProvider>);
+
+      expect(screen.getByRole("button", { name: "EN" })).toHaveClass("chip-accent");
+      expect(screen.getByText("Sign out")).toBeInTheDocument();
+    });
+  });
+
+  describe("compartilhar", () => {
+    afterEach(() => {
+      // @ts-expect-error -- limpando stub de teste, propriedade normalmente ausente no jsdom
+      delete navigator.share;
+      // @ts-expect-error -- limpando stub de teste, propriedade normalmente ausente no jsdom
+      delete navigator.clipboard;
+    });
+
+    it("usa a Web Share API quando disponível, sem cair no fallback de clipboard", async () => {
+      const shareMock = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "share", { value: shareMock, configurable: true });
+      const writeTextMock = vi.fn();
+      Object.defineProperty(navigator, "clipboard", { value: { writeText: writeTextMock }, configurable: true });
+      mockProgress = ZERO_PROGRESS;
+
+      render(<PerfilPage />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /Compartilhar/ }));
+      });
+
+      expect(shareMock).toHaveBeenCalledWith(expect.objectContaining({ title: "FitAI" }));
+      expect(writeTextMock).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: /Compartilhar/ })).toBeInTheDocument();
+    });
+
+    it("cai no fallback de clipboard quando a Web Share API não existe, mostrando 'Link copiado!' por 2s", async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "clipboard", { value: { writeText: writeTextMock }, configurable: true });
+      mockProgress = ZERO_PROGRESS;
+      vi.useFakeTimers();
+
+      render(<PerfilPage />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /Compartilhar/ }));
+      });
+
+      expect(writeTextMock).toHaveBeenCalledWith(window.location.origin);
+      expect(screen.getByRole("button", { name: "Link copiado!" })).toBeInTheDocument();
+
+      await act(async () => { vi.advanceTimersByTime(2000); });
+      expect(screen.getByRole("button", { name: "Compartilhar" })).toBeInTheDocument();
+
+      vi.useRealTimers();
     });
   });
 });

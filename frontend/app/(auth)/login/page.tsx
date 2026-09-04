@@ -6,6 +6,7 @@ import Image from "next/image";
 import { GoogleLogin } from "@react-oauth/google";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
+import { useLanguage } from "@/contexts/LanguageContext";
 import heroStrongman from "@/img/hero-strongman.png";
 import heroVictory from "@/img/hero-victory.png";
 
@@ -21,6 +22,7 @@ function saveSession(data: { token: string; refreshToken: string; name: string; 
 // Componente separado para usar useSearchParams dentro do Suspense
 function LoginForm() {
   const router = useRouter();
+  const { t } = useLanguage();
   // Se o middleware redirecionou de uma rota protegida, volta para lá após login
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/";
@@ -49,8 +51,8 @@ function LoginForm() {
   async function handleSubmit() {
     setError(null);
     if (tab === "criar") {
-      if (!name.trim()) return setError("Informe seu nome.");
-      if (password !== confirmPassword) return setError("As senhas não coincidem.");
+      if (!name.trim()) return setError(t.login.informeSeuNome);
+      if (password !== confirmPassword) return setError(t.login.senhasNaoCoincidem);
     }
     setLoading(true);
     try {
@@ -60,18 +62,18 @@ function LoginForm() {
         body: JSON.stringify(tab === "entrar" ? { email, password } : { name, email, password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Erro ao autenticar.");
+      if (!res.ok) throw new Error(data.message || t.login.erroAutenticar);
       saveSession(data);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : t.login.erroInesperado);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleGoogle(credentialResponse: { credential?: string }) {
-    if (!credentialResponse.credential) return setError("Token do Google não recebido.");
+    if (!credentialResponse.credential) return setError(t.login.tokenGoogleNaoRecebido);
     setLoading(true);
     setError(null);
     try {
@@ -81,11 +83,11 @@ function LoginForm() {
         body: JSON.stringify({ idToken: credentialResponse.credential }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Falha no Google login.");
+      if (!res.ok) throw new Error(data.message || t.login.falhaGoogleLogin);
       saveSession(data);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : t.login.erroInesperado);
     } finally {
       setLoading(false);
     }
@@ -128,16 +130,15 @@ function LoginForm() {
             fontWeight: 700, color: "var(--text)", lineHeight: 1.02,
             letterSpacing: "-0.02em", marginBottom: 24,
           }}>
-            <span className="word-up" style={{ animationDelay: "0.05s" }}>Cada</span>{" "}
-            <span className="word-up" style={{ animationDelay: "0.12s" }}>série</span>{" "}
-            <span className="word-up" style={{ animationDelay: "0.19s" }}>te</span>{" "}
-            <span className="word-up" style={{ animationDelay: "0.26s" }}>leva</span>
+            {t.login.headline.map((word, i) => (
+              <span key={i} className="word-up" style={{ animationDelay: `${0.05 + i * 0.07}s` }}>{word}{" "}</span>
+            ))}
             <br />
-            <span className="word-up" style={{ animationDelay: "0.33s" }}>mais</span>{" "}
-            <span className="flame-word word-up" style={{ animationDelay: "0.42s" }}>perto do limite.</span>
+            <span className="word-up" style={{ animationDelay: "0.33s" }}>{t.login.headlineLinha2}</span>{" "}
+            <span className="flame-word word-up" style={{ animationDelay: "0.42s" }}>{t.login.headlineAccent}</span>
           </h1>
           <p className="word-up" style={{ animationDelay: "0.56s", color: "var(--text-dim)", fontSize: 16, lineHeight: 1.65, maxWidth: 420 }}>
-            Treinos personalizados com inteligência artificial para você evoluir todos os dias.
+            {t.login.tagline}
           </p>
 
           {/* Assinatura: contador de repetição ao vivo */}
@@ -146,7 +147,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <p className="auth-brand-content" style={{ fontSize: 12, color: "var(--text-mute)" }}>© 2026 FitAI. Todos os direitos reservados.</p>
+        <p className="auth-brand-content" style={{ fontSize: 12, color: "var(--text-mute)" }}>{t.login.direitosReservados}</p>
       </div>
 
       {/* ── Coluna direita: formulário ── */}
@@ -159,17 +160,17 @@ function LoginForm() {
           {/* Header */}
           <div>
             <h2 className="h-display" style={{ fontSize: 28 }}>
-              {tab === "entrar" ? "Bem-vindo de volta." : "Comece sua jornada."}
+              {tab === "entrar" ? t.login.bemVindoDeVolta : t.login.comeceSuaJornada}
             </h2>
             <p style={{ color: "var(--text-dim)", marginTop: 6, fontSize: 14 }}>
               {tab === "entrar"
-                ? "Continue de onde parou no seu treino."
-                : "Treinos personalizados pela IA."}
+                ? t.login.continueOndeParou
+                : t.login.treinosPelaIA}
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
+          <div className="auth-tabs" role="tablist" aria-label={t.login.entrarOuCriarConta}>
             <div className={`auth-tab-pill${tab === "criar" ? " pos-1" : ""}`} />
             <button
               type="button"
@@ -178,7 +179,7 @@ function LoginForm() {
               className={`auth-tab${tab === "entrar" ? " active" : ""}`}
               onClick={() => { setTab("entrar"); setError(null); }}
             >
-              Entrar
+              {t.login.entrar}
             </button>
             <button
               type="button"
@@ -187,7 +188,7 @@ function LoginForm() {
               className={`auth-tab${tab === "criar" ? " active" : ""}`}
               onClick={() => { setTab("criar"); setError(null); }}
             >
-              Criar conta
+              {t.login.criarConta}
             </button>
           </div>
 
@@ -196,7 +197,7 @@ function LoginForm() {
             {tab === "criar" && (
               <div className="input-with-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
-                <input className="input" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} />
+                <input className="input" placeholder={t.login.seuNomeCompleto} value={name} onChange={e => setName(e.target.value)} />
               </div>
             )}
 
@@ -214,8 +215,8 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  aria-label={showPassword ? t.login.ocultarSenha : t.login.mostrarSenha}
+                  title={showPassword ? t.login.ocultarSenha : t.login.mostrarSenha}
                   style={{
                     position: "absolute", right: 12, background: "none", border: "none",
                     color: "var(--text-mute)", cursor: "pointer", display: "flex",
@@ -230,7 +231,7 @@ function LoginForm() {
               {tab === "entrar" && (
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => router.push("/reset-senha")} style={{ fontSize: 12, color: "var(--text-mute)", background: "none", border: "none", cursor: "pointer" }}>
-                    Esqueci a senha
+                    {t.login.esqueciSenha}
                   </button>
                 </div>
               )}
@@ -239,14 +240,14 @@ function LoginForm() {
             {tab === "criar" && (
               <div className="input-with-icon">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                <input className="input" type={showConfirm ? "text" : "password"} placeholder="Confirme sua senha"
+                <input className="input" type={showConfirm ? "text" : "password"} placeholder={t.login.confirmeSuaSenha}
                   value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   style={{ paddingRight: 44 }} />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
-                  title={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+                  aria-label={showConfirm ? t.login.ocultarConfirmacaoSenha : t.login.mostrarConfirmacaoSenha}
+                  title={showConfirm ? t.login.ocultarConfirmacaoSenha : t.login.mostrarConfirmacaoSenha}
                   style={{
                     position: "absolute", right: 12, background: "none", border: "none",
                     color: "var(--text-mute)", cursor: "pointer", display: "flex",
@@ -270,7 +271,7 @@ function LoginForm() {
               onClick={handleSubmit}
               disabled={loading}
             >
-              {loading ? "Aguarde..." : tab === "entrar" ? "Entrar →" : "Criar conta →"}
+              {loading ? t.login.aguarde : tab === "entrar" ? t.login.entrarSeta : t.login.criarContaSeta}
             </button>
           </div>
 
@@ -278,7 +279,7 @@ function LoginForm() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
             <span style={{ fontSize: 11, color: "var(--text-mute)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              ou continue com
+              {t.login.ouContinueCom}
             </span>
             <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
           </div>
@@ -287,7 +288,7 @@ function LoginForm() {
           <div style={{ display: "flex", justifyContent: "center" }}>
             <GoogleLogin
               onSuccess={handleGoogle}
-              onError={() => setError("Login com Google cancelado ou falhou.")}
+              onError={() => setError(t.login.googleCancelado)}
               theme="filled_black"
               shape="rectangular"
               size="large"
@@ -297,7 +298,7 @@ function LoginForm() {
 
           {/* Texto puro de propósito: /termos e /privacidade ainda não existem, não recriar como link clicável sem antes criar essas páginas */}
           <p style={{ fontSize: 11, textAlign: "center", color: "var(--text-mute)" }}>
-            Ao continuar, você concorda com os Termos e Política de Privacidade.
+            {t.login.termosTexto}
           </p>
         </div>
       </div>

@@ -217,7 +217,10 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const err = await res.text();
-      return NextResponse.json({ error: `Groq API error: ${err}` }, { status: 502 });
+      // Não repassa o corpo bruto da resposta da Groq ao cliente — pode conter
+      // detalhe interno do provedor. Fica só no log do servidor.
+      console.error("Groq API error:", res.status, err);
+      return NextResponse.json({ error: "Erro ao gerar treino. Tente novamente." }, { status: 502 });
     }
 
     const data = await res.json();
@@ -236,7 +239,9 @@ export async function POST(req: NextRequest) {
     const workouts = expandWorkouts(parsed.workouts as RawGeneratedWorkout[]);
     return NextResponse.json({ workouts } satisfies GenerateResponse);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro inesperado.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    // Não repassa err.message ao cliente — pode conter detalhe interno
+    // (ex: erro de rede, parsing). Fica só no log do servidor.
+    console.error("Falha ao gerar treino:", err);
+    return NextResponse.json({ error: "Erro ao gerar treino. Tente novamente." }, { status: 502 });
   }
 }

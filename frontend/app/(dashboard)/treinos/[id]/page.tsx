@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useWorkout, useWorkouts } from "@/hooks/useWorkouts";
 import { useWorkoutSession } from "@/hooks/useWorkoutSession";
+import { useLanguage } from "@/contexts/LanguageContext";
 import EditarTreinoModal from "@/components/EditarTreinoModal";
 
 // Formata segundos como "mm:ss" para o cronómetro da sessão
@@ -19,6 +20,7 @@ function formatTime(seconds: number): string {
 
 export default function TreinoDetalhe() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const { workout, loading, error } = useWorkout(id);
   const { deleteWorkout } = useWorkouts();
@@ -58,8 +60,8 @@ export default function TreinoDetalhe() {
 
   if (error || !workout) return (
     <div className="card" style={{ textAlign: "center", padding: 60 }}>
-      <p style={{ color: "var(--danger)" }}>{error ?? "Treino não encontrado."}</p>
-      <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => router.back()}>Voltar</button>
+      <p style={{ color: "var(--danger)" }}>{error ?? t.execucao.treinoNaoEncontrado}</p>
+      <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => router.back()}>{t.execucao.voltar}</button>
     </div>
   );
 
@@ -80,9 +82,9 @@ export default function TreinoDetalhe() {
             <Trophy size={36} color="#000" />
           </div>
 
-          <h1 className="h-display" style={{ fontSize: 28, marginBottom: 8 }}>Treino concluído!</h1>
+          <h1 className="h-display" style={{ fontSize: 28, marginBottom: 8 }}>{t.execucao.treinoConcluido}</h1>
           <p style={{ color: "var(--text-dim)", marginBottom: sessionResult.saved ? 32 : 12, fontSize: 14 }}>
-            {workout.name} — ótimo trabalho, {formatTime(sessionSeconds)} de esforço.
+            {t.execucao.otimoTrabalho(workout.name, formatTime(sessionSeconds))}
           </p>
 
           {!sessionResult.saved && (
@@ -91,16 +93,16 @@ export default function TreinoDetalhe() {
               background: "var(--surface-2)", border: "1px solid var(--danger)",
               color: "var(--danger)", fontSize: 13,
             }}>
-              Não foi possível salvar esta sessão no servidor. Os números abaixo são uma estimativa local — verifique sua conexão.
+              {t.execucao.naoFoiPossivelSalvar}
             </div>
           )}
 
           {/* Resumo em 3 stats */}
           <div className="grid-cols-3" style={{ gap: 16, marginBottom: 32 }}>
             {[
-              [sessionResult.durationMinutes, "min"],
-              [sessionResult.setsCompleted, "séries feitas"],
-              [vol >= 1000 ? `${(vol / 1000).toFixed(1)}k` : vol.toFixed(0), "kg volume"],
+              [sessionResult.durationMinutes, t.execucao.min],
+              [sessionResult.setsCompleted, t.execucao.seriesFeitas],
+              [vol >= 1000 ? `${(vol / 1000).toFixed(1)}k` : vol.toFixed(0), t.execucao.kgVolume],
             ].map(([v, l]) => (
               <div key={String(l)} className="card" style={{ padding: 16 }}>
                 <div className="h-display" style={{ fontSize: 26, color: "var(--accent)" }}>{v}</div>
@@ -117,16 +119,16 @@ export default function TreinoDetalhe() {
               fontSize: 13, color: "var(--text-dim)",
             }}>
               <Flame size={14} style={{ marginRight: 6, color: "var(--accent)" }} />
-              {totalSetsCount - doneSetsCount} série{totalSetsCount - doneSetsCount !== 1 ? "s" : ""} não concluída{totalSetsCount - doneSetsCount !== 1 ? "s" : ""} — sem problema, evolua no próximo!
+              {t.execucao.seriesNaoConcluidas(totalSetsCount - doneSetsCount)}
             </div>
           )}
 
           <div className="row gap-3" style={{ justifyContent: "center" }}>
             <button className="btn btn-secondary" onClick={() => router.push("/treinos")}>
-              Ver treinos
+              {t.execucao.verTreinos}
             </button>
             <button className="btn btn-primary btn-lg" onClick={() => router.push("/progresso")}>
-              Ver evolução →
+              {t.execucao.verEvolucao}
             </button>
           </div>
         </div>
@@ -145,7 +147,7 @@ export default function TreinoDetalhe() {
       <div className="anim-up">
         <div className="row gap-3" style={{ marginBottom: 16 }}>
           <button className="icon-btn" onClick={() => router.back()}><ArrowLeft size={18} /></button>
-          <div className="h-eyebrow">Voltar · Treinos</div>
+          <div className="h-eyebrow">{t.execucao.voltarTreinos}</div>
         </div>
 
         {/* Cabeçalho */}
@@ -153,22 +155,22 @@ export default function TreinoDetalhe() {
           <div>
             <h1 className="page-title">{workout.name}</h1>
             <div className="row gap-4" style={{ color: "var(--text-dim)", fontSize: 14, marginTop: 12 }}>
-              <div className="row gap-2"><Timer size={16} /> {workout.duration} min est.</div>
-              <div className="row gap-2"><Dumbbell size={16} /> {workout.exercises.length} exercícios</div>
-              <div className="row gap-2"><Target size={16} /> {totalSets} séries</div>
-              <div className="row gap-2"><Weight size={16} /> {(workout.volume / 1000).toFixed(1)}k kg vol</div>
+              <div className="row gap-2"><Timer size={16} /> {workout.duration} {t.execucao.minEst}</div>
+              <div className="row gap-2"><Dumbbell size={16} /> {workout.exercises.length} {t.execucao.exercicios}</div>
+              <div className="row gap-2"><Target size={16} /> {totalSets} {t.execucao.series}</div>
+              <div className="row gap-2"><Weight size={16} /> {(workout.volume / 1000).toFixed(1)}k {t.execucao.kgVol}</div>
             </div>
           </div>
           <div className="page-actions">
             <button className="btn btn-ghost" style={{ color: "var(--danger)" }} onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={14} /> Excluir
+              <Trash2 size={14} /> {t.execucao.excluir}
             </button>
             <button className="btn btn-secondary" onClick={() => setShowEditar(true)}>
-              <Edit2 size={14} /> Editar
+              <Edit2 size={14} /> {t.execucao.editar}
             </button>
             {/* Botão principal: inicia o modo de execução */}
             <button className="btn btn-primary btn-lg" onClick={startSession}>
-              <Play size={14} fill="currentColor" /> Iniciar treino
+              <Play size={14} fill="currentColor" /> {t.execucao.iniciarTreino}
             </button>
           </div>
         </div>
@@ -189,17 +191,17 @@ export default function TreinoDetalhe() {
                   <div>
                     <div className="h-display" style={{ fontSize: 16 }}>{ex.name}</div>
                     <div style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 2 }}>
-                      {ex.muscle} · {ex.sets.length} séries · descanso {ex.restSeconds}s
+                      {ex.muscle} · {ex.sets.length} {t.execucao.series} · {t.execucao.descanso} {ex.restSeconds}s
                     </div>
                   </div>
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: "var(--surface-2)" }}>
-                      <th style={{ ...th, width: 60 }}>Série</th>
-                      <th style={th}>Anterior</th>
-                      <th style={th}>Carga</th>
-                      <th style={th}>Reps</th>
+                      <th style={{ ...th, width: 60 }}>{t.execucao.colunaSerie}</th>
+                      <th style={th}>{t.execucao.colunaAnterior}</th>
+                      <th style={th}>{t.execucao.colunaCarga}</th>
+                      <th style={th}>{t.execucao.colunaReps}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -225,7 +227,7 @@ export default function TreinoDetalhe() {
           {/* Painel lateral */}
           <div className="col-stack">
             <div className="card">
-              <div className="h-eyebrow" style={{ marginBottom: 12 }}>Músculos trabalhados</div>
+              <div className="h-eyebrow" style={{ marginBottom: 12 }}>{t.execucao.musculosTrabalhados}</div>
               <div className="row gap-2" style={{ flexWrap: "wrap" }}>
                 {[...new Set(workout.exercises.map(e => e.muscle).filter(Boolean))].map(m => (
                   <span key={m} className="chip chip-accent">{m}</span>
@@ -234,14 +236,14 @@ export default function TreinoDetalhe() {
             </div>
             {workout.schedule && (
               <div className="card">
-                <div className="h-eyebrow" style={{ marginBottom: 8 }}>Dias programados</div>
+                <div className="h-eyebrow" style={{ marginBottom: 8 }}>{t.execucao.diasProgramados}</div>
                 <div style={{ fontSize: 14, color: "var(--text)" }}>{workout.schedule}</div>
               </div>
             )}
             {/* CTA para iniciar */}
             <button className="btn btn-primary btn-lg btn-block" onClick={startSession}
               style={{ justifyContent: "center" }}>
-              <Play size={16} fill="currentColor" /> Iniciar treino agora
+              <Play size={16} fill="currentColor" /> {t.execucao.iniciarTreinoAgora}
             </button>
           </div>
         </div>
@@ -256,18 +258,18 @@ export default function TreinoDetalhe() {
           <>
             <div onClick={() => setConfirmDelete(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
             <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(400px,90vw)", background: "var(--bg)", border: "1.5px solid var(--border)", borderRadius: 16, boxShadow: "0 24px 60px rgba(0,0,0,0.4)", padding: 28, zIndex: 1001 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Excluir treino?</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{t.execucao.excluirTreinoPergunta}</div>
               <p style={{ fontSize: 14, color: "var(--text-dim)", marginBottom: 24, lineHeight: 1.55 }}>
-                <strong style={{ color: "var(--text)" }}>{workout.name}</strong> será removido permanentemente.
+                <strong style={{ color: "var(--text)" }}>{workout.name}</strong> {t.execucao.removidoPermanente}
               </p>
               <div className="row gap-3" style={{ justifyContent: "flex-end" }}>
-                <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
+                <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>{t.execucao.cancelar}</button>
                 <button className="btn btn-danger" disabled={deleting} onClick={async () => {
                   setDeleting(true);
                   try { await deleteWorkout(workout.id); router.push("/treinos"); }
                   finally { setDeleting(false); }
                 }}>
-                  {deleting ? "Excluindo..." : "Sim, excluir"}
+                  {deleting ? t.execucao.excluindo : t.execucao.simExcluir}
                 </button>
               </div>
             </div>
@@ -298,7 +300,7 @@ export default function TreinoDetalhe() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{workout.name}</div>
               <div style={{ fontSize: 12, color: "var(--text-mute)" }}>
                 {/* Cronómetro da sessão */}
-                {formatTime(sessionSeconds)} · {doneSetsCount}/{totalSetsCount} séries
+                {formatTime(sessionSeconds)} · {doneSetsCount}/{totalSetsCount} {t.execucao.series}
               </div>
             </div>
           </div>
@@ -321,7 +323,7 @@ export default function TreinoDetalhe() {
           {/* Botão finalizar */}
           <button className="btn btn-primary" onClick={handleFinish} disabled={finishing}>
             {finishing ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={14} />}
-            {finishing ? "Salvando..." : "Finalizar"}
+            {finishing ? t.execucao.salvando : t.execucao.finalizar}
           </button>
         </div>
       </div>
@@ -356,12 +358,12 @@ export default function TreinoDetalhe() {
                     <div>
                       <div className="h-display" style={{ fontSize: 16 }}>{ex.name}</div>
                       <div style={{ fontSize: 12, color: "var(--text-mute)", marginTop: 2 }}>
-                        {ex.muscle} · {exProgress}/{ex.sets.length} séries · descanso {ex.restSeconds}s
+                        {ex.muscle} · {exProgress}/{ex.sets.length} {t.execucao.series} · {t.execucao.descanso} {ex.restSeconds}s
                       </div>
                     </div>
                   </div>
                   <button className="icon-btn" style={{ width: 32, height: 32 }}
-                    onClick={() => startRestTimer(ex.restSeconds)} title="Iniciar timer manualmente">
+                    onClick={() => startRestTimer(ex.restSeconds)} title={t.execucao.iniciarTimerManual}>
                     <RefreshCw size={14} />
                   </button>
                 </div>
@@ -370,10 +372,10 @@ export default function TreinoDetalhe() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: "var(--surface-2)" }}>
-                      <th style={{ ...th, width: 50 }}>Série</th>
-                      <th style={th}>Anterior</th>
-                      <th style={th}>Carga (kg)</th>
-                      <th style={th}>Reps</th>
+                      <th style={{ ...th, width: 50 }}>{t.execucao.colunaSerie}</th>
+                      <th style={th}>{t.execucao.colunaAnterior}</th>
+                      <th style={th}>{t.execucao.colunaCargaKg}</th>
+                      <th style={th}>{t.execucao.colunaReps}</th>
                       <th style={{ ...th, width: 60, textAlign: "right" }}>✓</th>
                     </tr>
                   </thead>
@@ -464,13 +466,13 @@ export default function TreinoDetalhe() {
           {/* Timer de descanso */}
           {restTimer !== null && (
             <div className="card card-accent" style={{ textAlign: "center" }}>
-              <div className="h-eyebrow" style={{ color: "var(--accent)", marginBottom: 8 }}>Descanso</div>
+              <div className="h-eyebrow" style={{ color: "var(--accent)", marginBottom: 8 }}>{t.execucao.descansoLabel}</div>
               <div className="h-display" style={{ fontSize: 64, fontFamily: "var(--font-mono)", lineHeight: 1 }}>
                 {/* Mostra mm:ss apenas se > 60s, senão só segundos */}
                 {restTimer >= 60 ? formatTime(restTimer) : `0:${String(restTimer).padStart(2, "0")}`}
               </div>
               <div className="row gap-2" style={{ marginTop: 16, justifyContent: "center" }}>
-                <button className="btn btn-secondary btn-sm flex-1" onClick={skipRestTimer}>Pular</button>
+                <button className="btn btn-secondary btn-sm flex-1" onClick={skipRestTimer}>{t.execucao.pular}</button>
                 <button className="btn btn-primary btn-sm flex-1" onClick={() => addRestSeconds(30)}>+30s</button>
               </div>
             </div>
@@ -478,28 +480,28 @@ export default function TreinoDetalhe() {
 
           {/* Progresso da sessão */}
           <div className="card">
-            <div className="h-eyebrow" style={{ marginBottom: 12 }}>Sessão</div>
+            <div className="h-eyebrow" style={{ marginBottom: 12 }}>{t.execucao.sessao}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>Tempo</div>
+                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>{t.execucao.tempo}</div>
                 <div className="h-mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)" }}>
                   {formatTime(sessionSeconds)}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>Volume</div>
+                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>{t.execucao.volume}</div>
                 <div className="h-mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)" }}>
                   {liveVolume >= 1000 ? `${(liveVolume / 1000).toFixed(1)}k` : liveVolume.toFixed(0)} kg
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>Séries</div>
+                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>{t.execucao.series}</div>
                 <div className="h-mono" style={{ fontSize: 20, fontWeight: 700 }}>
                   {doneSetsCount}/{totalSetsCount}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>Progresso</div>
+                <div style={{ fontSize: 11, color: "var(--text-mute)" }}>{t.execucao.progresso}</div>
                 <div className="h-mono" style={{ fontSize: 20, fontWeight: 700 }}>
                   {Math.round(progress)}%
                 </div>
@@ -512,7 +514,7 @@ export default function TreinoDetalhe() {
 
           {/* Músculos trabalhados */}
           <div className="card">
-            <div className="h-eyebrow" style={{ marginBottom: 12 }}>Músculos</div>
+            <div className="h-eyebrow" style={{ marginBottom: 12 }}>{t.execucao.musculos}</div>
             <div className="row gap-2" style={{ flexWrap: "wrap" }}>
               {[...new Set(liveExercises.map(e => e.muscle).filter(Boolean))].map(m => (
                 <span key={m} className="chip chip-accent">{m}</span>
@@ -522,11 +524,11 @@ export default function TreinoDetalhe() {
 
           {/* Notas da sessão */}
           <div className="card">
-            <div className="h-eyebrow" style={{ marginBottom: 10 }}>Notas</div>
+            <div className="h-eyebrow" style={{ marginBottom: 10 }}>{t.execucao.notas}</div>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Como está o treino? Alguma observação?"
+              placeholder={t.execucao.notasPlaceholder}
               style={{
                 width: "100%", minHeight: 90,
                 background: "var(--surface-2)", border: "1px solid var(--border)",
@@ -545,8 +547,8 @@ export default function TreinoDetalhe() {
             disabled={finishing}
           >
             {finishing
-              ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Salvando...</>
-              : <><Check size={16} /> Finalizar treino</>}
+              ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> {t.execucao.salvando}</>
+              : <><Check size={16} /> {t.execucao.finalizarTreino}</>}
           </button>
         </div>
       </div>

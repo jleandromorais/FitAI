@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Dumbbell, Check } from "lucide-react";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useSessions } from "@/hooks/useSessions";
 import { useProgress } from "@/hooks/useProgress";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constantes
@@ -32,8 +33,8 @@ function codeColor(code: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Retorna o nome do mês e ano formatado (ex: "Maio 2026")
-function formatMonth(date: Date): string {
-  return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+function formatMonth(date: Date, dateLocale: string): string {
+  return date.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })
     .replace(/^\w/, c => c.toUpperCase());
 }
 
@@ -52,6 +53,8 @@ function firstDayOfMonth(year: number, month: number): number {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CalendarioPage() {
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === "en" ? "en-US" : "pt-BR";
   const { workouts, loading } = useWorkouts();
   const { sessions } = useSessions(365);
   const { data: progress } = useProgress();
@@ -134,14 +137,14 @@ export default function CalendarioPage() {
     <div className="anim-up">
       <div className="page-head">
         <div>
-          <h1 className="page-title">Histórico</h1>
-          <div className="page-sub">Treinos programados no mês</div>
+          <h1 className="page-title">{t.calendario.titulo}</h1>
+          <div className="page-sub">{t.calendario.subtitulo}</div>
         </div>
         {/* Navegação de mês */}
         <div className="row gap-2">
           <button className="icon-btn" onClick={() => setMesOffset(o => o - 1)}><ChevronLeft size={16} /></button>
           <div className="btn btn-secondary btn-sm" style={{ pointerEvents: "none", textTransform: "capitalize" }}>
-            {formatMonth(baseDate)}
+            {formatMonth(baseDate, dateLocale)}
           </div>
           <button className="icon-btn" onClick={() => setMesOffset(o => o + 1)}><ChevronRight size={16} /></button>
         </div>
@@ -152,33 +155,33 @@ export default function CalendarioPage() {
           mostrar — em vez de 4 tiles do mesmo peso disputando atenção igual. */}
       <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card card-accent">
-          <div className="h-eyebrow">Dias com treino</div>
+          <div className="h-eyebrow">{t.calendario.diasComTreino}</div>
           <div className="h-display" style={{ fontSize: 36, marginTop: 8 }}>
             {doneDays.size}
-            <span className="stat-unit">/{workingDays} dias</span>
+            <span className="stat-unit">/{workingDays} {t.calendario.dias}</span>
           </div>
           {doneDays.size > 0 && (
             <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 4, fontWeight: 600 }}>
-              {doneDays.size} sessão{doneDays.size !== 1 ? "s" : ""} concluída{doneDays.size !== 1 ? "s" : ""}
+              {t.calendario.sessaoConcluida(doneDays.size)}
             </div>
           )}
         </div>
         <div className="card card-tight">
-          <div className="h-eyebrow">Treinos</div>
+          <div className="h-eyebrow">{t.calendario.treinos}</div>
           <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {workouts.length}
-            <span className="stat-unit"> planos</span>
+            <span className="stat-unit"> {t.calendario.planos}</span>
           </div>
         </div>
         <div className="card card-tight">
-          <div className="h-eyebrow">Volume total</div>
+          <div className="h-eyebrow">{t.calendario.volumeTotal}</div>
           <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume.toFixed(0)}
             <span className="stat-unit"> kg</span>
           </div>
         </div>
         <div className="card card-tight">
-          <div className="h-eyebrow">Frequência</div>
+          <div className="h-eyebrow">{t.calendario.frequencia}</div>
           <div className="h-display" style={{ fontSize: 22, marginTop: 6 }}>
             {workingDays > 0 ? Math.round((doneDays.size / workingDays) * 100) : 0}
             <span className="stat-unit">%</span>
@@ -190,11 +193,11 @@ export default function CalendarioPage() {
 
         {/* ── Calendário ── */}
         <div className="card">
-          <div className="h-eyebrow" style={{ marginBottom: 16 }}>{formatMonth(baseDate)}</div>
+          <div className="h-eyebrow" style={{ marginBottom: 16 }}>{formatMonth(baseDate, dateLocale)}</div>
 
           {/* Cabeçalho dos dias da semana */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 4 }}>
-            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(d => (
+            {t.diasCalendario.map(d => (
               <div key={d} style={{
                 fontSize: 9, color: "var(--text-mute)", textAlign: "center",
                 fontWeight: 700, letterSpacing: "0.06em",
@@ -306,20 +309,20 @@ export default function CalendarioPage() {
 
         {/* ── Atividade recente ── */}
         <div className="card">
-          <div className="h-eyebrow" style={{ marginBottom: 14 }}>Seus treinos</div>
+          <div className="h-eyebrow" style={{ marginBottom: 14 }}>{t.calendario.seusTreinos}</div>
 
           {loading && (
-            <p style={{ fontSize: 13, color: "var(--text-mute)" }}>Carregando...</p>
+            <p style={{ fontSize: 13, color: "var(--text-mute)" }}>{t.calendario.carregando}</p>
           )}
 
           {!loading && workouts.length === 0 && (
             <div style={{ textAlign: "center", padding: "32px 0" }}>
               <Dumbbell size={32} style={{ opacity: 0.3, marginBottom: 10 }} />
               <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
-                Nenhum treino cadastrado ainda.
+                {t.calendario.nenhumTreino}
               </p>
               <Link href="/treinos" className="btn btn-primary btn-sm" style={{ marginTop: 16 }}>
-                Criar treino
+                {t.calendario.criarTreino}
               </Link>
             </div>
           )}
@@ -347,7 +350,7 @@ export default function CalendarioPage() {
                     {w.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-mute)", marginTop: 2 }}>
-                    {w.schedule || "Sem dia definido"} · {w.exercises.length} exercícios
+                    {w.schedule || t.calendario.semDiaDefinido} · {w.exercises.length} {t.calendario.exercicios}
                   </div>
                 </div>
 

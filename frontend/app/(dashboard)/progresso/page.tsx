@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Dumbbell, AlertTriangle, TrendingUp } from "lucide-react";
 import { useProgress } from "@/hooks/useProgress";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useSessions } from "@/hooks/useSessions";
 import { useProgressStats } from "@/hooks/useProgressStats";
 import ForcaTab from "@/components/ui/ForcaTab";
@@ -12,6 +13,7 @@ import Link from "next/link";
 import { fmtVol } from "@/lib/format";
 
 export default function ProgressoPage() {
+  const { t } = useLanguage();
   const { data, loading, error } = useProgress();
   const { sessions } = useSessions(90);
 
@@ -37,7 +39,7 @@ export default function ProgressoPage() {
         style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 400 }}
       >
         <Loader2 size={36} color="var(--accent)" style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>A carregar o teu progresso…</span>
+        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>{t.progresso.carregando}</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -52,19 +54,19 @@ export default function ProgressoPage() {
       <div className="anim-up">
         <div className="page-head">
           <div>
-            <h1 className="page-title">Evolução</h1>
+            <h1 className="page-title">{t.progresso.titulo}</h1>
           </div>
         </div>
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon auth-status-icon-danger" style={{ margin: "0 auto 16px" }}><AlertTriangle size={22} /></div>
           <div className="h-display" style={{ fontSize: 18, marginBottom: 8 }}>
-            Não foi possível carregar o progresso
+            {t.progresso.erroTitulo}
           </div>
           <p style={{ color: "var(--text-dim)", fontSize: 13, marginBottom: 24 }}>
-            Verifica a tua conexão e tenta novamente.
+            {t.progresso.erroTexto}
           </p>
           <button className="btn btn-secondary" onClick={() => window.location.reload()}>
-            Tentar novamente
+            {t.progresso.tentarNovamente}
           </button>
         </div>
       </div>
@@ -81,18 +83,18 @@ export default function ProgressoPage() {
       <div className="anim-up">
         <div className="page-head">
           <div>
-            <h1 className="page-title">Evolução</h1>
-            <div className="page-sub">Acompanhe seu progresso</div>
+            <h1 className="page-title">{t.progresso.titulo}</h1>
+            <div className="page-sub">{t.progresso.subtitulo}</div>
           </div>
         </div>
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><TrendingUp size={26} /></div>
-          <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>Sem dados ainda</div>
+          <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>{t.progresso.semDados}</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
-            Execute pelo menos um treino para ver sua evolução aqui.
+            {t.progresso.executePeloMenos}
           </p>
           <Link href="/treinos" className="btn btn-primary">
-            <Dumbbell size={16} /> Ir para treinos
+            <Dumbbell size={16} /> {t.progresso.irParaTreinos}
           </Link>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -107,18 +109,16 @@ export default function ProgressoPage() {
       {/* Cabeçalho */}
       <div className="page-head">
         <div>
-          <h1 className="page-title">Evolução</h1>
+          <h1 className="page-title">{t.progresso.titulo}</h1>
           <div className="page-sub">
-            {data.totalWorkouts} treino{data.totalWorkouts !== 1 ? "s" : ""} ·{" "}
-            {data.totalSetsCompleted} séries concluídas ·{" "}
-            {fmtVol(data.totalVolume)} kg volume total
+            {t.progresso.resumo(data.totalWorkouts, data.totalSetsCompleted, fmtVol(data.totalVolume))}
           </div>
         </div>
 
         {/* Abas — aria-controls/id ligam cada botão ao seu painel, senão um
             leitor de ecrã não sabe qual conteúdo pertence a qual aba. */}
         <div className="tabs" role="tablist">
-          {[["forca", "Força"], ["volume", "Volume"], ["prs", "Recordes"]].map(([id, l]) => (
+          {[["forca", t.progresso.abaForca], ["volume", t.progresso.abaVolume], ["prs", t.progresso.abaRecordes]].map(([id, l]) => (
             <button
               key={id}
               id={`tab-${id}`}
@@ -140,29 +140,29 @@ export default function ProgressoPage() {
           vez de 3 tiles do mesmo peso disputando atenção igual. */}
       <div className="grid-cols-3" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card card-accent">
-          <div className="stat-label">Volume total</div>
+          <div className="stat-label">{t.progresso.volumeTotal}</div>
           <div style={{ marginTop: 10 }}>
             <span className="stat-num" style={{ fontSize: 38 }}>{fmtVol(data.totalVolume)}</span>
             <span className="stat-unit"> kg</span>
           </div>
-          <div style={{ fontSize: 11, marginTop: 6, fontWeight: 600, color: "var(--accent)" }}>acumulado</div>
+          <div style={{ fontSize: 11, marginTop: 6, fontWeight: 600, color: "var(--accent)" }}>{t.progresso.acumulado}</div>
         </div>
         <div className="card card-tight">
-          <div className="stat-label">Séries concluídas</div>
+          <div className="stat-label">{t.progresso.seriesConcluidas}</div>
           <div style={{ marginTop: 8 }}>
             <span className="stat-num" style={{ fontSize: 22 }}>{data.totalSetsCompleted}</span>
           </div>
           <div style={{ fontSize: 11, marginTop: 4, color: "var(--text-mute)" }}>
-            em {data.totalWorkouts} treino{data.totalWorkouts !== 1 ? "s" : ""}
+            {t.progresso.em} {data.totalWorkouts} {t.progresso.treino(data.totalWorkouts)}
           </div>
         </div>
         <div className="card card-tight">
-          <div className="stat-label">Exercícios</div>
+          <div className="stat-label">{t.progresso.exercicios}</div>
           <div style={{ marginTop: 8 }}>
             <span className="stat-num" style={{ fontSize: 22 }}>{data.exercises.length}</span>
           </div>
           <div style={{ fontSize: 11, marginTop: 4, color: "var(--text-mute)" }}>
-            {prs.length} com ganho de carga
+            {prs.length} {t.progresso.comGanhoDeCarga}
           </div>
         </div>
       </div>

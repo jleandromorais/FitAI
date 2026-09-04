@@ -4,17 +4,30 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationDict } from "@/lib/translations";
 import type { GenerateRequest, GeneratedWorkout } from "@/app/api/generate-workout/route";
 
-type Message = { who: "ai" | "me"; text: string; chips?: string[] };
+// chip.value é sempre o valor canônico em português — é o que vai pro
+// backend (answers.goal/level/etc) e é pattern-matched literalmente lá
+// (ex: goal === "Força" em generate-workout/route.ts). chip.label é só o
+// texto exibido, no idioma ativo. Nunca traduzir o value.
+type Chip = { value: string; label: string };
+type Message = { who: "ai" | "me"; text: string; chips?: Chip[] };
 
-const INITIAL: Message[] = [
-  {
-    who: "ai",
-    text: "Olá! Sou a IA do FitAI. Para montar seu treino ideal, preciso entender alguns pontos. Qual é seu nível?",
-    chips: ["Iniciante", "Intermediário", "Avançado"],
-  },
-];
+function buildInitial(t: TranslationDict): Message[] {
+  return [
+    {
+      who: "ai",
+      text: t.aiGen.saudacao,
+      chips: [
+        { value: "Iniciante", label: t.aiGen.iniciante },
+        { value: "Intermediário", label: t.aiGen.intermediario },
+        { value: "Avançado", label: t.aiGen.avancado },
+      ],
+    },
+  ];
+}
 
 // Mensagens rotativas durante a geração — não refletem progresso real do
 // backend (a IA responde tudo de uma vez), só reduzem a sensação de espera
@@ -23,24 +36,33 @@ const INITIAL: Message[] = [
 // se um dos dois mudar, ajuste o outro. Ao chegar na última mensagem, o
 // carrossel para de girar de propósito (assentar em "Finalizando..." em vez
 // de repetir do início).
-const LOADING_MESSAGES = [
-  "Montando seu treino com IA...",
-  "Selecionando os melhores exercícios...",
-  "Ajustando séries e repetições...",
-  "Organizando a divisão da semana...",
-  "Finalizando os detalhes...",
-];
 
-const FLOW: { key: keyof GenerateRequest; q: string; chips: string[] }[] = [
-  { key: "goal",      q: "Perfeito. E qual seu objetivo principal?",         chips: ["Hipertrofia", "Força", "Resistência", "Emagrecimento"] },
-  { key: "days",      q: "Quantos dias por semana você pode treinar?",        chips: ["3 dias", "4 dias", "5 dias", "6 dias"] },
-  { key: "equipment", q: "Tem acesso a equipamentos?",                        chips: ["Academia completa", "Halteres + barra", "Apenas peso corporal"] },
-  { key: "duration",  q: "Quanto tempo por sessão?",                          chips: ["30 min", "45 min", "60 min", "90 min"] },
-];
+function buildFlow(t: TranslationDict): { key: keyof GenerateRequest; q: string; chips: Chip[] }[] {
+  return [
+    { key: "goal", q: t.aiGen.perguntaObjetivo, chips: [
+      { value: "Hipertrofia", label: t.aiGen.hipertrofia },
+      { value: "Força", label: t.aiGen.forca },
+      { value: "Resistência", label: t.aiGen.resistencia },
+      { value: "Emagrecimento", label: t.aiGen.emagrecimento },
+    ] },
+    { key: "days", q: t.aiGen.perguntaDias, chips: [3, 4, 5, 6].map(n => ({ value: `${n} dias`, label: `${n} ${t.calendario.dias}` })) },
+    { key: "equipment", q: t.aiGen.perguntaEquipamento, chips: [
+      { value: "Academia completa", label: t.aiGen.academiaCompleta },
+      { value: "Halteres + barra", label: t.aiGen.halteresBarra },
+      { value: "Apenas peso corporal", label: t.aiGen.pesoCorporal },
+    ] },
+    { key: "duration", q: t.aiGen.perguntaDuracao, chips: [
+      { value: "30 min", label: "30 min" }, { value: "45 min", label: "45 min" },
+      { value: "60 min", label: "60 min" }, { value: "90 min", label: "90 min" },
+    ] },
+  ];
+}
 
 export default function AiGenPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>(INITIAL);
+  const { t } = useLanguage();
+  const FLOW = buildFlow(t);
+  const [messages, setMessages] = useState<Message[]>(() => buildInitial(t));
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<GenerateRequest>>({});
   const [generating, setGenerating] = useState(false);
@@ -53,7 +75,7 @@ export default function AiGenPage() {
     if (!generating) return;
     const id = setInterval(() => {
       setLoadingMsgIndex(i => {
-        if (i >= LOADING_MESSAGES.length - 1) {
+        if (i >= t.aiGen.loadingMensagens.length - 1) {
           clearInterval(id);
           return i;
         }
@@ -61,13 +83,13 @@ export default function AiGenPage() {
       });
     }, 1800);
     return () => clearInterval(id);
-  }, [generating]);
+  }, [generating, t.aiGen.loadingMensagens.length]);
 
-  async function pick(answer: string) {
-    const next: Message[] = [...messages, { who: "me", text: answer }];
+  async function pick(chip: Chip) {
+    const next: Message[] = [...messages, { who: "me", text: chip.label }];
 
     if (step === 0) {
-      const newAnswers = { ...answers, level: answer };
+      const newAnswers = { ...answers, level: chip.value };
       setAnswers(newAnswers);
       const f = FLOW[0];
       next.push({ who: "ai", text: f.q, chips: f.chips });
@@ -77,7 +99,7 @@ export default function AiGenPage() {
     }
 
     const flowIndex = step - 1;
-    const newAnswers = { ...answers, [FLOW[flowIndex].key]: answer };
+    const newAnswers = { ...answers, [FLOW[flowIndex].key]: chip.value };
     setAnswers(newAnswers);
 
     if (flowIndex < FLOW.length - 1) {
@@ -100,13 +122,13 @@ export default function AiGenPage() {
 
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error ?? "Erro ao gerar treino.");
+          throw new Error(data.error ?? t.aiGen.erroGerar);
         }
 
         const data = await res.json();
         setGeneratedWorkouts(data.workouts);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
+        setError(err instanceof Error ? err.message : t.aiGen.erroInesperado);
       } finally {
         setGenerating(false);
       }
@@ -122,19 +144,32 @@ export default function AiGenPage() {
       }
       router.push("/treinos");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar treinos.");
+      setError(err instanceof Error ? err.message : t.aiGen.erroSalvar);
       setSaving(false);
     }
   }
 
   function reset() {
-    setMessages(INITIAL);
+    setMessages(buildInitial(t));
     setStep(0);
     setAnswers({});
     setGeneratedWorkouts([]);
     setGenerating(false);
     setLoadingMsgIndex(0);
     setError(null);
+  }
+
+  // answers.* guarda o value canônico em português (ver Chip); pra exibir o
+  // resumo pós-geração no idioma ativo, busca o label correspondente entre
+  // todos os chips já definidos (saudação inicial + FLOW).
+  function labelFor(value: string | undefined): string {
+    if (!value) return "";
+    for (const f of FLOW) {
+      const c = f.chips.find(c => c.value === value);
+      if (c) return c.label;
+    }
+    const initialChips = buildInitial(t)[0]?.chips ?? [];
+    return initialChips.find(c => c.value === value)?.label ?? value;
   }
 
   const done = generatedWorkouts.length > 0;
@@ -145,10 +180,10 @@ export default function AiGenPage() {
         <div>
           <div className="row gap-2" style={{ marginBottom: 8 }}>
             <Sparkles size={16} color="var(--accent)" />
-            <div className="h-eyebrow" style={{ color: "var(--accent)" }}>FitAI Assistant</div>
+            <div className="h-eyebrow" style={{ color: "var(--accent)" }}>{t.aiGen.assistant}</div>
           </div>
-          <h1 className="page-title">Gerador de treino</h1>
-          <div className="page-sub">A IA monta um plano sob medida com base no seu objetivo</div>
+          <h1 className="page-title">{t.aiGen.titulo}</h1>
+          <div className="page-sub">{t.aiGen.subtitulo}</div>
         </div>
       </div>
 
@@ -168,8 +203,8 @@ export default function AiGenPage() {
                       {m.chips && i === messages.length - 1 && !done && !generating && (
                         <div className="row gap-2" style={{ flexWrap: "wrap", marginTop: 12 }}>
                           {m.chips.map(c => (
-                            <button key={c} className="chip" style={{ height: 36, padding: "0 14px" }} onClick={() => pick(c)}>
-                              {c}
+                            <button key={c.value} className="chip" style={{ height: 36, padding: "0 14px" }} onClick={() => pick(c)}>
+                              {c.label}
                             </button>
                           ))}
                         </div>
@@ -183,7 +218,7 @@ export default function AiGenPage() {
                       padding: "14px 18px", borderRadius: "16px 4px 16px 16px",
                       fontSize: 14, fontWeight: 600,
                     }}>{m.text}</div>
-                    <div className="avatar" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0 }}>EU</div>
+                    <div className="avatar" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0 }}>{t.aiGen.eu}</div>
                   </div>
                 )}
               </div>
@@ -201,7 +236,7 @@ export default function AiGenPage() {
                       }} />
                     ))}
                     <span key={loadingMsgIndex} className="anim-up" style={{ marginLeft: 8, fontSize: 13, color: "var(--text-dim)" }}>
-                      {LOADING_MESSAGES[loadingMsgIndex]}
+                      {t.aiGen.loadingMensagens[loadingMsgIndex]}
                     </span>
                   </div>
                 </div>
@@ -217,7 +252,7 @@ export default function AiGenPage() {
                 <AlertCircle size={16} color="var(--danger)" />
                 <span style={{ color: "var(--danger)" }}>{error}</span>
                 <button className="btn btn-ghost btn-sm" style={{ marginLeft: "auto" }} onClick={reset}>
-                  <RefreshCw size={12} /> Tentar novamente
+                  <RefreshCw size={12} /> {t.aiGen.tentarNovamente}
                 </button>
               </div>
             )}
@@ -234,10 +269,10 @@ export default function AiGenPage() {
                     </div>
                     <div>
                       <div className="h-display" style={{ fontSize: 20 }}>
-                        {generatedWorkouts.length} treino{generatedWorkouts.length !== 1 ? "s" : ""} gerado{generatedWorkouts.length !== 1 ? "s" : ""}!
+                        {t.aiGen.treinosGerados(generatedWorkouts.length)}
                       </div>
                       <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
-                        {answers.goal} · {answers.days} · {answers.duration}
+                        {labelFor(answers.goal)} · {labelFor(answers.days)} · {labelFor(answers.duration)}
                       </div>
                     </div>
                   </div>
@@ -252,7 +287,7 @@ export default function AiGenPage() {
                           {w.code} — {w.name}
                         </div>
                         <div style={{ fontSize: 11, color: "var(--text-mute)" }}>
-                          {w.exercises.length} exercícios · {w.schedule}
+                          {w.exercises.length} {t.aiGen.exercicios} · {w.schedule}
                         </div>
                       </div>
                     ))}
@@ -265,10 +300,10 @@ export default function AiGenPage() {
                       onClick={saveWorkouts}
                       disabled={saving}
                     >
-                      {saving ? "Salvando..." : "Salvar e ver treinos"}
+                      {saving ? t.aiGen.salvando : t.aiGen.salvarEVerTreinos}
                     </button>
                     <button className="btn btn-secondary" onClick={reset} disabled={saving}>
-                      <RefreshCw size={14} /> Gerar outro
+                      <RefreshCw size={14} /> {t.aiGen.gerarOutro}
                     </button>
                   </div>
                 </div>

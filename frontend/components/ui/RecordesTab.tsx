@@ -4,25 +4,27 @@ import Link from "next/link";
 import { Trophy, Dumbbell } from "lucide-react";
 import { ExerciseProgress } from "@/hooks/useProgress";
 import { HudCorners } from "@/components/ui/HudCorners";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RecordesTabProps {
   prs: ExerciseProgress[];
 }
 
 export default function RecordesTab({ prs }: RecordesTabProps) {
+  const { t } = useLanguage();
   if (prs.length === 0) {
     return (
       <div className="col-stack">
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><Trophy size={26} /></div>
           <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>
-            Sem recordes ainda
+            {t.recordesTab.semRecordes}
           </div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
-            Execute treinos com mais carga do que na sessão anterior para criar um recorde.
+            {t.recordesTab.executeComMaisCarga}
           </p>
           <Link href="/treinos" className="btn btn-primary">
-            <Dumbbell size={16} /> Treinar agora
+            <Dumbbell size={16} /> {t.recordesTab.treinarAgora}
           </Link>
         </div>
       </div>
@@ -67,7 +69,7 @@ export default function RecordesTab({ prs }: RecordesTabProps) {
                   <span className="stat-unit">kg</span>
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 2 }}>
-                  anterior: {pr.prevWeight > 0 ? `${pr.prevWeight}kg` : "—"}
+                  {t.recordesTab.anterior}: {pr.prevWeight > 0 ? `${pr.prevWeight}kg` : "—"}
                 </div>
               </div>
               <span className="chip" style={{

@@ -3,6 +3,7 @@
 import { Dumbbell } from "lucide-react";
 import { LineChart } from "@/components/ui/Charts";
 import { ExerciseProgress, ProgressData } from "@/hooks/useProgress";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Verde-Conquista pra ganho de carga: é um "recorde" no mesmo sentido que a
 // aba de Recordes (DESIGN.md, "A Regra do Verde-Sinal") — Brasa é reservada
@@ -23,6 +24,7 @@ interface ForcaTabProps {
 }
 
 export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHistory, exIdx, onSelectExercise }: ForcaTabProps) {
+  const { t } = useLanguage();
   return (
     <div className="grid-3">
       <div className="col-stack">
@@ -53,7 +55,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                     )}
                     {selectedEx.delta === 0 && selectedEx.prevWeight === 0 && (
                       <span style={{ fontSize: 12, color: "var(--text-mute)" }}>
-                        Execute o treino para ver a evolução
+                        {t.forcaTab.executeParaVerEvolucao}
                       </span>
                     )}
                   </div>
@@ -66,20 +68,20 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                 height={240}
                 showDots
                 yLabel={v => `${v.toFixed(0)}kg`}
-                label={`Evolução de carga — ${selectedEx.name}`}
+                label={`${t.forcaTab.evolucaoDeCarga} — ${selectedEx.name}`}
               />
             </div>
 
             {/* Cards de stats do exercício seleccionado */}
             <div className="grid-cols-3" style={{ gap: 16 }}>
               <div className="card">
-                <div className="h-eyebrow">Atual</div>
+                <div className="h-eyebrow">{t.forcaTab.atual}</div>
                 <div className="h-display" style={{ fontSize: 26, marginTop: 8 }}>
                   {selectedEx.currentWeight}<span className="stat-unit">kg</span>
                 </div>
               </div>
               <div className="card">
-                <div className="h-eyebrow">Anterior</div>
+                <div className="h-eyebrow">{t.forcaTab.anterior}</div>
                 <div className="h-display" style={{ fontSize: 26, marginTop: 8 }}>
                   {selectedEx.prevWeight > 0
                     ? <>{selectedEx.prevWeight}<span className="stat-unit">kg</span></>
@@ -88,7 +90,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                 </div>
               </div>
               <div className="card">
-                <div className="h-eyebrow">Ganho</div>
+                <div className="h-eyebrow">{t.forcaTab.ganho}</div>
                 <div className="h-display" style={{ fontSize: 26, marginTop: 8, color: deltaColor(selectedEx.delta) }}>
                   {selectedEx.delta > 0 ? "+" : ""}{selectedEx.delta}
                   <span className="stat-unit">kg</span>
@@ -101,7 +103,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
           <div className="card" style={{ textAlign: "center", padding: 48 }}>
             <Dumbbell size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
             <div style={{ fontSize: 14, color: "var(--text-mute)" }}>
-              Execute um treino para ver a evolução de carga.
+              {t.forcaTab.executeUmTreino}
             </div>
           </div>
         )}
@@ -109,7 +111,7 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
 
       {/* Lista de todos os exercícios com evolução */}
       <div className="card">
-        <div className="h-eyebrow" style={{ marginBottom: 16 }}>Todos os exercícios</div>
+        <div className="h-eyebrow" style={{ marginBottom: 16 }}>{t.forcaTab.todosExercicios}</div>
         <div className="col gap-3" style={{ maxHeight: 480, overflowY: "auto" }}>
           {data.exercises.length > 0 ? data.exercises.filter(e => e.prevWeight > 0).map(ex => (
             // <button>, não <div onClick>: sem isto, quem navega por teclado
@@ -142,17 +144,17 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                 {/* Delta de carga vs sessão anterior */}
                 {ex.delta !== 0 && (
                   <div style={{ fontSize: 11, marginTop: 2, fontWeight: 600, color: deltaColor(ex.delta) }}>
-                    {ex.delta > 0 ? "↑ +" : "↓ "}{ex.delta}kg vs anterior
+                    {ex.delta > 0 ? "↑ +" : "↓ "}{ex.delta}kg {t.forcaTab.vsAnterior}
                   </div>
                 )}
               </div>
-              <div className="h-mono" style={{ fontSize: 14, fontWeight: 600 }} title={ex.currentWeight === 0 ? "Exercício de peso corporal — sem carga registada" : undefined}>
+              <div className="h-mono" style={{ fontSize: 14, fontWeight: 600 }} title={ex.currentWeight === 0 ? t.forcaTab.pesoCorporal : undefined}>
                 {ex.currentWeight > 0 ? `${ex.currentWeight}kg` : "PC"}
               </div>
             </button>
           )) : (
             <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
-              Nenhum exercício encontrado.
+              {t.forcaTab.nenhumExercicio}
             </p>
           )}
         </div>

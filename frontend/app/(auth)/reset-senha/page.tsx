@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import EffortLines from "@/components/ui/EffortLines";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
@@ -22,6 +23,7 @@ const CheckIcon = () => (
 // ── Etapa 1: solicitar o token de reset ──────────────────────────────────────
 
 function ForgotStep() {
+  const { t } = useLanguage();
   const [email, setEmail]     = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
@@ -40,10 +42,10 @@ function ForgotStep() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao solicitar reset.");
+      if (!res.ok) throw new Error(data.error ?? t.resetSenha.erroSolicitar);
       setSent(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : t.login.erroInesperado);
     } finally {
       setLoading(false);
     }
@@ -54,10 +56,10 @@ function ForgotStep() {
       <div style={{ textAlign: "center", padding: "12px 0" }}>
         <div className="auth-status-icon"><MailSentIcon /></div>
         <h2 className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>
-          Verifique seu e-mail
+          {t.resetSenha.verifiqueEmail}
         </h2>
         <p style={{ color: "var(--text-dim)", fontSize: 14, lineHeight: 1.55 }}>
-          Se este e-mail estiver cadastrado, enviamos um link para redefinir sua senha.
+          {t.resetSenha.linkEnviado}
         </p>
       </div>
     );
@@ -67,10 +69,10 @@ function ForgotStep() {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <h2 className="h-display" style={{ fontSize: 24, marginBottom: 8 }}>
-          Esqueceu a senha?
+          {t.resetSenha.esqueceuSenha}
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.55 }}>
-          Sem drama — informe seu e-mail e mandamos um link pra redefinir.
+          {t.resetSenha.semDrama}
         </p>
       </div>
 
@@ -91,7 +93,7 @@ function ForgotStep() {
         {error && <p style={{ fontSize: 13, color: "var(--danger)", textAlign: "center" }}>{error}</p>}
 
         <button className="btn btn-primary btn-block btn-lg" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Enviando..." : "Solicitar reset →"}
+          {loading ? t.resetSenha.enviando : t.resetSenha.solicitarReset}
         </button>
       </div>
     </div>
@@ -101,6 +103,7 @@ function ForgotStep() {
 // ── Etapa 2: digitar nova senha com o token recebido ─────────────────────────
 
 function ResetStep({ token, email }: { token: string; email: string }) {
+  const { t } = useLanguage();
   const router                        = useRouter();
   const [password, setPassword]       = useState("");
   const [confirm, setConfirm]         = useState("");
@@ -114,7 +117,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
     setError(null);
     const pv = validatePassword(password);
     if (!pv.valid) return setError(pv.error);
-    if (password !== confirm) return setError("As senhas não coincidem.");
+    if (password !== confirm) return setError(t.login.senhasNaoCoincidem);
 
     setLoading(true);
     try {
@@ -124,11 +127,11 @@ function ResetStep({ token, email }: { token: string; email: string }) {
         body: JSON.stringify({ token, newPassword: password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao redefinir senha.");
+      if (!res.ok) throw new Error(data.error ?? t.resetSenha.erroRedefinir);
       setSuccess(true);
       setTimeout(() => router.push("/login"), 2500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : t.login.erroInesperado);
     } finally {
       setLoading(false);
     }
@@ -139,10 +142,10 @@ function ResetStep({ token, email }: { token: string; email: string }) {
       <div style={{ textAlign: "center", padding: "12px 0" }}>
         <div className="auth-status-icon auth-status-icon-gain"><CheckIcon /></div>
         <h2 className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>
-          Senha redefinida!
+          {t.resetSenha.senhaRedefinida}
         </h2>
         <p style={{ color: "var(--text-dim)", fontSize: 14 }}>
-          Redirecionando para o login...
+          {t.resetSenha.redirecionando}
         </p>
       </div>
     );
@@ -152,12 +155,12 @@ function ResetStep({ token, email }: { token: string; email: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <h2 className="h-display" style={{ fontSize: 24, marginBottom: 8 }}>
-          Nova senha
+          {t.resetSenha.novaSenha}
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-dim)" }}>
           {email
-            ? <>Defina uma nova senha para <strong style={{ color: "var(--text)" }}>{email}</strong>.</>
-            : "Escolha uma senha nova pra continuar."}
+            ? <>{t.resetSenha.defina} <strong style={{ color: "var(--text)" }}>{email}</strong>.</>
+            : t.resetSenha.escolhaSenha}
         </p>
       </div>
 
@@ -167,7 +170,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
           <input
             className="input"
             type={showPassword ? "text" : "password"}
-            placeholder="Nova senha (mín. 6 caracteres)"
+            placeholder={t.resetSenha.novaSenhaPlaceholder}
             value={password}
             onChange={e => setPassword(e.target.value)}
             style={{ paddingRight: 44 }}
@@ -176,8 +179,8 @@ function ResetStep({ token, email }: { token: string; email: string }) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-            title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            aria-label={showPassword ? t.login.ocultarSenha : t.login.mostrarSenha}
+            title={showPassword ? t.login.ocultarSenha : t.login.mostrarSenha}
             style={{
               position: "absolute", right: 12, background: "none", border: "none",
               color: "var(--text-mute)", cursor: "pointer", display: "flex",
@@ -194,7 +197,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
           <input
             className="input"
             type={showConfirm ? "text" : "password"}
-            placeholder="Confirme a nova senha"
+            placeholder={t.resetSenha.confirmSenhaPlaceholder}
             value={confirm}
             onChange={e => setConfirm(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleReset()}
@@ -203,8 +206,8 @@ function ResetStep({ token, email }: { token: string; email: string }) {
           <button
             type="button"
             onClick={() => setShowConfirm(!showConfirm)}
-            aria-label={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
-            title={showConfirm ? "Ocultar confirmação de senha" : "Mostrar confirmação de senha"}
+            aria-label={showConfirm ? t.login.ocultarConfirmacaoSenha : t.login.mostrarConfirmacaoSenha}
+            title={showConfirm ? t.login.ocultarConfirmacaoSenha : t.login.mostrarConfirmacaoSenha}
             style={{
               position: "absolute", right: 12, background: "none", border: "none",
               color: "var(--text-mute)", cursor: "pointer", display: "flex",
@@ -220,7 +223,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
         {error && <p style={{ fontSize: 13, color: "var(--danger)", textAlign: "center" }}>{error}</p>}
 
         <button className="btn btn-primary btn-block btn-lg" onClick={handleReset} disabled={loading}>
-          {loading ? "Salvando..." : "Salvar nova senha →"}
+          {loading ? t.resetSenha.salvando : t.resetSenha.salvarNovaSenha}
         </button>
       </div>
     </div>
@@ -230,6 +233,7 @@ function ResetStep({ token, email }: { token: string; email: string }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 
 function ResetSenhaForm() {
+  const { t }            = useLanguage();
   const router           = useRouter();
   const searchParams     = useSearchParams();
   const tokenFromUrl     = searchParams.get("token");
@@ -258,7 +262,7 @@ function ResetSenhaForm() {
 
         <div style={{ textAlign: "center", marginTop: 20 }}>
           <button type="button" onClick={() => router.push("/login")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text-mute)" }}>
-            ← Voltar ao login
+            {t.resetSenha.voltarAoLogin}
           </button>
         </div>
       </div>

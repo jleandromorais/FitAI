@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
 
 const truncateStyle = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } as const;
@@ -13,6 +14,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { workouts } = useWorkouts();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -25,21 +27,21 @@ export default function Sidebar() {
   }
 
   const NAV = [
-    { href: "/",           icon: Home,     label: "Dashboard" },
-    { href: "/treinos",    icon: Dumbbell, label: "Treinos",   badge: workouts.length > 0 ? String(workouts.length) : undefined },
-    { href: "/calendario", icon: Calendar, label: "Histórico" },
-    { href: "/progresso",  icon: BarChart2,label: "Evolução"  },
-    { href: "/perfil",     icon: User,     label: "Perfil"    },
+    { href: "/",           icon: Home,     label: t.sidebar.dashboard },
+    { href: "/treinos",    icon: Dumbbell, label: t.sidebar.treinos,   badge: workouts.length > 0 ? String(workouts.length) : undefined },
+    { href: "/calendario", icon: Calendar, label: t.sidebar.historico },
+    { href: "/progresso",  icon: BarChart2,label: t.sidebar.evolucao  },
+    { href: "/perfil",     icon: User,     label: t.sidebar.perfil    },
   ];
 
   const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
-  const displayName = user?.name || user?.email?.split("@")[0] || "Usuário";
+  const displayName = user?.name || user?.email?.split("@")[0] || t.sidebar.usuario;
   const displayEmail = user?.email ?? "";
 
   function handleLogout() {
-    if (window.confirm("Tem certeza que deseja sair?")) logout();
+    if (window.confirm(t.sidebar.confirmarSair)) logout();
   }
 
   return (
@@ -49,7 +51,7 @@ export default function Sidebar() {
         type="button"
         className="hamburger-btn"
         onClick={() => setMobileOpen(o => !o)}
-        aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+        aria-label={mobileOpen ? t.sidebar.fecharMenu : t.sidebar.abrirMenu}
         aria-expanded={mobileOpen}
       >
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -70,7 +72,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <div className="side-section-label">Navegação</div>
+      <div className="side-section-label">{t.sidebar.navegacao}</div>
       <div className="col gap-2">
         {NAV.map(({ href, icon: Icon, label, badge }) => {
           // "/" só fica ativo em match exato; as demais rotas ficam ativas
@@ -87,10 +89,10 @@ export default function Sidebar() {
       </div>
 
       {/* Tools */}
-      <div className="side-section-label">Ferramentas</div>
+      <div className="side-section-label">{t.sidebar.ferramentas}</div>
       <Link href="/ai-gen" className="side-item-cta">
         <Sparkles size={18} />
-        Gerar treino com IA
+        {t.sidebar.gerarComIA}
       </Link>
 
       {/* User */}
@@ -114,8 +116,8 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={handleLogout}
-            title="Sair"
-            aria-label="Sair"
+            title={t.sidebar.sair}
+            aria-label={t.sidebar.sair}
             style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4, flexShrink: 0 }}
           >
             <LogOut size={16} color="var(--text-mute)" />

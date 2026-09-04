@@ -7,6 +7,8 @@ import { Sparkline } from "@/components/ui/Charts";
 import heroStrongman from "@/img/hero-strongman.png";
 import { HudCorners } from "@/components/ui/HudCorners";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationDict } from "@/lib/translations";
 import { useWorkouts } from "@/hooks/useWorkouts";
 import { useProgress } from "@/hooks/useProgress";
 import { useProgressStats } from "@/hooks/useProgressStats";
@@ -63,10 +65,10 @@ function buildVolumeSparkline(volumePerWorkout: number[]): number[] {
   return volumePerWorkout.slice(-12);
 }
 
-function greetingFor(hour: number): string {
-  if (hour < 12) return "Bom dia";
-  if (hour < 20) return "Boa tarde";
-  return "Boa noite";
+function greetingFor(hour: number, t: TranslationDict): string {
+  if (hour < 12) return t.dashboard.bomDia;
+  if (hour < 20) return t.dashboard.boaTarde;
+  return t.dashboard.boaNoite;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,7 +77,9 @@ function greetingFor(hour: number): string {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { locale, t } = useLanguage();
   const firstName = user?.name?.split(" ")[0] ?? "atleta";
+  const dateLocale = locale === "en" ? "en-US" : "pt-BR";
 
   const { workouts, loading, error, reload } = useWorkouts();
   const { data: progress } = useProgress();
@@ -83,7 +87,7 @@ export default function Dashboard() {
   // Lazy initializer é a forma pura de ler Date.now() no render (mesmo padrão de progresso/page.tsx).
   const [now] = useState(() => Date.now());
   const { prs } = useProgressStats(progress, sessions, 0, now);
-  const greeting = greetingFor(new Date(now).getHours());
+  const greeting = greetingFor(new Date(now).getHours(), t);
 
   const stats = useMemo(() => {
     if (workouts.length === 0) return null;
@@ -126,7 +130,7 @@ export default function Dashboard() {
         style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 400 }}
       >
         <Loader2 size={36} color="var(--accent)" style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>A carregar os teus treinos…</span>
+        <span style={{ fontSize: 13, color: "var(--text-dim)" }}>{t.dashboard.carregandoTreinos}</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -145,7 +149,7 @@ export default function Dashboard() {
         <div className="page-head">
           <div>
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
-              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+              {new Date().toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
           </div>
@@ -153,12 +157,12 @@ export default function Dashboard() {
 
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon auth-status-icon-danger" style={{ margin: "0 auto 16px" }}><AlertCircle size={28} /></div>
-          <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>Não foi possível carregar seus treinos</div>
+          <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>{t.dashboard.erroTitulo}</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
-            Verifique sua conexão e tente novamente. Se o problema persistir, tente entrar na sua conta novamente.
+            {t.dashboard.erroTexto}
           </p>
           <button className="btn btn-primary btn-lg" onClick={() => reload()}>
-            <RefreshCw size={16} /> Tentar novamente
+            <RefreshCw size={16} /> {t.dashboard.tentarNovamente}
           </button>
         </div>
       </div>
@@ -171,25 +175,25 @@ export default function Dashboard() {
         <div className="page-head">
           <div>
             <div className="h-eyebrow" style={{ marginBottom: 8 }}>
-              {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+              {new Date().toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" })}
             </div>
             <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
-            <div className="page-sub">Vamos começar sua jornada.</div>
+            <div className="page-sub">{t.dashboard.vamosComecar}</div>
           </div>
         </div>
 
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><Dumbbell size={28} /></div>
-          <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>Nenhum treino cadastrado</div>
+          <div className="h-display" style={{ fontSize: 22, marginBottom: 8 }}>{t.dashboard.semTreinoTitulo}</div>
           <p style={{ color: "var(--text-dim)", marginBottom: 28 }}>
-            Crie seu primeiro treino ou deixe a IA montar um plano sob medida.
+            {t.dashboard.semTreinoTexto}
           </p>
           <div className="row gap-3" style={{ justifyContent: "center" }}>
             <Link href="/treinos" className="btn btn-primary btn-lg">
-              <Dumbbell size={16} /> Criar treino
+              <Dumbbell size={16} /> {t.dashboard.criarTreino}
             </Link>
             <Link href="/ai-gen" className="btn btn-secondary btn-lg">
-              <Sparkles size={16} /> Gerar com IA
+              <Sparkles size={16} /> {t.dashboard.gerarComIA}
             </Link>
           </div>
         </div>
@@ -222,8 +226,8 @@ export default function Dashboard() {
           <h1 className="page-title">{greeting}, <em style={{ color: "var(--accent)", fontStyle: "italic" }}>{firstName}</em> 👋</h1>
           <div className="page-sub">
             {workouts.length > 0
-              ? `Você tem ${workouts.length} treino${workouts.length !== 1 ? "s" : ""} cadastrado${workouts.length !== 1 ? "s" : ""}. Hora de mover ferro.`
-              : "Hora de começar."}
+              ? t.dashboard.voceTemTreinos(workouts.length)
+              : t.dashboard.horaDeComecar}
           </div>
         </div>
       </div>
@@ -235,7 +239,7 @@ export default function Dashboard() {
           menor, sem sparkline — apoiam, não competem. */}
       <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
         <div className="card card-accent" style={{ gridColumn: "span 2" }}>
-          <div className="stat-label">Volume total</div>
+          <div className="stat-label">{t.dashboard.volumeTotal}</div>
           <div style={{ marginTop: 10 }}>
             <span className="stat-num" style={{ fontSize: 40, ...(volumeCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{volumeDisplay}</span>
             <span className="stat-unit"> kg</span>
@@ -247,26 +251,26 @@ export default function Dashboard() {
 
         <div className="col gap-2" style={{ gridColumn: "span 2" }}>
           <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
-            <div className="stat-label">Treinos</div>
+            <div className="stat-label">{t.dashboard.treinos}</div>
             <div>
               {/* Mono só enquanto ainda está a contar — assentado, volta pra Space
                   Grotesk (o `.stat-num` por defeito), igual ao resto do sistema. */}
               <span className="stat-num" style={{ fontSize: 20, ...(workoutsCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedWorkoutsCount}</span>
-              <span className="stat-unit"> planos</span>
+              <span className="stat-unit"> {t.dashboard.planos}</span>
             </div>
           </div>
           <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
-            <div className="stat-label">Total de séries</div>
+            <div className="stat-label">{t.dashboard.totalSeries}</div>
             <div>
               <span className="stat-num" style={{ fontSize: 20, ...(setsCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedSets}</span>
-              <span className="stat-unit"> séries</span>
+              <span className="stat-unit"> {t.dashboard.series}</span>
             </div>
           </div>
           <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
-            <div className="stat-label">Média / treino</div>
+            <div className="stat-label">{t.dashboard.mediaTreino}</div>
             <div>
               <span className="stat-num" style={{ fontSize: 20, ...(avgCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedAvg}</span>
-              <span className="stat-unit"> séries</span>
+              <span className="stat-unit"> {t.dashboard.series}</span>
             </div>
           </div>
         </div>
@@ -284,35 +288,36 @@ export default function Dashboard() {
             <HudCorners />
             <div className="row gap-4" style={{ position: "relative", zIndex: 1 }}>
               <div style={{ flex: 1 }}>
-                <div className="h-eyebrow" style={{ color: "var(--accent)" }}>{isScheduledToday ? "Treino de hoje" : "Treino em destaque"}</div>
+                <div className="h-eyebrow" style={{ color: "var(--accent)" }}>{isScheduledToday ? t.dashboard.treinoDeHoje : t.dashboard.treinoEmDestaque}</div>
                 <h2 className="h-display" style={{ fontSize: 36, margin: "12px 0 16px" }}>{featured.name}</h2>
                 <div className="row gap-4" style={{ color: "var(--text-dim)", fontSize: 14, marginBottom: 24 }}>
-                  <div className="row gap-2"><Timer size={16} /> {featured.duration} min</div>
-                  <div className="row gap-2"><Dumbbell size={16} /> {featured.exercises.length} exercícios</div>
-                  <div className="row gap-2"><Target size={16} /> {featured.totalSets} séries</div>
+                  <div className="row gap-2"><Timer size={16} /> {featured.duration} {t.dashboard.min}</div>
+                  <div className="row gap-2"><Dumbbell size={16} /> {featured.exercises.length} {t.dashboard.exercicios}</div>
+                  <div className="row gap-2"><Target size={16} /> {featured.totalSets} {t.dashboard.series}</div>
                 </div>
                 <Link href={`/treinos/${featured.id}`} className="btn btn-primary btn-lg">
-                  <Play size={14} fill="currentColor" /> Começar treino
+                  <Play size={14} fill="currentColor" /> {t.dashboard.comecarTreino}
                 </Link>
               </div>
               {/* Dias programados */}
               <div style={{ width: 200 }}>
-                <h3 className="h-eyebrow" style={{ marginBottom: 12 }}>Treinado esta semana</h3>
+                <h3 className="h-eyebrow" style={{ marginBottom: 12 }}>{t.dashboard.treinadoEstaSemana}</h3>
                 {/* Estados próprios (não os de `useWorkouts`): sem isto, um fetch de
                     sessões ainda em curso ou falhado renderizava "–" em todos os dias,
                     indistinguível de uma semana genuinamente sem treinos. */}
                 {sessionsLoading ? (
-                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>A verificar sessões…</p>
+                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>{t.dashboard.verificandoSessoes}</p>
                 ) : sessionsError ? (
-                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>Não foi possível confirmar as sessões desta semana.</p>
+                  <p style={{ fontSize: 12, color: "var(--text-mute)" }}>{t.dashboard.erroSessoesSemana}</p>
                 ) : (
                   // Mesma linguagem visual do dia "treinado" no /calendario
                   // (gain-soft + borda --accent) — em vez de uma barra de
                   // progresso genérica por dia, que não significava nada
                   // além de "ligado/desligado".
                   <div className="row gap-1" style={{ justifyContent: "space-between" }}>
-                    {WEEK_DAYS.map(d => {
+                    {WEEK_DAYS.map((d, i) => {
                       const active = trainedDays.has(d);
+                      const dayLabel = t.dias[i]; // WEEK_DAYS é chave interna (bate com DAY_NAMES); t.dias é só o rótulo exibido, mesma ordem
                       return (
                         <div key={d} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                           <div style={{
@@ -323,10 +328,10 @@ export default function Dashboard() {
                           }}>
                             {active
                               ? <Check size={11} color="var(--accent)" strokeWidth={3} />
-                              : <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{d[0]}</span>
+                              : <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{dayLabel[0]}</span>
                             }
                           </div>
-                          <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{d}</span>
+                          <span style={{ fontSize: 9, color: "var(--text-mute)" }}>{dayLabel}</span>
                         </div>
                       );
                     })}
@@ -339,8 +344,8 @@ export default function Dashboard() {
           {/* Lista de treinos */}
           <div>
             <div className="row between" style={{ marginBottom: 12 }}>
-              <h3 className="h-display" style={{ fontSize: 18 }}>Meus treinos</h3>
-              <Link href="/treinos" style={{ fontSize: 13, color: "var(--text-dim)" }}>Ver tudo</Link>
+              <h3 className="h-display" style={{ fontSize: 18 }}>{t.dashboard.meusTreinos}</h3>
+              <Link href="/treinos" style={{ fontSize: 13, color: "var(--text-dim)" }}>{t.dashboard.verTudo}</Link>
             </div>
             <div className="grid-cols-2" style={{ gap: 12 }}>
               {workouts.slice(0, 4).map(w => (
@@ -375,18 +380,18 @@ export default function Dashboard() {
           <div className="card">
             <div className="row gap-2" style={{ marginBottom: 12, alignItems: "center" }}>
               <Sparkles size={16} color="var(--accent)" />
-              <h3 className="h-eyebrow" style={{ color: "var(--accent)", margin: 0 }}>Sugestão da IA</h3>
+              <h3 className="h-eyebrow" style={{ color: "var(--accent)", margin: 0 }}>{t.dashboard.sugestaoIA}</h3>
             </div>
             <div style={{ fontSize: 14, lineHeight: 1.55, marginBottom: 16 }}>
               {workouts.length < 3
-                ? "Você tem poucos treinos cadastrados. Que tal deixar a IA montar um plano completo para você?"
-                : `Você tem ${workouts.length} treinos cadastrados. Considere adicionar um dia de recuperação ativa ou mobilidade.`}
+                ? t.dashboard.sugestaoPoucos
+                : t.dashboard.sugestaoMuitos(workouts.length)}
             </div>
             <div className="row gap-2">
               <Link href="/ai-gen" className="btn btn-primary btn-sm flex-1" style={{ justifyContent: "center" }}>
-                Gerar com IA
+                {t.dashboard.gerarComIA}
               </Link>
-              <Link href="/treinos" className="btn btn-ghost btn-sm">Ver treinos</Link>
+              <Link href="/treinos" className="btn btn-ghost btn-sm">{t.dashboard.verTreinos}</Link>
             </div>
           </div>
 
@@ -394,7 +399,7 @@ export default function Dashboard() {
           <div className="card card-gain" style={{ position: "relative" }}>
             <HudCorners color="var(--gain)" size={11} inset={8} />
             <div className="row between" style={{ marginBottom: 14 }}>
-              <h3 className="h-eyebrow" style={{ color: "var(--gain)", margin: 0 }}>Recordes recentes</h3>
+              <h3 className="h-eyebrow" style={{ color: "var(--gain)", margin: 0 }}>{t.dashboard.recordesRecentes}</h3>
               <Trophy size={16} color="var(--gain)" />
             </div>
             {prs.length > 0 ? (
@@ -408,14 +413,14 @@ export default function Dashboard() {
               </div>
             ) : (
               <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
-                Ainda sem recordes registrados — treine o mesmo exercício duas vezes pra ver o seu primeiro PR aqui.
+                {t.dashboard.semRecordes}
               </p>
             )}
           </div>
 
           {/* Foco muscular */}
           <div className="card">
-            <h3 className="h-eyebrow" style={{ marginBottom: 14 }}>Foco muscular</h3>
+            <h3 className="h-eyebrow" style={{ marginBottom: 14 }}>{t.dashboard.focoMuscular}</h3>
             {muscleDistribution.length > 0 ? (
               <div className="col gap-3">
                 {muscleDistribution.map(r => (
@@ -432,7 +437,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <p style={{ fontSize: 13, color: "var(--text-mute)" }}>
-                Adicione exercícios para ver a distribuição muscular.
+                {t.dashboard.semExercicios}
               </p>
             )}
           </div>

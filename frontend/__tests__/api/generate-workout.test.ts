@@ -153,10 +153,12 @@ describe("POST /api/generate-workout", () => {
     expect(res.status).toBe(502);
   });
 
-  it("retorna 502 quando a chamada ao Groq falha (não-ok)", async () => {
+  it("retorna 502 com mensagem genérica (sem vazar o corpo bruto da Groq) quando a chamada falha (não-ok)", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
-      text: () => Promise.resolve("Service Unavailable"),
+      status: 503,
+      text: () => Promise.resolve("Service Unavailable — internal upstream detail"),
     });
     const token = await signToken("ana@test.com");
 
@@ -165,7 +167,24 @@ describe("POST /api/generate-workout", () => {
 
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(body.error).toContain("Groq API error");
+    expect(body.error).toBe("Erro ao gerar treino. Tente novamente.");
+    expect(body.error).not.toContain("internal upstream detail");
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("retorna 502 com mensagem genérica (sem vazar err.message) quando o fetch lança uma exceção inesperada", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    global.fetch = vi.fn().mockRejectedValue(new Error("ECONNRESET at 10.0.0.5:443 — internal network detail"));
+    const token = await signToken("ana@test.com");
+
+    const req = makeRequest(VALID_BODY, token);
+    const res = await POST(req);
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toBe("Erro ao gerar treino. Tente novamente.");
+    expect(body.error).not.toContain("internal network detail");
+    consoleErrorSpy.mockRestore();
   });
 
   it("faz a requisição ao Groq com o prompt correto", async () => {
