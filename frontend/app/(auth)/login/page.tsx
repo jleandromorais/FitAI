@@ -7,6 +7,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
 import heroStrongman from "@/img/hero-strongman.png";
+import heroVictory from "@/img/hero-victory.png";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 
@@ -97,8 +98,12 @@ function LoginForm() {
       <div className="auth-brand">
         <div className="auth-brand-ember" />
         <EffortLines />
+        {/* Força pra quem já treina (Entrar), vitória/conquista pra quem tá
+            começando (Criar conta) — duas identidades, uma por vez, nunca as
+            duas competindo na mesma tela. */}
         <Image
-          src={heroStrongman}
+          key={tab}
+          src={tab === "entrar" ? heroStrongman : heroVictory}
           alt=""
           aria-hidden="true"
           className="auth-hero-figure"
