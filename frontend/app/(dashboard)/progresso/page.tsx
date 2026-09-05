@@ -9,7 +9,6 @@ import { useProgressStats } from "@/hooks/useProgressStats";
 import ForcaTab from "@/components/ui/ForcaTab";
 import VolumeTab from "@/components/ui/VolumeTab";
 import RecordesTab from "@/components/ui/RecordesTab";
-import FotosTab from "@/components/ui/FotosTab";
 import Link from "next/link";
 import { fmtVol } from "@/lib/format";
 
@@ -18,7 +17,7 @@ export default function ProgressoPage() {
   const { data, loading, error } = useProgress();
   const { sessions } = useSessions(90);
 
-  // Aba activa: força | volume | prs | fotos
+  // Aba activa: força | volume | prs
   const [tab, setTab] = useState("forca");
 
   // Exercício seleccionado na aba Força (índice na lista)
@@ -76,16 +75,14 @@ export default function ProgressoPage() {
 
   // Um utilizador que acabou de fazer o primeiro treino já tem dados reais
   // (totalVolume, totalSets) — só ainda não tem um SEGUNDO ponto de
-  // comparação por exercício. As abas força/volume/prs mostram o prompt "sem
-  // dados" enquanto isso. Fotos de evolução são independentes de ter treino
-  // registado — não faz sentido bloquear alguém de guardar a primeira foto
-  // só porque ainda não treinou, por isso segue direto pro FotosTab abaixo.
+  // comparação por exercício. As três abas mostram o prompt "sem dados"
+  // enquanto isso. (Fotos de evolução, medidas e metas de peso vivem agora
+  // em /evolucao — fora deste gate.)
   const hasWorkoutData = !!data && data.totalWorkouts > 0;
   const TABS: [string, string][] = [
     ["forca", t.progresso.abaForca],
     ["volume", t.progresso.abaVolume],
     ["prs", t.progresso.abaRecordes],
-    ["fotos", t.progresso.abaFotos],
   ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -123,11 +120,7 @@ export default function ProgressoPage() {
         </div>
       </div>
 
-      {tab === "fotos" ? (
-        <div role="tabpanel" id="panel-fotos" aria-labelledby="tab-fotos">
-          <FotosTab />
-        </div>
-      ) : !hasWorkoutData ? (
+      {!hasWorkoutData ? (
         <div className="card" style={{ textAlign: "center", padding: 60 }}>
           <div className="auth-status-icon" style={{ margin: "0 auto 16px" }}><TrendingUp size={26} /></div>
           <div className="h-display" style={{ fontSize: 20, marginBottom: 8 }}>{t.progresso.semDados}</div>

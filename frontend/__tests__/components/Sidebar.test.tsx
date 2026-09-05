@@ -47,10 +47,17 @@ describe("Sidebar", () => {
     expect(screen.getByRole("link", { name: /Dashboard/ })).not.toHaveClass("active");
   });
 
+  it("mostra o item 'Físico' apontando para /evolucao entre 'Evolução' e 'Perfil'", () => {
+    render(<Sidebar />);
+    const fisico = screen.getByRole("link", { name: /Físico/ });
+    expect(fisico).toHaveAttribute("href", "/evolucao");
+  });
+
   it("cada item de NAV fica ativo apenas na sua própria rota", () => {
     const routes: [string, RegExp][] = [
       ["/calendario", /Histórico/],
       ["/progresso", /Evolução/],
+      ["/evolucao", /Físico/],
       ["/perfil", /Perfil/],
     ];
     for (const [path, name] of routes) {

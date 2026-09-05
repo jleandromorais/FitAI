@@ -1379,7 +1379,86 @@ body {
   animation: photoCardReveal 0.4s ease-out both;
 }
 
+/* ─── EVOLUÇÃO FÍSICA (/evolucao) ─────────────────────────────────── */
+/* Troca de sub-aba: um único gesto (fade + micro-slide) reaproveitado nas 4
+   abas — não um efeito por aba. key={tab} no painel remonta e replaya. */
+@keyframes evoPanelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.evo-panel { animation: evoPanelIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Linha nova na lista de medidas — mesmas 3 camadas do .photo-card:
+   posição+opacidade (primária), escala (secundária), fundo revelando
+   (ambiente). key por id garante que só a linha recém-criada anima. */
+@keyframes measureRowIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes measureRowGlow {
+  from { background: var(--accent-soft); }
+  to   { background: transparent; }
+}
+.measure-row { animation: measureRowIn 0.22s cubic-bezier(0.2, 0, 0, 1) both; }
+.measure-row.fresh {
+  animation: measureRowIn 0.22s cubic-bezier(0.2, 0, 0, 1) both,
+             measureRowGlow 0.9s ease-out 0.1s both;
+}
+
+/* Barra da meta início→atual→alvo — o momento autoral da tela. Ao montar: o
+   preenchimento varre até a posição atual e o marcador "atual" viaja o
+   trilho, uma vez. --pos é setado inline (0–100%). Ao atingir, o trilho
+   inteiro passa a Verde-Conquista (--gain). Só transform/opacity + um `left`
+   num nó absoluto minúsculo (sem reflow de irmãos). */
+.meta-track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  margin: 14px 0 22px;
+}
+.meta-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: var(--pos, 0%);
+  border-radius: 99px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: metaFill 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes metaFill { from { transform: scaleX(0); } }
+.meta-marker {
+  position: absolute;
+  top: 50%;
+  left: var(--pos, 0%);
+  width: 12px; height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  animation: metaMarkerIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes metaMarkerIn { from { left: 0%; } }
+.meta-track.reached .meta-fill,
+.meta-track.reached .meta-marker { background: var(--gain); }
+.meta-cap {
+  position: absolute;
+  top: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+.meta-cap.start { left: 0; }
+.meta-cap.target { right: 0; }
+
 @media (prefers-reduced-motion: reduce) {
+  .evo-panel, .measure-row, .measure-row.fresh, .meta-fill, .meta-marker {
+    animation: none !important;
+  }
+  .measure-row.fresh { background: transparent !important; }
+  .meta-fill { transform: none !important; }
   .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
   .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up, .flame-icon,
   .set-confirm-btn.just-done {

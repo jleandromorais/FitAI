@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Dumbbell, BarChart2, Calendar, User, Sparkles, LogOut, Menu, X } from "lucide-react";
+import { Home, Dumbbell, BarChart2, Calendar, Camera, User, Sparkles, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useWorkouts } from "@/hooks/useWorkouts";
@@ -31,6 +31,7 @@ export default function Sidebar() {
     { href: "/treinos",    icon: Dumbbell, label: t.sidebar.treinos,   badge: workouts.length > 0 ? String(workouts.length) : undefined },
     { href: "/calendario", icon: Calendar, label: t.sidebar.historico },
     { href: "/progresso",  icon: BarChart2,label: t.sidebar.evolucao  },
+    { href: "/evolucao",   icon: Camera,   label: t.sidebar.fisico    },
     { href: "/perfil",     icon: User,     label: t.sidebar.perfil    },
   ];
 
