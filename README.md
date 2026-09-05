@@ -33,7 +33,7 @@ O **FitAI** é uma aplicação web completa para gestão e acompanhamento de tre
 
 | Landing page | Login |
 |---|---|
-| ![Landing page do FitAI](IMGREAD/page) | ![Tela de login do FitAI](docs/screenshots/login.png) |
+| ![Landing page do FitAI](IMGREAD/page) | ![Tela de login do FitAI](IMGREAD/login) |
 
 | Dashboard | Execução de treino |
 |---|---|
