@@ -946,9 +946,23 @@ body {
   overflow-x: clip;
 }
 
-.landing-nav {
-  position: sticky;
+/* Wrapper do scroll com inércia (ver SmoothScroll em inicio/page.tsx) — fica
+   fixo na viewport e é transladado via JS pra perseguir window.scrollY. A
+   nav fica FORA dele, sempre presa de verdade ao topo real da tela, porque
+   `position: sticky` não funciona dentro de um ancestral transformado. */
+.landing-smooth-wrapper {
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 100%;
+  will-change: transform;
+}
+
+.landing-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
   display: flex;
   align-items: center;
@@ -970,7 +984,9 @@ body {
 
 .landing-hero {
   position: relative;
-  padding: clamp(64px, 10vw, 128px) clamp(20px, 5vw, 64px) clamp(56px, 8vw, 96px);
+  /* padding-top folgado o bastante pra nunca ficar embaixo da nav, que agora
+     é fixed de verdade (fora do fluxo) em vez de sticky. */
+  padding: clamp(96px, 13vw, 152px) clamp(20px, 5vw, 64px) clamp(56px, 8vw, 96px);
   overflow: hidden;
 }
 .landing-hero-grid {
@@ -1003,16 +1019,24 @@ body {
 
 /* Demo real da pergunta-resposta do /ai-gen — não é um screenshot, é a
    mesma linguagem visual (bolha + chips) reconstruída, com uma etiqueta
-   explícita "demonstração" pra nunca ser confundida com um chat ao vivo. */
+   explícita "demonstração" pra nunca ser confundida com um chat ao vivo.
+   Único elemento com vidro fosco no produto inteiro — tratamento reservado
+   a esta página Persuade, nunca ao Operate do app (Regra Flat-por-Defeito
+   continua valendo no resto do sistema). */
 .landing-demo-card {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: linear-gradient(155deg, rgba(49,36,32,0.72), rgba(22,19,22,0.82));
+  border: 1px solid rgba(255,255,255,0.09);
   border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  backdrop-filter: blur(16px) saturate(115%);
+  box-shadow:
+    0 12px 40px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .landing-demo-tag {
   align-self: flex-start;
@@ -1181,6 +1205,29 @@ body {
 }
 .landing-reveal.in-view { opacity: 1; transform: translateY(0); }
 
+/* Coreografia de entrada da primeira dobra — dispara ao montar (não por
+   scroll, já está tudo visível de cara): nav, headline (stagger próprio via
+   .word-up), texto de apoio, CTA e por fim o card de demo, em cascata. Uma
+   única timeline coordenada, igual ao resto do sistema já faz no login. */
+.landing-load { animation: landingLoadUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.landing-load-nav   { animation-name: landingLoadNav;  animation-duration: 0.6s; }
+.landing-load-lede  { animation-delay: 0.62s; }
+.landing-load-cta   { animation-delay: 0.78s; }
+.landing-load-card  { animation-delay: 0.92s; animation-duration: 0.85s; animation-name: landingLoadCard; }
+
+@keyframes landingLoadUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes landingLoadNav {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes landingLoadCard {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ─── ANIMATIONS ──────────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
@@ -1211,9 +1258,10 @@ body {
   .flame-icon-wrap::before, .flame-icon-wrap::after, .set-confirm-btn.just-done::after {
     display: none;
   }
-  .landing-reveal {
+  .landing-reveal, .landing-load {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+    animation: none !important;
   }
 }

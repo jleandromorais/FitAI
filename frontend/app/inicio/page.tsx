@@ -29,6 +29,69 @@ import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
 import { LineChart } from "@/components/ui/Charts";
 
+// Scroll com inércia (técnica de github.com/naocodei — "o conteúdo persegue
+// a posição da rolagem em vez de saltar pra ela"), em JS puro, sem lib.
+// O documento real ganha um spacer com a altura do conteúdo (mantém a
+// scrollbar nativa e o scroll por teclado/roda funcionando de verdade); o
+// conteúdo visível fica num wrapper "fixed" que persegue window.scrollY a
+// cada frame com atrito. Desativado em touch (o scroll nativo já é bom) e
+// com prefers-reduced-motion — nesses casos o scroll é 100% nativo.
+function SmoothScroll({ children }: { children: React.ReactNode }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (!reduceMotion && !coarsePointer) setEnabled(true);
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const wrapper = wrapperRef.current;
+    const spacer = spacerRef.current;
+    if (!wrapper || !spacer) return;
+
+    let current = window.scrollY;
+    let target = window.scrollY;
+    let frameId = 0;
+
+    function syncSpacerHeight() {
+      spacer!.style.height = `${wrapper!.getBoundingClientRect().height}px`;
+    }
+    syncSpacerHeight();
+    const resizeObserver = new ResizeObserver(syncSpacerHeight);
+    resizeObserver.observe(wrapper);
+
+    function onScroll() { target = window.scrollY; }
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    function tick() {
+      current += (target - current) * 0.085;
+      if (Math.abs(target - current) < 0.05) current = target;
+      wrapper!.style.transform = `translate3d(0, ${-current}px, 0)`;
+      frameId = requestAnimationFrame(tick);
+    }
+    frameId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", onScroll);
+      resizeObserver.disconnect();
+    };
+  }, [enabled]);
+
+  return (
+    <>
+      <div ref={wrapperRef} className={enabled ? "landing-smooth-wrapper" : undefined}>
+        {children}
+      </div>
+      {enabled && <div ref={spacerRef} aria-hidden="true" />}
+    </>
+  );
+}
+
 // Revela cada .landing-reveal quando entra na viewport — um único gesto de
 // entrada reaproveitado pela página inteira, nunca uma animação por seção.
 function useScrollReveal() {
@@ -112,8 +175,8 @@ const EXAMPLE_VOLUME = [3200, 3450, 3400, 3800, 4100, 4050, 4400, 4750];
 
 export default function LandingPage() {
   return (
-    <div className="landing">
-      <nav className="landing-nav">
+    <>
+      <nav className="landing-nav landing-load landing-load-nav">
         <div className="landing-nav-brand">
           <div className="sidebar-brand-mark" style={{ width: 32, height: 32, fontSize: 14 }}>F</div>
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, color: "var(--text)" }}>
@@ -126,6 +189,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      <SmoothScroll>
+      <div className="landing">
       <section className="landing-hero">
         <div className="auth-brand-ember" style={{ opacity: 0.6 }} />
         <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}><EffortLines /></div>
@@ -134,20 +199,20 @@ export default function LandingPage() {
             <h1 className="landing-h1">
               Seu próximo treino já está <em className="flame-word">decidido</em> antes de você chegar na academia.
             </h1>
-            <p className="landing-lede">
+            <p className="landing-lede landing-load landing-load-lede">
               A maioria dos apps de treino só registra o que você já escolheu fazer. O FitAI propõe o plano —
               a IA monta um programa completo a partir do seu nível, objetivo, dias disponíveis e equipamento.
             </p>
-            <div className="landing-cta-row">
+            <div className="landing-cta-row landing-load landing-load-cta">
               <Link href="/login?tab=criar" className="btn btn-primary btn-lg">
                 Criar meu plano <ArrowRight size={16} />
               </Link>
               <Link href="/login" className="btn btn-ghost btn-lg">Já tenho conta</Link>
             </div>
           </div>
-          <Reveal>
+          <div className="landing-load landing-load-card">
             <AiDemoCard />
-          </Reveal>
+          </div>
         </div>
       </section>
 
@@ -224,6 +289,8 @@ export default function LandingPage() {
         </div>
         <span className="landing-footer-note">© 2026 FitAI. Todos os direitos reservados.</span>
       </footer>
-    </div>
+      </div>
+      </SmoothScroll>
+    </>
   );
 }
