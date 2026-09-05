@@ -18,4 +18,5 @@ public class ExerciseProgressDto {
     private Double delta;         // currentWeight - prevWeight (ganho de carga)
     private Integer totalSets;    // total de séries cadastradas
     private Double volume;        // peso × reps somado das séries feitas (done=true) deste exercício — real, não estimado
+    private String suggestion;    // "subir_carga" | "manter_carga" | null — ver WorkoutService.computeSuggestion
 }

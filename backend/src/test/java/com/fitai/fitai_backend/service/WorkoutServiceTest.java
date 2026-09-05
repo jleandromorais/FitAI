@@ -294,6 +294,97 @@ class WorkoutServiceTest {
         assertThat(dto.getTotalSetsCompleted()).isEqualTo(2);
     }
 
+    // ── getProgress: sugestão de progressão ──────────────────────────────────────
+    // Regra usa só os 2 pontos de dado que já existem por exercício (peso atual,
+    // peso anterior, se a série foi concluída) — sem histórico de 3+ sessões, ver
+    // spec-exercise-progression-suggestion.md.
+
+    @Test
+    void getProgress_bateuTudoNoMesmoPeso_sugereSubirCarga() {
+        SetData set = workout.getExercises().get(0).getSets().get(0);
+        set.setPrev(60.0);
+        set.setWeight(60.0);
+        set.setDone(true);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isEqualTo("subir_carga");
+    }
+
+    @Test
+    void getProgress_naoCompletouSerie_sugereManterCarga() {
+        SetData set = workout.getExercises().get(0).getSets().get(0);
+        set.setPrev(60.0);
+        set.setWeight(60.0);
+        set.setDone(false);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isEqualTo("manter_carga");
+    }
+
+    @Test
+    void getProgress_semPesoAnterior_naoSugereNada() {
+        SetData set = workout.getExercises().get(0).getSets().get(0);
+        set.setPrev(null);
+        set.setWeight(60.0);
+        set.setDone(true);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isNull();
+    }
+
+    @Test
+    void getProgress_jaSubiuPesoDesdeUltimaVez_naoSugereNada() {
+        SetData set = workout.getExercises().get(0).getSets().get(0);
+        set.setPrev(60.0);
+        set.setWeight(65.0);
+        set.setDone(true);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isNull();
+    }
+
+    @Test
+    void getProgress_variasSeries_umaNaoConcluida_sugereManterCarga() {
+        // Exercita completedAllSets de verdade com mais de uma série: a primeira
+        // foi concluída no mesmo peso da anterior, a segunda ficou por fazer —
+        // o exercício inteiro conta como "não completou", mesmo a 1ª série OK.
+        Exercise exercise = workout.getExercises().get(0);
+        SetData set1 = exercise.getSets().get(0);
+        set1.setPrev(60.0);
+        set1.setWeight(60.0);
+        set1.setDone(true);
+        SetData set2 = SetData.builder().id(2L).reps(10).weight(60.0).prev(60.0).done(false).build();
+        set2.setExercise(exercise);
+        exercise.getSets().add(set2);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isEqualTo("manter_carga");
+    }
+
+    @Test
+    void getProgress_naoCompletouESemPesoAnterior_naoSugereNada() {
+        // Regra de "sem histórico" tem prioridade sobre "não completou".
+        SetData set = workout.getExercises().get(0).getSets().get(0);
+        set.setPrev(null);
+        set.setWeight(60.0);
+        set.setDone(false);
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getExercises().get(0).getSuggestion()).isNull();
+    }
+
     // ── computeCurrentStreak (via getProgress) ──────────────────────────────────
 
     private static String abbrevFor(DayOfWeek d) {

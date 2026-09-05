@@ -314,6 +314,9 @@ public class WorkoutService {
                 // estimado por uma contagem de reps assumida, ver ARCHITECTURE.md e
                 // PRODUCT.md ("track truth, not vibes").
                 double exerciseVolume = 0.0;
+                // Verdadeiro só se TODAS as séries do exercício foram marcadas feitas —
+                // usado por computeSuggestion() para distinguir "bateu tudo" de "ficou devendo".
+                boolean completedAllSets = true;
 
                 for (SetData s : ex.getSets()) {
                     double curr = s.getWeight() != null ? s.getWeight().doubleValue() : 0.0;
@@ -326,6 +329,8 @@ public class WorkoutService {
                     if (Boolean.TRUE.equals(s.getDone())) {
                         workoutVolume += curr * reps;
                         exerciseVolume += curr * reps;
+                    } else {
+                        completedAllSets = false;
                     }
                 }
 
@@ -340,7 +345,8 @@ public class WorkoutService {
                             maxPrev,
                             Math.round((maxCurrent - maxPrev) * 10.0) / 10.0,
                             ex.getSets().size(),
-                            Math.round(exerciseVolume * 10.0) / 10.0
+                            Math.round(exerciseVolume * 10.0) / 10.0,
+                            computeSuggestion(maxCurrent, maxPrev, completedAllSets)
                     ));
                 }
             }
@@ -362,6 +368,25 @@ public class WorkoutService {
                 exercises,
                 computeCurrentStreak(workouts, sessions)
         );
+    }
+
+    /*
+     * Sugestão de progressão por exercício — usa só os dois pontos de dado que
+     * já existem em SetData (peso atual, peso da sessão anterior, se as séries
+     * foram concluídas). Sem histórico de 3+ sessões por exercício no schema
+     * atual, então NUNCA sugere deload/redução — exigiria dado que não existe
+     * (ver PRODUCT.md "track truth, not vibes"). maxPrev <= 0 é checado
+     * primeiro porque tem prioridade sobre os outros ramos: sem um segundo
+     * ponto de comparação, não há sinal suficiente pra sugerir nada.
+     */
+    private String computeSuggestion(double maxCurrent, double maxPrev, boolean completedAllSets) {
+        if (maxPrev <= 0) return null;
+        // Comparação com tolerância, não "==" — o delta mostrado ao utilizador já
+        // é arredondado a 1 casa (ver Math.round acima); "0.0kg" de delta precisa
+        // sempre bater com "mesmo peso" aqui, mesmo com resíduo de ponto flutuante.
+        if (completedAllSets && Math.abs(maxCurrent - maxPrev) < 0.01) return "subir_carga";
+        if (!completedAllSets) return "manter_carga";
+        return null;
     }
 
     // Abreviações em português (sem acento, minúsculas) usadas no campo livre
