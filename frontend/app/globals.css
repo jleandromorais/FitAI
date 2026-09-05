@@ -982,23 +982,39 @@ body {
 }
 .landing-nav-link:hover { color: var(--text); }
 
+/* Hero em tela cheia: um cartão único ocupando quase todo o viewport (a nav
+   fixed flutua por cima, fora do fluxo), com o conteúdo ancorado nos dois
+   cantos de baixo — título/CTA à esquerda, card de demonstração à direita —
+   em vez do grid de duas colunas perto do topo que a estrutura padrão
+   convida. Layout de composição, sem copiar marca/copy/assets de terceiros. */
+.landing-hero-outer {
+  min-height: 100svh;
+  padding: clamp(88px, 11vw, 128px) clamp(16px, 3vw, 24px) clamp(16px, 3vw, 24px);
+  display: flex;
+}
 .landing-hero {
   position: relative;
-  /* padding-top folgado o bastante pra nunca ficar embaixo da nav, que agora
-     é fixed de verdade (fora do fluxo) em vez de sticky. */
-  padding: clamp(96px, 13vw, 152px) clamp(20px, 5vw, 64px) clamp(56px, 8vw, 96px);
+  flex: 1;
+  width: 100%;
+  border-radius: 28px;
   overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
 }
-.landing-hero-grid {
+.landing-hero-bottom {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: clamp(32px, 6vw, 72px);
-  align-items: center;
-  max-width: 1240px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  gap: clamp(24px, 4vw, 48px);
+  padding: clamp(28px, 4vw, 56px);
 }
+.landing-hero-content { max-width: 620px; }
+.landing-hero-demo { flex-shrink: 0; width: min(380px, 38vw); }
 .landing-h1 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -1129,31 +1145,48 @@ body {
   max-width: 65ch;
 }
 
-.landing-split {
+/* Grid assimétrico de features reais: um cartão grande (visual ao vivo) +
+   dois cartões sólidos de acento — nunca ícone+título+texto genérico, cada
+   cartão carrega um mecanismo de verdade do produto. */
+.landing-feature-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(32px, 6vw, 72px);
-  align-items: center;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
-.landing-split.reverse .landing-split-visual { order: -1; }
-.landing-split-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(24px, 2.8vw, 34px);
-  color: var(--text);
-  margin-bottom: 16px;
-  line-height: 1.2;
+.landing-feature-card {
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 320px;
 }
-.landing-split-text { font-size: 15px; line-height: 1.7; color: var(--text-dim); max-width: 50ch; }
-.landing-split-visual {
+.landing-feature-card.big {
+  grid-column: span 2;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
+}
+.landing-feature-card.accent {
+  grid-column: span 2;
+  background: linear-gradient(155deg, var(--surface-3), var(--surface-2));
+  border: 1px solid var(--border);
+}
+.landing-feature-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(19px, 2vw, 23px);
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+.landing-feature-card-text { font-size: 14px; line-height: 1.65; color: var(--text-dim); max-width: 40ch; }
+.landing-feature-card-visual {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 260px;
+  margin-bottom: 16px;
+  min-height: 140px;
 }
 
 .landing-cta-final {
@@ -1188,8 +1221,16 @@ body {
 .landing-footer-note { font-size: 12px; color: var(--text-mute); }
 
 @media (max-width: 900px) {
-  .landing-hero-grid, .landing-split { grid-template-columns: 1fr; }
-  .landing-split.reverse .landing-split-visual { order: 0; }
+  .landing-feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .landing-hero-outer { min-height: auto; padding: 84px 14px 14px; }
+  .landing-hero { min-height: calc(100svh - 98px); align-items: stretch; }
+  .landing-hero-bottom { flex-direction: column; align-items: stretch; padding: 22px; }
+  .landing-hero-content { max-width: 100%; }
+  .landing-hero-demo { width: 100%; }
+  .landing-feature-grid { grid-template-columns: 1fr; }
+  .landing-feature-card.big, .landing-feature-card.accent { grid-column: span 1; }
 }
 @media (max-width: 560px) {
   .landing-nav-link { display: none; }

@@ -191,27 +191,29 @@ export default function LandingPage() {
 
       <SmoothScroll>
       <div className="landing">
-      <section className="landing-hero">
-        <div className="auth-brand-ember" style={{ opacity: 0.6 }} />
-        <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}><EffortLines /></div>
-        <div className="landing-hero-grid">
-          <div>
-            <h1 className="landing-h1">
-              Seu próximo treino já está <em className="flame-word">decidido</em> antes de você chegar na academia.
-            </h1>
-            <p className="landing-lede landing-load landing-load-lede">
-              A maioria dos apps de treino só registra o que você já escolheu fazer. O FitAI propõe o plano —
-              a IA monta um programa completo a partir do seu nível, objetivo, dias disponíveis e equipamento.
-            </p>
-            <div className="landing-cta-row landing-load landing-load-cta">
-              <Link href="/login?tab=criar" className="btn btn-primary btn-lg">
-                Criar meu plano <ArrowRight size={16} />
-              </Link>
-              <Link href="/login" className="btn btn-ghost btn-lg">Já tenho conta</Link>
+      <section className="landing-hero-outer">
+        <div className="landing-hero">
+          <div className="auth-brand-ember" style={{ opacity: 0.6 }} />
+          <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}><EffortLines /></div>
+          <div className="landing-hero-bottom">
+            <div className="landing-hero-content">
+              <h1 className="landing-h1">
+                Seu próximo treino já está <em className="flame-word">decidido</em> antes de você chegar na academia.
+              </h1>
+              <p className="landing-lede landing-load landing-load-lede">
+                A maioria dos apps de treino só registra o que você já escolheu fazer. O FitAI propõe o plano —
+                a IA monta um programa completo a partir do seu nível, objetivo, dias disponíveis e equipamento.
+              </p>
+              <div className="landing-cta-row landing-load landing-load-cta">
+                <Link href="/login?tab=criar" className="btn btn-primary btn-lg">
+                  Criar meu plano <ArrowRight size={16} />
+                </Link>
+                <Link href="/login" className="btn btn-ghost btn-lg">Já tenho conta</Link>
+              </div>
             </div>
-          </div>
-          <div className="landing-load landing-load-card">
-            <AiDemoCard />
+            <div className="landing-hero-demo landing-load landing-load-card">
+              <AiDemoCard />
+            </div>
           </div>
         </div>
       </section>
@@ -230,44 +232,35 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-section">
-        <div className="landing-split">
-          <Reveal>
-            <div>
-              <h2 className="landing-split-title">Cada série, cronometrada. Cada peso, editável na hora.</h2>
-              <p className="landing-split-text">
-                Durante o treino, o FitAI cronometra o descanso entre séries, deixa você ajustar peso e reps
-                em tempo real, e soma o volume levantado enquanto a sessão acontece — sem precisar fechar o
-                app pra fazer conta depois.
-              </p>
+        <Reveal>
+          <div className="landing-feature-grid">
+            <div className="landing-feature-card big">
+              <div className="landing-feature-card-visual">
+                <RepCounter />
+              </div>
+              <div>
+                <h3 className="landing-feature-card-title">Cada série, cronometrada. Cada peso, editável na hora.</h3>
+                <p className="landing-feature-card-text">
+                  O FitAI cronometra o descanso entre séries, deixa você ajustar peso e reps em tempo real, e
+                  soma o volume levantado enquanto a sessão acontece.
+                </p>
+              </div>
             </div>
-          </Reveal>
-          <Reveal>
-            <div className="landing-split-visual">
-              <RepCounter />
+            <div className="landing-feature-card accent">
+              <div className="landing-feature-card-visual" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                <div className="h-eyebrow" style={{ marginBottom: 8 }}>Exemplo ilustrativo — volume por sessão (kg)</div>
+                <LineChart data={EXAMPLE_VOLUME} height={120} label="Exemplo de evolução de volume" />
+              </div>
+              <div>
+                <h3 className="landing-feature-card-title">Carga e volume comparados sessão a sessão, não estimados.</h3>
+                <p className="landing-feature-card-text">
+                  O FitAI compara o peso e o volume de hoje com a sua última sessão do mesmo exercício —
+                  evidência real de progresso, nunca uma média inventada.
+                </p>
+              </div>
             </div>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="landing-section">
-        <div className="landing-split reverse">
-          <Reveal>
-            <div>
-              <h2 className="landing-split-title">Carga e volume comparados sessão a sessão, não estimados.</h2>
-              <p className="landing-split-text">
-                Cada série executada fica salva. O FitAI compara o peso e o volume de hoje com a sua última
-                sessão do mesmo exercício — evidência real de progresso, ou de estagnação, nunca uma média
-                inventada.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="landing-split-visual" style={{ padding: "32px 32px 20px", flexDirection: "column", alignItems: "stretch" }}>
-              <div className="h-eyebrow" style={{ marginBottom: 8 }}>Exemplo ilustrativo — volume por sessão (kg)</div>
-              <LineChart data={EXAMPLE_VOLUME} height={160} label="Exemplo de evolução de volume" />
-            </div>
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
       </section>
 
       <section className="landing-cta-final">
