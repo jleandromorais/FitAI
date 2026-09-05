@@ -1015,6 +1015,32 @@ body {
 }
 .landing-hero-content { max-width: 620px; }
 .landing-hero-demo { flex-shrink: 0; width: min(380px, 38vw); }
+
+/* Emblema da marca no hero — a mesma figura em grafite (asas + "veni vidi
+   vici") já usada no login, aqui em tamanho grande como marca de destaque da
+   página. O selinho "F" pequeno (sidebar, nav, rodapé) continua sendo o
+   logo funcional do produto; este é o único lugar com a ilustração completa.
+   Mesma técnica invert+screen dos outros usos (ver .auth-hero-figure) —
+   necessária pro traço escuro aparecer sobre o fundo quase-preto. */
+.landing-hero-emblem {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 62%;
+  width: auto;
+  max-width: 70%;
+  object-fit: contain;
+  filter: invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 75%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 75%, transparent 100%);
+}
+@media (max-width: 760px) {
+  .landing-hero-emblem { display: none; }
+}
 .landing-h1 {
   font-family: var(--font-display);
   font-weight: 700;

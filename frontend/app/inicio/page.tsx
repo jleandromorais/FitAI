@@ -24,10 +24,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles, Dumbbell, ArrowRight } from "lucide-react";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
 import { LineChart } from "@/components/ui/Charts";
+import heroVictory from "@/img/hero-victory.png";
 
 // Scroll com inércia (técnica de github.com/naocodei — "o conteúdo persegue
 // a posição da rolagem em vez de saltar pra ela"), em JS puro, sem lib.
@@ -195,6 +197,7 @@ export default function LandingPage() {
         <div className="landing-hero">
           <div className="auth-brand-ember" style={{ opacity: 0.6 }} />
           <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}><EffortLines /></div>
+          <Image src={heroVictory} alt="" aria-hidden="true" className="landing-hero-emblem" priority />
           <div className="landing-hero-bottom">
             <div className="landing-hero-content">
               <h1 className="landing-h1">
