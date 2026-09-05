@@ -55,7 +55,7 @@ O **FitAI** é uma aplicação web completa para gestão e acompanhamento de tre
 | **Backend** | Spring Boot 4 · Java 21 · Spring Security · JWT |
 | **Base de Dados** | PostgreSQL 17/18 · Flyway (Migrations) |
 | **Autenticação** | JWT (Access + Refresh) · Google OAuth2 |
-| **Inteligência Artificial** | Groq API (Qwen, via Groq Cloud) |
+| **Inteligência Artificial** | Groq API (GPT-OSS 120B, via Groq Cloud) |
 | **Testes** | Vitest + Testing Library (Front) · JUnit 5 (Back) · Playwright (E2E) |
 | **Deploy** | Vercel (Frontend) · Render (Backend + Postgres) |
 

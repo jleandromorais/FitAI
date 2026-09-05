@@ -205,16 +205,23 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        // llama-3.3-70b-versatile foi descontinuado pela Groq (a Llama saiu
-        // do catálogo inteiro) — causava 404 "model_not_found" em toda
-        // chamada, que o código já tratava como 502 genérico pro cliente.
-        // qwen/qwen3.8-27b testado directamente contra a API: JSON válido,
-        // ~4s (bem dentro do limite de 9s abaixo), respeita a lista de
-        // músculos permitidos do prompt.
-        model: "qwen/qwen3.8-27b",
+        // llama-3.3-70b-versatile foi descontinuado pela Groq (404
+        // "model_not_found" em toda chamada). Trocado primeiro pra
+        // qwen/qwen3.8-27b — gerava JSON correto, mas a conta tem um limite
+        // de saída (OTPM) de só 1000 tokens/min pra esse modelo, e um plano
+        // de treino completo pede ~1200-1700 tokens: 429 "rate_limit_exceeded"
+        // em toda chamada real, confirmado nos logs de produção da Vercel.
+        // openai/gpt-oss-120b testado directamente contra a API (6/6 JSON
+        // válido no cenário mais pesado — 6 treinos avançado): margem de
+        // rate limit muito maior (~8000 tokens/min) e ~4-5.6s, dentro do
+        // limite de 9s abaixo. reasoning_effort:"low" é necessário — sem
+        // isso o modelo (é um modelo de raciocínio) gasta o orçamento de
+        // tokens pensando e devolve content vazio.
+        model: "openai/gpt-oss-120b",
         messages: [{ role: "user", content: buildPrompt(body) }],
         temperature: 0.7,
         max_tokens: 6000,
+        reasoning_effort: "low",
       }),
       // Deixa uma margem abaixo do limite de 10s do Vercel Hobby pra devolver
       // um erro tratado em vez do function timeout bruto da plataforma.
