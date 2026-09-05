@@ -276,20 +276,26 @@ public class WorkoutService {
     /*
      * PROGRESSO DO UTILIZADOR
      *
-     * Calcula a evolução de carga por exercício e o volume total acumulado.
-     * Usa os campos `weight` (peso atual) e `prev` (peso da sessão anterior)
-     * que são atualizados em cada sessão pelo saveSession().
-     *
-     * Não requer tabela extra — os dados já estão no SetData.
+     * Volume e séries globais vêm do histórico real de sessões (WorkoutSession),
+     * não do snapshot embutido em SetData — SetData.weight/prev reflete só a
+     * última sessão de cada exercício, então somar por ali sub-conta qualquer
+     * treino repetido mais de uma vez (ver ARCHITECTURE.md). A evolução por
+     * exercício (currentWeight/prevWeight/delta) continua vindo de SetData,
+     * já que WorkoutSession não guarda detalhe por exercício, só o agregado.
      */
     public ProgressDto getProgress(String email) {
         List<Workout> workouts = workoutRepository.findAllByUserEmail(email);
+        List<WorkoutSession> sessions = sessionRepository.findAllByUserEmail(email);
 
-        // Volume e séries globais
-        double totalVolume = 0.0;
-        int totalSetsCompleted = 0;
+        double totalVolume = sessions.stream()
+                .mapToDouble(s -> s.getTotalVolume() != null ? s.getTotalVolume() : 0.0)
+                .sum();
+        int totalSetsCompleted = sessions.stream()
+                .mapToInt(s -> s.getSetsCompleted() != null ? s.getSetsCompleted() : 0)
+                .sum();
 
-        // Volume e label por treino (para o gráfico de barras)
+        // Volume e label por treino (para o gráfico de barras) — este continua
+        // por treino/template, um conceito diferente do total global acima.
         List<Double> volumePerWorkout = new java.util.ArrayList<>();
         List<String> workoutLabels   = new java.util.ArrayList<>();
 
@@ -304,7 +310,10 @@ public class WorkoutService {
                 // Peso máximo atual e anterior entre todas as séries do exercício
                 double maxCurrent = 0.0;
                 double maxPrev    = 0.0;
-                int    setsDone   = 0;
+                // Volume real deste exercício (peso × reps das séries feitas) — nunca
+                // estimado por uma contagem de reps assumida, ver ARCHITECTURE.md e
+                // PRODUCT.md ("track truth, not vibes").
+                double exerciseVolume = 0.0;
 
                 for (SetData s : ex.getSets()) {
                     double curr = s.getWeight() != null ? s.getWeight().doubleValue() : 0.0;
@@ -315,10 +324,8 @@ public class WorkoutService {
                     if (prev > maxPrev)    maxPrev    = prev;
 
                     if (Boolean.TRUE.equals(s.getDone())) {
-                        workoutVolume  += curr * reps;
-                        totalVolume    += curr * reps;
-                        totalSetsCompleted++;
-                        setsDone++;
+                        workoutVolume += curr * reps;
+                        exerciseVolume += curr * reps;
                     }
                 }
 
@@ -332,7 +339,8 @@ public class WorkoutService {
                             maxCurrent,
                             maxPrev,
                             Math.round((maxCurrent - maxPrev) * 10.0) / 10.0,
-                            ex.getSets().size()
+                            ex.getSets().size(),
+                            Math.round(exerciseVolume * 10.0) / 10.0
                     ));
                 }
             }
@@ -352,7 +360,7 @@ public class WorkoutService {
                 volumePerWorkout,
                 workoutLabels,
                 exercises,
-                computeCurrentStreak(workouts, email)
+                computeCurrentStreak(workouts, sessions)
         );
     }
 
@@ -404,12 +412,12 @@ public class WorkoutService {
      * Sem limite de janela de datas — usa TODO o histórico de sessões,
      * diferente de getRecentSessions() que só olha os últimos N dias.
      */
-    private Integer computeCurrentStreak(List<Workout> workouts, String email) {
+    private Integer computeCurrentStreak(List<Workout> workouts, List<WorkoutSession> sessions) {
         Set<DayOfWeek> scheduledDays = parseScheduledDays(workouts);
 
         if (scheduledDays.isEmpty()) return 0;
 
-        Set<LocalDate> trainedDates = sessionRepository.findAllByUserEmail(email).stream()
+        Set<LocalDate> trainedDates = sessions.stream()
                 .map(s -> s.getExecutedAt().toLocalDate())
                 .collect(java.util.stream.Collectors.toSet());
 

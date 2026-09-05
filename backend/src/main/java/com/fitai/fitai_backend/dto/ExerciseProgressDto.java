@@ -17,4 +17,5 @@ public class ExerciseProgressDto {
     private Double prevWeight;    // maior peso anterior (antes da última sessão)
     private Double delta;         // currentWeight - prevWeight (ganho de carga)
     private Integer totalSets;    // total de séries cadastradas
+    private Double volume;        // peso × reps somado das séries feitas (done=true) deste exercício — real, não estimado
 }

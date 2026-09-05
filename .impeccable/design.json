@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-06T00:00:00.000Z",
+  "title": "Design System: FitAI",
+  "extensions": {
+    "colorMeta": {
+      "bg": { "role": "neutral", "displayName": "Carvão Quente", "canonical": "#12100e", "tonalRamp": ["#12100e", "#1c1815", "#241f1a", "#2c261f", "#332b23", "#6b6053", "#a89e8f", "#f5f1ea"] },
+      "surface": { "role": "neutral", "displayName": "Cinza Quente", "canonical": "#1c1815" },
+      "surface-2": { "role": "neutral", "displayName": "Cinza Levantado", "canonical": "#241f1a" },
+      "surface-3": { "role": "neutral", "displayName": "Cinza Aceso", "canonical": "#2c261f" },
+      "border": { "role": "neutral", "displayName": "Fuligem", "canonical": "#332b23" },
+      "border-soft": { "role": "neutral", "displayName": "Fuligem Suave", "canonical": "#241f1a" },
+      "text": { "role": "neutral", "displayName": "Alvo Quente", "canonical": "#f5f1ea" },
+      "text-dim": { "role": "neutral", "displayName": "Cinza Morno", "canonical": "#a89e8f" },
+      "text-mute": { "role": "neutral", "displayName": "Cinza Apagado", "canonical": "#6b6053" },
+      "accent": { "role": "primary", "displayName": "Brasa", "canonical": "#ff5a2e", "tonalRamp": ["#40170c", "#662412", "#8c3219", "#b33f20", "#d94d27", "#ff5a2e", "#ff9477", "#ffc5b6"] },
+      "accent-hover": { "role": "primary", "displayName": "Brasa Clara", "canonical": "#ff7a52" },
+      "accent-soft": { "role": "primary", "displayName": "Brasa Suave", "canonical": "rgba(255,90,46,0.1)" },
+      "gain": { "role": "secondary", "displayName": "Verde-Conquista", "canonical": "#8fe85a", "tonalRamp": ["#243a17", "#395d24", "#4f8032", "#64a23f", "#7ac54d", "#8fe85a", "#b6f094", "#d8f7c5"] },
+      "gain-soft": { "role": "secondary", "displayName": "Verde-Conquista Suave", "canonical": "rgba(143,232,90,0.1)" },
+      "danger": { "role": "tertiary", "displayName": "Vermelho-Alerta", "canonical": "#ff4d4d", "tonalRamp": ["#401313", "#661f1f", "#8c2a2a", "#b33636", "#d94141", "#ff4d4d", "#ff8b8b", "#ffc1c1"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos de página, headline de auth, números de stat grandes." },
+      "body": { "displayName": "Body", "purpose": "Texto corrido por defeito de toda a aplicação." },
+      "mono": { "displayName": "Mono", "purpose": "Qualquer valor numérico que muda ao vivo: cronómetro, reps, pesos, contadores, índices." }
+    },
+    "shadows": [
+      { "name": "modal-lg", "value": "0 32px 80px rgba(0,0,0,0.5)", "purpose": "Modais grandes de várias etapas (ex: wizard de criar treino), sempre com backdrop-filter: blur(4px)." },
+      { "name": "modal-sm", "value": "0 24px 60px rgba(0,0,0,0.4)", "purpose": "Diálogos pequenos de confirmação (ex: eliminar treino)." },
+      { "name": "drawer-mobile", "value": "2px 0 24px rgba(0,0,0,0.4)", "purpose": "Sidebar em overlay off-canvas em ecrãs ≤768px." },
+      { "name": "rep-counter-glow", "value": "0 0 12px rgba(255,90,46,0.6)", "purpose": "Glow pulsante do dot atual no RepCounter da página de autenticação — reservado a esse componente de assinatura." }
+    ],
+    "motion": [
+      { "name": "duration-fast", "value": "150ms", "purpose": "Transição por defeito de hover/press em botões e cards." },
+      { "name": "duration-standard", "value": "200ms", "purpose": "Transições de border-color e background em cards e itens de navegação." },
+      { "name": "ease-tab-slide", "value": "cubic-bezier(0.65,0,0.35,1)", "purpose": "Pill deslizante do seletor de tabs de autenticação (250ms)." }
+    ],
+    "breakpoints": [
+      { "name": "grid-collapse-1col", "value": "560px" },
+      { "name": "sidebar-drawer", "value": "768px" },
+      { "name": "grid-collapse-2col", "value": "900px" },
+      { "name": "auth-brand-panel-min", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão Primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "CTA principal. Feedback tátil por scale, nunca por sombra.",
+      "html": "<button class=\"ds-btn-primary\">Salvar treino</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; font-family:var(--font-body); background:var(--accent); color:#16100c; border:none; transition:background .15s, transform .1s; } .ds-btn-primary:hover { background:var(--accent-hover); } .ds-btn-primary:active { transform:scale(0.97); } .ds-btn-primary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }"
+    },
+    {
+      "name": "Botão Secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação não-primária no mesmo contexto de um primary.",
+      "html": "<button class=\"ds-btn-secondary\">Cancelar</button>",
+      "css": ".ds-btn-secondary { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; font-family:var(--font-body); background:var(--surface-2); color:var(--text-dim); border:1px solid var(--border); transition:background .15s, transform .1s; } .ds-btn-secondary:hover { background:var(--surface-3); } .ds-btn-secondary:active { transform:scale(0.97); }"
+    },
+    {
+      "name": "Botão Destrutivo",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Eliminar, cancelar irreversivelmente.",
+      "html": "<button class=\"ds-btn-danger\">Eliminar treino</button>",
+      "css": ".ds-btn-danger { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; font-family:var(--font-body); background:rgba(255,77,77,0.12); color:var(--danger); border:1px solid rgba(255,77,77,0.2); transition:background .15s, transform .1s; } .ds-btn-danger:hover { background:rgba(255,77,77,0.2); } .ds-btn-danger:active { transform:scale(0.97); }"
+    },
+    {
+      "name": "Card de Estatística",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Superfície flat com degrau de cor + borda de 1px, sem sombra.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-label\">Volume total</div><div class=\"ds-card-value\">12.480<span class=\"ds-card-unit\">kg</span></div></div>",
+      "css": ".ds-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; transition:border-color .2s; } .ds-card:hover { border-color:#3d332a; } .ds-card-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); font-family:var(--font-body); } .ds-card-value { font-size:32px; font-weight:700; font-family:var(--font-display); color:var(--text); margin-top:6px; } .ds-card-unit { font-size:13px; font-weight:400; color:var(--text-dim); margin-left:3px; }"
+    },
+    {
+      "name": "Campo de Texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Foco marcado só por mudança de cor de borda, sem glow nem ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Peso (kg)\" />",
+      "css": ".ds-input { background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:10px 14px; font-size:14px; color:var(--text); font-family:var(--font-body); } .ds-input::placeholder { color:var(--text-mute); } .ds-input:focus { outline:none; border-color:var(--accent); }"
+    },
+    {
+      "name": "Chip de Grupo Muscular",
+      "kind": "chip",
+      "refersTo": "chip-accent",
+      "description": "Etiqueta de exibição não-interativa (cursor:default) — não confundir com o chip de filtro clicável.",
+      "html": "<span class=\"ds-chip\">Peito</span>",
+      "css": ".ds-chip { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:600; font-family:var(--font-body); cursor:default; }"
+    },
+    {
+      "name": "Item de Navegação",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Estado ativo é preenchimento tintado (accent-soft), não borda nem sublinhado.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 12h18M3 6h18M3 18h18\"/></svg>Dashboard</a>",
+      "css": ".ds-nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; color:var(--text-dim); font-size:13px; font-weight:500; font-family:var(--font-body); text-decoration:none; } .ds-nav-item:hover { background:var(--surface-2); } .ds-nav-item-active { background:var(--accent-soft); color:var(--accent); }"
+    },
+    {
+      "name": "Contador Ao Vivo",
+      "kind": "custom",
+      "refersTo": "rep-counter",
+      "description": "Componente de assinatura: número mono gigante com glow laranja e dots de progresso pulsantes. Usa sempre tabular-nums para valores que mudam ao vivo.",
+      "html": "<div class=\"ds-rep-counter\"><div class=\"ds-rep-num\">7</div><div class=\"ds-rep-dots\"><span class=\"ds-rep-dot ds-rep-dot-current\"></span><span class=\"ds-rep-dot\"></span><span class=\"ds-rep-dot\"></span><span class=\"ds-rep-dot\"></span></div></div>",
+      "css": ".ds-rep-num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:64px; font-weight:700; color:var(--accent); text-shadow:0 0 32px rgba(255,90,46,0.35); } .ds-rep-dots { display:flex; gap:6px; margin-top:8px; } .ds-rep-dot { width:22px; height:4px; border-radius:99px; background:var(--border); } .ds-rep-dot-current { background:var(--accent); box-shadow:0 0 12px rgba(255,90,46,0.6); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Combustão",
+    "overview": "FitAI não é uma app de fitness clínica e branca — é carvão quente em vez de preto-terminal, com uma brasa laranja como identidade de energia e esforço. O fundo nunca é preto puro nem cinza neutro: é um carvão morno (#12100e) que sobe em degraus de calor (surface → surface-2 → surface-3) para separar camadas, sem nunca recorrer a sombra. A brasa (--accent, laranja #ff5a2e) é o único acento realmente vivo do sistema — usada com intenção, não espalhada. O verde (--gain) é deliberadamente reservado: não é uma segunda cor de marca, é um sinal semântico único para \"conquista\" (streak, recorde, meta batida) — usá-lo fora desse contexto dilui o único momento em que o sistema muda de linguagem.\n\nA tipografia reforça a mesma lógica de intensidade contida: Space Grotesk em negrito para números e títulos que devem \"pesar\" no ecrã (stats, headlines), Inter para o texto corrido do dia a dia, e JetBrains Mono — com tabular-nums — para qualquer valor que mude ao vivo (cronómetro, contador de reps, pesos). Esta escolha não é decorativa: no RepCounter da página de autenticação, o número em mono com glow (text-shadow laranja) é literalmente o elemento que vende o produto antes do login.",
+    "keyCharacteristics": [
+      "Tema escuro único e fixo — não existe modo claro nem toggle.",
+      "Superfícies flat: hierarquia por degrau de cor + borda de 1px, nunca por sombra.",
+      "Sombra reservada estritamente a elementos elevados acima do conteúdo (modais, sidebar mobile em overlay) — nunca em cards, botões ou inputs em repouso.",
+      "Um único acento vivo (laranja); o verde é sinal, não paleta.",
+      "Dados que mudam em tempo real (cronómetro, reps, pesos) usam sempre a fonte mono com tabular-nums."
+    ],
+    "rules": [
+      { "name": "A Regra da Brasa Única", "body": "Só existe um acento vivo no sistema — a Brasa. Antes de introduzir qualquer nova cor \"de destaque\", pergunta se ela não devia ser apenas Brasa com outra opacidade.", "section": "colors" },
+      { "name": "A Regra do Verde-Sinal", "body": "Verde-Conquista significa uma coisa: o utilizador conseguiu algo (streak, PR, set feito). Nunca o uses como cor decorativa, de marca, ou de estado neutro — isso esvazia o sinal.", "section": "colors" },
+      { "name": "A Regra do Mono ao Vivo", "body": "Qualquer número que muda em tempo real (timer, reps, peso durante a sessão) é sempre JetBrains Mono com tabular-nums — nunca a fonte de corpo.", "section": "typography" },
+      { "name": "A Regra Flat-por-Defeito", "body": "Cards, botões, chips e inputs em repouso nunca têm box-shadow. Sombra só aparece quando um elemento se eleva fisicamente sobre outro (modal sobre página, drawer sobre conteúdo).", "section": "elevation" },
+      { "name": "A Regra dos Três Degraus", "body": "Tiles pequenos/ícones ficam nos 7–9px, cards/painéis nos 10–14px, modais nos 16–18px.", "section": "shapes" },
+      { "name": "A Regra do Painel Único", "body": "HudCorners e .glow-live ficam reservados a cards de dado vivo/gerado (hero, recordes) — no máximo um .glow-live por ecrã.", "section": "components" },
+      { "name": "A Regra da Honestidade do Painel", "body": "O vocabulário de painel de sistema (cantos HUD, grelha, selo \"ao vivo\") só pode vestir um card cujo conteúdo seja genuinamente computado a partir de dado real do utilizador — nunca lógica local/estática, mesmo que o card mencione IA.", "section": "components" }
+    ],
+    "dos": [
+      "Do usar sempre JetBrains Mono + tabular-nums para qualquer número que mude ao vivo (timer, reps, peso).",
+      "Do manter cards, botões, chips e inputs sem sombra em repouso — profundidade vem de degrau de cor + borda.",
+      "Do reservar Verde-Conquista exclusivamente para sinalizar sucesso/conquista (PR, streak, set concluído).",
+      "Do usar scale(0.97) (ou equivalente tátil por movimento) como feedback de \"active\" em vez de mudança de sombra.",
+      "Do seguir a escala de radius por tipo de superfície: 7–9px tiles/botões, 10–14px cards, 16–18px modais."
+    ],
+    "donts": [
+      "Don't introduzir uma segunda cor de \"destaque\" ao lado da Brasa.",
+      "Don't usar Verde-Conquista como cor de marca, decorativa, ou de estado neutro.",
+      "Don't adicionar box-shadow a um card, botão, chip ou input em repouso.",
+      "Don't reintroduzir o verde neon rgba(0,255,136,...) — usar --accent/--accent-soft (elementos comuns) ou --gain/--gain-soft (conquistas genuínas).",
+      "Don't aplicar o vocabulário de painel de sistema a um card cujo conteúdo seja regra local/estática."
+    ]
+  }
+}

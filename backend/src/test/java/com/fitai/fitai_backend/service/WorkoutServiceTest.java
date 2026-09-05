@@ -254,15 +254,44 @@ class WorkoutServiceTest {
 
     @Test
     void getProgress_comSeriesConcluidas_deveAcumularVolume() {
+        // A evolução por exercício (currentWeight/prevWeight) ainda vem do SetData...
         workout.getExercises().get(0).getSets().get(0).setDone(true);
         when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
 
+        // ...mas o volume/séries GLOBAIS vêm do histórico real de sessões, não do
+        // SetData — ver comentário de getProgress() em WorkoutService.
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(LocalDate.now().atTime(10, 0))
+                        .totalVolume(600.0).setsCompleted(1).build()
+        ));
+
         ProgressDto dto = workoutService.getProgress("ana@test.com");
 
-        assertThat(dto.getTotalVolume()).isEqualTo(600.0); // 60 × 10
+        assertThat(dto.getTotalVolume()).isEqualTo(600.0);
         assertThat(dto.getTotalSetsCompleted()).isEqualTo(1);
         assertThat(dto.getExercises()).hasSize(1);
         assertThat(dto.getExercises().get(0).getName()).isEqualTo("Supino");
+    }
+
+    @Test
+    void getProgress_treinoExecutadoVariasVezes_somaVolumeDeCadaSessaoReal() {
+        // Bug corrigido: antes, totalVolume vinha do SetData (snapshot da ÚLTIMA
+        // sessão), então um treino executado 50x contava 1x só. Agora soma o
+        // volume de cada WorkoutSession real, então 2 sessões = 2x o volume.
+        when(workoutRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(workout));
+
+        LocalDate today = LocalDate.now();
+        when(sessionRepository.findAllByUserEmail("ana@test.com")).thenReturn(List.of(
+                WorkoutSession.builder().executedAt(today.atTime(10, 0))
+                        .totalVolume(600.0).setsCompleted(1).build(),
+                WorkoutSession.builder().executedAt(today.minusDays(1).atTime(10, 0))
+                        .totalVolume(550.0).setsCompleted(1).build()
+        ));
+
+        ProgressDto dto = workoutService.getProgress("ana@test.com");
+
+        assertThat(dto.getTotalVolume()).isEqualTo(1150.0); // 600 + 550, não só a última
+        assertThat(dto.getTotalSetsCompleted()).isEqualTo(2);
     }
 
     // ── computeCurrentStreak (via getProgress) ──────────────────────────────────

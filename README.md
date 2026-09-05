@@ -4,6 +4,8 @@
 
 FitAI é uma aplicação web completa para gestão e acompanhamento de treinos físicos. O utilizador cria o seu plano de treino por divisão muscular (Push/Pull/Legs, Upper/Lower, ABC…), executa as sessões com acompanhamento em tempo real, e acompanha a evolução de carga e volume ao longo do tempo. A IA sugere e gera planos de treino personalizados com base no perfil e nos objetivos de cada utilizador.
 
+> Para decisões de arquitetura, trade-offs aceitos e dívida técnica conhecida, ver [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ---
 
 ## Stack
@@ -15,7 +17,7 @@ FitAI é uma aplicação web completa para gestão e acompanhamento de treinos f
 | Base de dados | PostgreSQL 17/18 |
 | Migrations | Flyway |
 | Autenticação | JWT (access + refresh) + Google OAuth2 |
-| IA | Gemini API (Google AI Studio) |
+| IA | Groq API (Llama, via Groq Cloud) |
 | Testes | Vitest + Testing Library (frontend) · JUnit 5 (backend) |
 | Deploy | Vercel (frontend) · Render (backend + Postgres) |
 
@@ -32,7 +34,7 @@ FitAI é uma aplicação web completa para gestão e acompanhamento de treinos f
 - **Histórico de carga** — cada sessão grava o peso executado e move o anterior para `prev`, permitindo comparação com a sessão anterior
 - **Progresso real** — gráficos de evolução de carga por exercício, volume por treino e recordes pessoais, alimentados pelos dados das sessões guardadas
 - **Calendário** — visualização mensal dos dias com treino programado por divisão
-- **IA** — geração de planos de treino personalizados via Gemini API com base no nível, objetivo, dias disponíveis e equipamento
+- **IA** — geração de planos de treino personalizados via Groq API com base no nível, objetivo, dias disponíveis e equipamento
 - **Dashboard** — visão geral com treino em destaque, stats ao vivo e distribuição muscular
 - **Proteção de rotas** — middleware que redireciona utilizadores não autenticados para o login
 - **Rate limiting** — filtro de proteção contra abuso nos endpoints de autenticação
@@ -59,8 +61,14 @@ FitAI/
 │   │   ├── GoogleProvider.tsx
 │   │   └── ui/Charts.tsx               # LineChart, BarChart, Sparkline
 │   ├── hooks/
-│   │   ├── useWorkouts.ts
-│   │   └── useProgress.ts
+│   │   ├── useWorkouts.ts              # Lista de treinos + treino individual (useWorkout)
+│   │   ├── useProgress.ts              # Estatísticas agregadas + evolução por exercício
+│   │   ├── useProgressStats.ts         # Deriva PRs, distribuição muscular etc. de useProgress
+│   │   ├── useSessions.ts              # Histórico de sessões executadas
+│   │   ├── useWorkoutSession.ts        # Estado da sessão ao vivo (timer, séries)
+│   │   ├── useWorkoutSlots.ts          # Wizard de criação de treino (múltiplos blocos)
+│   │   ├── useExerciseRows.ts          # Edição de exercícios (usado pelos modais)
+│   │   └── useCountdown.ts             # Cronómetro/timer genérico
 │   ├── lib/
 │   │   ├── api.ts                      # Cliente HTTP com JWT
 │   │   └── exercises.ts                # Catálogo de 57 exercícios
@@ -231,16 +239,16 @@ POST /workouts/{id}/session
   { exercises: [{ exerciseId, sets: [{ setIndex, weight, reps, done }] }] }
         │
         ▼
-Backend (WorkoutService.saveSession)
-  - set.prev ← set.weight   (guarda histórico)
-  - set.weight ← novo peso executado
-  - set.done ← true/false
-  - Calcula volume total e séries concluídas
+Backend (WorkoutService.saveSession) — escreve nas DUAS fontes:
+  - SetData: prev ← weight (guarda histórico), weight ← novo peso, done ← true/false
+    (usado depois para a evolução de carga POR EXERCÍCIO)
+  - WorkoutSession: nova linha com totalVolume, setsCompleted, executedAt
+    (usado depois para QUALQUER estatística agregada — ver ARCHITECTURE.md)
         │
         ▼
 GET /workouts/progress
-  - Lê weight (atual) e prev (anterior) de cada SetData
-  - Calcula delta de carga por exercício
+  - Evolução por exercício (currentWeight/prevWeight/delta) ← lê de SetData
+  - Totais agregados (totalVolume, streak) ← soma todas as WorkoutSession
   - Devolve stats para os gráficos de evolução
 ```
 
@@ -250,15 +258,22 @@ GET /workouts/progress
 
 ```
 User
- └── Workout (N)
-      ├── name, code, schedule, tags[]
-      └── Exercise (N)
-           ├── name, muscle, restSeconds
-           └── SetData (N)
-                ├── reps, weight   ← valor atual (planeado ou executado)
-                ├── prev           ← peso da sessão anterior
-                └── done           ← true se foi executada na última sessão
+ ├── Workout (N)
+ │    ├── name, code, schedule, tags[]
+ │    └── Exercise (N)
+ │         ├── name, muscle, restSeconds
+ │         └── SetData (N)
+ │              ├── reps, weight   ← valor atual (planeado ou executado)
+ │              ├── prev           ← peso da sessão anterior
+ │              └── done           ← true se foi executada na última sessão
+ │
+ └── WorkoutSession (N)            ← uma linha por sessão realmente executada
+      ├── executedAt
+      ├── totalVolume, setsCompleted, durationMinutes
+      └── workout (referência)
 ```
+
+`SetData` guarda só o snapshot da **última** execução de cada exercício (evolução de carga por exercício). `WorkoutSession` guarda o **histórico completo**, uma linha por sessão, e é a fonte de qualquer estatística agregada (volume total, streak). As duas coexistem de propósito — ver [ARCHITECTURE.md](ARCHITECTURE.md) para a regra completa de qual usar quando.
 
 O schema é gerido pelo **Flyway**. As migrations estão em [backend/src/main/resources/db/migration/](backend/src/main/resources/db/migration/) e correm automaticamente no arranque do backend.
 
