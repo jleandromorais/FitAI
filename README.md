@@ -1,14 +1,35 @@
-# FitAI
+# FitAI 🏋️‍♂️🧠
+
+![Next.js](https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_4-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL_17-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Groq](https://img.shields.io/badge/AI-Groq_Cloud-f55036?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
 > Plataforma inteligente de treinos personalizados — monorepo com frontend Next.js e backend Spring Boot.
 
-FitAI é uma aplicação web completa para gestão e acompanhamento de treinos físicos. O utilizador cria o seu plano de treino por divisão muscular (Push/Pull/Legs, Upper/Lower, ABC…), executa as sessões com acompanhamento em tempo real, e acompanha a evolução de carga e volume ao longo do tempo. A IA sugere e gera planos de treino personalizados com base no perfil e nos objetivos de cada utilizador.
+O **FitAI** é uma aplicação web completa para gestão e acompanhamento de treinos físicos. Crie planos por divisão muscular (Push/Pull/Legs, Upper/Lower, ABC), execute sessões com acompanhamento em tempo real e analise a sua evolução de carga e volume. Precisa de inspiração? A nossa integração com IA gera rotinas personalizadas com base no seu perfil, objetivos e equipamento disponível.
 
-> Para decisões de arquitetura, trade-offs aceitos e dívida técnica conhecida, ver [ARCHITECTURE.md](ARCHITECTURE.md).
+🔗 **Notas de Arquitetura:** Para decisões de design, trade-offs aceitos e dívida técnica conhecida, consulte o [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
-## Preview
+## 📑 Índice
+
+1. [Preview](#-preview)
+2. [Stack Tecnológica](#-stack-tecnológica)
+3. [Funcionalidades Principais](#-funcionalidades-principais)
+4. [Estrutura do Monorepo](#-estrutura-do-monorepo)
+5. [Configuração e Arranque Local](#-configuração-e-arranque-local)
+6. [Testes](#-testes)
+7. [Documentação da API](#-documentação-da-api)
+8. [Fluxo de Dados](#-fluxo-de-dados)
+9. [Deploy](#-deploy)
+10. [Variáveis de Ambiente](#-variáveis-de-ambiente)
+
+---
+
+## 📸 Preview
 
 | Landing page | Login |
 |---|---|
@@ -22,334 +43,203 @@ FitAI é uma aplicação web completa para gestão e acompanhamento de treinos f
 |---|---|
 | ![Gráficos de progresso](docs/screenshots/progresso.png) | ![Gerador de treino com IA](docs/screenshots/ai-gen.png) |
 
-> Imagens ainda não adicionadas. Salve os seus prints em [docs/screenshots/](docs/screenshots/) com esses nomes exatos (`landing.png`, `login.png`, `dashboard.png`, `treino-execucao.png`, `progresso.png`, `ai-gen.png`) e eles aparecem aqui automaticamente — sem precisar editar este arquivo. Para adicionar/remover telas, edite a tabela acima e o nome do arquivo correspondente.
+> 💡 **Nota para devs:** Salve os seus *prints* na pasta [`docs/screenshots/`](docs/screenshots/) com os nomes exatos referenciados acima para que sejam renderizados automaticamente.
 
 ---
 
-## Stack
+## 🛠 Stack Tecnológica
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 |
-| Backend | Spring Boot 4 · Java 21 · Spring Security · JWT |
-| Base de dados | PostgreSQL 17/18 |
-| Migrations | Flyway |
-| Autenticação | JWT (access + refresh) + Google OAuth2 |
-| IA | Groq API (Llama, via Groq Cloud) |
-| Testes | Vitest + Testing Library (frontend) · JUnit 5 (backend) |
-| Deploy | Vercel (frontend) · Render (backend + Postgres) |
+| **Frontend** | Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 |
+| **Backend** | Spring Boot 4 · Java 21 · Spring Security · JWT |
+| **Base de Dados** | PostgreSQL 17/18 · Flyway (Migrations) |
+| **Autenticação** | JWT (Access + Refresh) · Google OAuth2 |
+| **Inteligência Artificial** | Groq API (Llama, via Groq Cloud) |
+| **Testes** | Vitest + Testing Library (Front) · JUnit 5 (Back) · Playwright (E2E) |
+| **Deploy** | Vercel (Frontend) · Render (Backend + Postgres) |
 
 ---
 
-## Funcionalidades
+## ✨ Funcionalidades Principais
 
-- **Autenticação** — registo/login com email e password ou Google OAuth2, com refresh token e recuperação de password por email
-- **Splits de treino** — criação por divisão muscular: Push/Pull/Legs, Upper/Lower, ABC, ABCD, Full Body ou personalizado
-- **Duplicação de blocos** — Upper 1 / Upper 2, Lower 1 / Lower 2 com dias diferentes
-- **Catálogo de exercícios** — 57 exercícios pré-definidos organizados por 9 grupos musculares, com dicas de execução, séries, reps e descanso padrão
-- **Pesquisa de exercícios** — filtro por nome ou grupo muscular ao adicionar exercícios ao treino
-- **Execução de treino** — modo sessão ao vivo com timer de descanso automático, cronómetro, peso e reps editáveis por série, e volume calculado em tempo real
-- **Histórico de carga** — cada sessão grava o peso executado e move o anterior para `prev`, permitindo comparação com a sessão anterior
-- **Progresso real** — gráficos de evolução de carga por exercício, volume por treino e recordes pessoais, alimentados pelos dados das sessões guardadas
-- **Calendário** — visualização mensal dos dias com treino programado por divisão
-- **IA** — geração de planos de treino personalizados via Groq API com base no nível, objetivo, dias disponíveis e equipamento
-- **Dashboard** — visão geral com treino em destaque, stats ao vivo e distribuição muscular
-- **Proteção de rotas** — middleware que redireciona utilizadores não autenticados para o login
-- **Rate limiting** — filtro de proteção contra abuso nos endpoints de autenticação
+* **Autenticação Robusta:** Registo/login tradicional ou Google OAuth2, com sistema de *refresh tokens* e recuperação de password. Proteção contra abusos via *Rate Limiting*.
+* **Gestão de Treinos:** Criação de *splits* musculares flexíveis (PPL, Upper/Lower, Full Body). Suporte a duplicação de blocos para treinos alternados (ex: Upper 1 / Upper 2).
+* **Catálogo Integrado:** 57 exercícios pré-definidos divididos por 9 grupos musculares. Pesquisa rápida por nome ou agrupamento.
+* **Modo Sessão ao Vivo:** Execução guiada com *timer* de descanso automático, cronómetro geral, e edição fluída de pesos e repetições série a série.
+* **Histórico e Progressão:** Gravação inteligente de cargas. A sessão atual exibe o peso da sessão anterior para facilitar a progressão de carga (Overload).
+* **Dashboard Analítico:** Gráficos de evolução de carga, volume acumulado e recordes pessoais alimentados por dados reais das sessões concluídas.
+* **Geração por IA:** Criação de treinos sob medida, analisando o nível de experiência do utilizador, frequência semanal e material disponível.
 
 ---
 
-## Estrutura do monorepo
+## 📂 Estrutura do Monorepo
 
-```
+```text
 FitAI/
-├── frontend/                       # Next.js 16
+├── frontend/                       # Next.js 16 App Router
 │   ├── app/
-│   │   ├── (auth)/login/           # Login, registo, recuperação de password
-│   │   └── (dashboard)/            # Área autenticada
-│   │       ├── page.tsx                # Dashboard
-│   │       ├── treinos/                # Lista e detalhe/execução de treinos
-│   │       ├── progresso/              # Evolução de carga e volume
-│   │       ├── calendario/             # Histórico mensal
-│   │       ├── ai-gen/                 # Gerador de treinos com IA
-│   │       └── perfil/                 # Dados do utilizador
-│   ├── components/
-│   │   ├── NovoTreinoModal.tsx         # Wizard de criação de treino por split
-│   │   ├── EditarTreinoModal.tsx
-│   │   ├── GoogleProvider.tsx
-│   │   └── ui/Charts.tsx               # LineChart, BarChart, Sparkline
-│   ├── hooks/
-│   │   ├── useWorkouts.ts              # Lista de treinos + treino individual (useWorkout)
-│   │   ├── useProgress.ts              # Estatísticas agregadas + evolução por exercício
-│   │   ├── useProgressStats.ts         # Deriva PRs, distribuição muscular etc. de useProgress
-│   │   ├── useSessions.ts              # Histórico de sessões executadas
-│   │   ├── useWorkoutSession.ts        # Estado da sessão ao vivo (timer, séries)
-│   │   ├── useWorkoutSlots.ts          # Wizard de criação de treino (múltiplos blocos)
-│   │   ├── useExerciseRows.ts          # Edição de exercícios (usado pelos modais)
-│   │   └── useCountdown.ts             # Cronómetro/timer genérico
-│   ├── lib/
-│   │   ├── api.ts                      # Cliente HTTP com JWT
-│   │   └── exercises.ts                # Catálogo de 57 exercícios
-│   └── proxy.ts                        # Middleware de proteção de rotas
+│   │   ├── (auth)/                 # Login, registo, recuperação
+│   │   └── (dashboard)/            # Rotas protegidas (treinos, progresso, ai-gen)
+│   ├── components/                 # UI components, Modais e Gráficos
+│   ├── hooks/                      # Lógica de estado (Workouts, Sessions, Progress)
+│   ├── lib/                        # Clientes API e Dicionário de Exercícios
+│   └── proxy.ts                    # Middleware de proteção de rotas
 │
-└── backend/                        # Spring Boot
-    ├── Dockerfile                      # Multi-stage build para deploy
-    ├── DEPLOY.md                       # Guia de deploy no Render
+└── backend/                        # Spring Boot 4
+    ├── Dockerfile                  # Multi-stage build para produção
+    ├── DEPLOY.md                   # Instruções detalhadas para Render
     └── src/main/
         ├── java/com/fitai/fitai_backend/
-        │   ├── controller/             # AuthController, WorkoutController
-        │   ├── service/                # AuthService, WorkoutService, GoogleTokenVerifier
-        │   ├── model/                  # User, Workout, Exercise, SetData
-        │   ├── dto/                    # Request/Response DTOs
-        │   ├── security/               # JwtFilter, JwtUtil, RateLimitFilter, UserDetailsServiceImpl
-        │   └── config/                 # SecurityConfig (CORS, JWT, BCrypt)
+        │   ├── controller/         # Endpoints REST
+        │   ├── service/            # Regras de negócio e integração Google Auth
+        │   ├── model/ & dto/       # Entidades JPA e Records/Classes DTO
+        │   └── security/           # Filtros JWT e Configurações CORS/BCrypt
         └── resources/
-            ├── application.properties  # Configuração com variáveis de ambiente
-            └── db/migration/           # Migrations Flyway versionadas
+            └── db/migration/       # Scripts SQL (Flyway)
 ```
 
 ---
 
-## Pré-requisitos
+## 🚀 Configuração e Arranque Local
 
-- Node.js 20+
-- Java 21+
-- PostgreSQL 17+ a correr na porta 5432
+### Pré-requisitos
+* Node.js 20+
+* Java 21+
+* PostgreSQL 17+ (a correr na porta 5432)
 
----
-
-## Configuração e arranque local
-
-### 1. Base de dados
-
-Cria a base de dados no PostgreSQL:
-
+### 1. Base de Dados
+Crie a base de dados (o schema será gerado automaticamente pelo Flyway no arranque do backend):
 ```sql
 CREATE DATABASE fitai;
 ```
 
-O schema é criado automaticamente pelo Flyway no primeiro arranque do backend.
-
 ### 2. Backend
-
 ```bash
 cd backend
 ./gradlew bootRun
-# API disponível em http://localhost:8081
 ```
-
-Variáveis de ambiente esperadas (com defaults para desenvolvimento):
-
-```properties
-DB_URL=jdbc:postgresql://localhost:5432/fitai
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-JWT_SECRET=<segredo de pelo menos 256 bits>
-GOOGLE_CLIENT_ID=<client id do Google Cloud>
-SENDGRID_API_KEY=<api key da SendGrid, sendgrid.com>
-SENDGRID_FROM=<email verificado via Single Sender Verification>
-```
+*A API ficará disponível em `http://localhost:8081`.*
 
 ### 3. Frontend
-
+Crie o ficheiro `frontend/.env.local` baseado nas variáveis de ambiente listadas [abaixo](#-variáveis-de-ambiente) e execute:
 ```bash
 cd frontend
 npm install
 npm run dev
-# App disponível em http://localhost:3000
 ```
-
-Cria o ficheiro `frontend/.env.local`:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8081
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=<o teu Google Client ID>
-GROQ_API_KEY=<a tua Groq API Key>
-JWT_SECRET=<mesmo valor usado no backend — necessário para validar o login nas rotas de IA>
-```
+*A App ficará disponível em `http://localhost:3000`.*
 
 ---
 
-## Testes
+## 🧪 Testes
 
-### Frontend
-
+**Frontend:**
 ```bash
 cd frontend
-npm test                  # uma execução
-npm run test:watch        # modo watch
-npm run test:coverage     # com cobertura
+npm test                  # Execução única (Vitest)
+npm run test:watch        # Modo Watch
+npm run test:coverage     # Relatório de cobertura
 ```
 
-### Backend
-
+**Backend:**
 ```bash
 cd backend
-./gradlew test
+./gradlew test            # Testes unitários e de integração (com H2 e MockMvc)
 ```
 
-Inclui testes unitários (services, security) e testes de integração (`*IT`) que sobem o contexto Spring completo com H2 e validam o fluxo HTTP real via MockMvc (auth ponta a ponta, isolamento de dados entre usuários).
-
-### E2E (Playwright)
-
-Os testes E2E rodam contra o app real (frontend + backend + Postgres), não contra mocks. Antes de rodar:
-
+**E2E (Playwright):**
+Garante o funcionamento de ponta a ponta (Front + Back + DB reais).
 ```bash
-# Terminal 1 — backend + banco
-cd backend
-./gradlew bootRun
-
-# Terminal 2 — frontend
+# Certifique-se de que o Frontend e Backend estão a correr em outros terminais
 cd frontend
-npm run dev
-```
-
-Depois, em outro terminal:
-
-```bash
-cd frontend
-npx playwright install chromium   # só na primeira vez
+npx playwright install chromium   # Apenas na primeira execução
 npm run test:e2e
 ```
 
 ---
 
-## API — Endpoints
+## 📡 Documentação da API
 
-### Autenticação
-
+### Autenticação (`/auth`)
 | Método | Rota | Descrição |
-|---|---|---|
-| POST | `/auth/register` | Criar conta com email e password |
-| POST | `/auth/login` | Login com email e password |
-| POST | `/auth/google` | Login com Google OAuth2 |
-| POST | `/auth/refresh` | Trocar refresh token por novo access token |
-| POST | `/auth/forgot-password` | Solicitar email de recuperação |
-| POST | `/auth/reset-password` | Definir nova password com token recebido |
+|:---:|---|---|
+| `POST` | `/register` | Registo com email/password |
+| `POST` | `/login` | Login com email/password |
+| `POST` | `/google` | Login via Google OAuth2 |
+| `POST` | `/refresh` | Rotação de *Refresh Token* |
+| `POST` | `/forgot-password`| Pedido de recuperação de conta |
+| `POST` | `/reset-password` | Redefinição de senha via token |
 
-### Treinos
-
+### Treinos (`/workouts`)
 | Método | Rota | Descrição |
-|---|---|---|
-| GET | `/workouts` | Listar treinos do utilizador autenticado |
-| POST | `/workouts` | Criar treino |
-| GET | `/workouts/progress` | Evolução de carga e volume por exercício |
-| GET | `/workouts/{id}` | Buscar treino por ID |
-| PUT | `/workouts/{id}` | Atualizar treino |
-| DELETE | `/workouts/{id}` | Eliminar treino |
-| POST | `/workouts/{id}/session` | Guardar dados de uma sessão executada |
+|:---:|---|---|
+| `GET` | `/` | Lista todos os treinos do utilizador |
+| `POST` | `/` | Cria um novo treino |
+| `GET` | `/progress` | Obtém estatísticas de evolução de carga/volume |
+| `GET` | `/{id}` | Detalhes de um treino específico |
+| `PUT` | `/{id}` | Atualiza estrutura de um treino |
+| `DELETE`| `/{id}` | Elimina um treino |
+| `POST` | `/{id}/session` | Submete dados de uma sessão concluída |
 
 ---
 
-## Fluxo de dados — sessão de treino
+## 🔄 Fluxo de Dados: Sessão de Treino
 
-```
-Utilizador executa treino
-        │
-        ▼
-Frontend (modo sessão ao vivo)
-  - Peso e reps editáveis por série
-  - Timer de descanso automático
-  - Volume calculado em tempo real
-        │
-        ▼
-POST /workouts/{id}/session
-  { exercises: [{ exerciseId, sets: [{ setIndex, weight, reps, done }] }] }
-        │
-        ▼
-Backend (WorkoutService.saveSession) — escreve nas DUAS fontes:
-  - SetData: prev ← weight (guarda histórico), weight ← novo peso, done ← true/false
-    (usado depois para a evolução de carga POR EXERCÍCIO)
-  - WorkoutSession: nova linha com totalVolume, setsCompleted, executedAt
-    (usado depois para QUALQUER estatística agregada — ver ARCHITECTURE.md)
-        │
-        ▼
-GET /workouts/progress
-  - Evolução por exercício (currentWeight/prevWeight/delta) ← lê de SetData
-  - Totais agregados (totalVolume, streak) ← soma todas as WorkoutSession
-  - Devolve stats para os gráficos de evolução
-```
+O armazenamento de dados de treino resolve a dicotomia entre "estado atual da carga" e "histórico estatístico".
+
+1. **Frontend (Sessão):** O utilizador executa o treino. O peso e as repetições são ajustados.
+2. **Submissão:** O *payload* é enviado para `POST /workouts/{id}/session`.
+3. **Backend (`WorkoutService.saveSession`):**
+   * Atualiza a tabela `SetData`: O `weight` anterior move-se para `prev`. O novo `weight` é guardado. Isso garante que a próxima sessão mostre a carga exata a ser batida.
+   * Insere na tabela `WorkoutSession`: Grava uma nova linha imutável com `totalVolume`, `setsCompleted` e data, servindo como base absoluta para todos os gráficos do dashboard.
+4. **Visualização (`GET /workouts/progress`):** Cruza a evolução estática (SetData) com a métrica temporal (WorkoutSessions).
 
 ---
 
-## Modelo de dados
-
-```
-User
- ├── Workout (N)
- │    ├── name, code, schedule, tags[]
- │    └── Exercise (N)
- │         ├── name, muscle, restSeconds
- │         └── SetData (N)
- │              ├── reps, weight   ← valor atual (planeado ou executado)
- │              ├── prev           ← peso da sessão anterior
- │              └── done           ← true se foi executada na última sessão
- │
- └── WorkoutSession (N)            ← uma linha por sessão realmente executada
-      ├── executedAt
-      ├── totalVolume, setsCompleted, durationMinutes
-      └── workout (referência)
-```
-
-`SetData` guarda só o snapshot da **última** execução de cada exercício (evolução de carga por exercício). `WorkoutSession` guarda o **histórico completo**, uma linha por sessão, e é a fonte de qualquer estatística agregada (volume total, streak). As duas coexistem de propósito — ver [ARCHITECTURE.md](ARCHITECTURE.md) para a regra completa de qual usar quando.
-
-O schema é gerido pelo **Flyway**. As migrations estão em [backend/src/main/resources/db/migration/](backend/src/main/resources/db/migration/) e correm automaticamente no arranque do backend.
-
----
-
-## Deploy
-
-### Backend — Render
-
-Guia completo em [backend/DEPLOY.md](backend/DEPLOY.md). Em resumo:
-
-1. Cria um **PostgreSQL** gratuito no Render
-2. Cria um **Web Service** ligado ao repositório com:
-   - Root directory: `backend`
-   - Runtime: `Docker`
-3. Define as variáveis de ambiente abaixo
-4. O Render constrói via `Dockerfile` e expõe a API em `https://fitai-backend.onrender.com`
-
-> **Importante:** o Render fornece o `DB_URL` no formato `postgres://...`. O Spring Boot precisa de `jdbc:postgresql://...` — converte antes de colar.
-
-### Frontend — Vercel
-
-1. Importa o repositório na Vercel
-2. Define o **Root Directory** como `frontend`
-3. Configura as variáveis de ambiente (incluindo `NEXT_PUBLIC_API_URL` apontando para o backend no Render)
-4. Cada push para `main` dispara um novo deploy automaticamente
-
----
-
-## Variáveis de ambiente — produção
+## ☁️ Deploy
 
 ### Backend (Render)
+1. Crie uma instância PostgreSQL gratuita.
+2. Crie um **Web Service** ligado a este repositório.
+3. Configure o root para `backend` e o runtime para `Docker`.
+4. Defina as variáveis de ambiente necessárias. *(Dica: converta o `postgres://` fornecido pelo Render para `jdbc:postgresql://`)*.
 
-| Variável | Descrição |
-|---|---|
-| `DB_URL` | URL JDBC do PostgreSQL (`jdbc:postgresql://...`) |
-| `DB_USERNAME` | Utilizador da base de dados |
-| `DB_PASSWORD` | Password da base de dados |
-| `JWT_SECRET` | Segredo para assinar tokens JWT (mínimo 256 bits) |
-| `JWT_EXPIRATION` | Validade do access token em ms (default `86400000` = 24h) |
-| `JWT_REFRESH_EXPIRATION` | Validade do refresh token em ms (default `604800000` = 7 dias) |
-| `GOOGLE_CLIENT_ID` | Client ID do Google Cloud Console |
-| `CORS_ALLOWED_ORIGINS` | URLs permitidas separadas por vírgula |
-| `SENDGRID_API_KEY` | API key da SendGrid (sendgrid.com) para envio do e-mail de reset de senha via HTTPS — SMTP direto é bloqueado em várias plataformas de deploy |
-| `SENDGRID_FROM` | Endereço remetente — precisa estar verificado via Single Sender Verification no painel da SendGrid |
-| `FRONTEND_URL` | URL do frontend, usada para montar o link de reset de senha |
+> 📖 **Guia Passo-a-Passo:** Consulte [backend/DEPLOY.md](backend/DEPLOY.md)
 
 ### Frontend (Vercel)
-
-| Variável | Descrição |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | URL pública do backend |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Client ID do Google (mesmo valor do backend) |
-| `GROQ_API_KEY` | API Key da Groq, usada pela rota de geração de treino com IA |
-| `JWT_SECRET` | Mesmo segredo do backend — usado para validar o login antes de gerar treino com IA |
+1. Importe o repositório na Vercel e defina o **Root Directory** como `frontend`.
+2. Configure as variáveis de ambiente (apontando `NEXT_PUBLIC_API_URL` para o serviço do Render).
+3. Deploys contínuos são feitos automaticamente em pushes para a *branch* `main`.
 
 ---
 
-## Licença
+## ⚙️ Variáveis de Ambiente
 
-MIT
+### Backend (.properties / Render)
+| Variável | Descrição / Exemplo |
+|---|---|
+| `DB_URL` | URL JDBC do Postgres (`jdbc:postgresql://...`) |
+| `DB_USERNAME` / `DB_PASSWORD` | Credenciais da base de dados |
+| `JWT_SECRET` | Chave de assinatura criptográfica (Mín. 256 bits) |
+| `JWT_EXPIRATION` | TTL do access token em ms (Default: `86400000` / 24h) |
+| `JWT_REFRESH_EXPIRATION`| TTL do refresh token em ms (Default: `604800000` / 7d) |
+| `GOOGLE_CLIENT_ID` | Client ID gerado no Google Cloud Console |
+| `CORS_ALLOWED_ORIGINS` | URLs do frontend separadas por vírgula |
+| `SENDGRID_API_KEY` | Chave da API SendGrid (usada via HTTPS para contornar bloqueios SMTP) |
+| `SENDGRID_FROM` | Email remetente autorizado no painel SendGrid |
+| `FRONTEND_URL` | URL base do client (usado em links de e-mail) |
+
+### Frontend (`.env.local` / Vercel)
+| Variável | Descrição |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Endereço público do Backend |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`| Mesmo Client ID usado no Backend |
+| `GROQ_API_KEY` | Chave de API para o serviço Groq Cloud (Geração IA) |
+| `JWT_SECRET` | Chave partilhada com o backend para validação local em *Server Actions* |
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença MIT.
