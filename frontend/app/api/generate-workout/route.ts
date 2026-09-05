@@ -205,7 +205,13 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        // llama-3.3-70b-versatile foi descontinuado pela Groq (a Llama saiu
+        // do catálogo inteiro) — causava 404 "model_not_found" em toda
+        // chamada, que o código já tratava como 502 genérico pro cliente.
+        // qwen/qwen3.8-27b testado directamente contra a API: JSON válido,
+        // ~4s (bem dentro do limite de 9s abaixo), respeita a lista de
+        // músculos permitidos do prompt.
+        model: "qwen/qwen3.8-27b",
         messages: [{ role: "user", content: buildPrompt(body) }],
         temperature: 0.7,
         max_tokens: 6000,
