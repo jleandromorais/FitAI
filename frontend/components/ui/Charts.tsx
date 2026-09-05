@@ -108,7 +108,7 @@ export function Sparkline({ data, width = 100, height = 30, color = 'var(--accen
   const [lastX, lastY] = toPoint(data[data.length - 1], data.length - 1);
 
   return (
-    <svg width={width} height={height} style={{ display: 'block', overflow: 'visible' }}
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', maxWidth: width, display: 'block', overflow: 'visible' }}
       role="img" aria-label={label ?? "Mini-gráfico de tendência"}>
       <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       {pulse && (
