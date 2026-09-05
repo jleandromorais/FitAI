@@ -27,8 +27,13 @@ export function useBodyMeasurements() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Não limpa `error` aqui de propósito. Esta função é chamada de dois sítios:
+  // do efeito de montagem e do reload() — e o reload() já faz setError(null)
+  // ele próprio, logo antes de chamar. No mount não há nada para limpar, o
+  // `error` nasce null. Um setState síncrono no corpo desta função tornaria o
+  // efeito de montagem um setState-dentro-de-efeito (react-hooks/
+  // set-state-in-effect), que é o erro que mantinha o CI vermelho.
   function fetchMeasurements() {
-    setError(null);
     return api.get<BodyMeasurement[]>("/body-measurements")
       .then(data => setMeasurements(data))
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))

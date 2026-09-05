@@ -1016,30 +1016,60 @@ body {
 .landing-hero-content { max-width: 620px; }
 .landing-hero-demo { flex-shrink: 0; width: min(380px, 38vw); }
 
-/* Emblema da marca no hero — a mesma figura em grafite (asas + "veni vidi
-   vici") já usada no login, aqui em tamanho grande como marca de destaque da
-   página. O selinho "F" pequeno (sidebar, nav, rodapé) continua sendo o
-   logo funcional do produto; este é o único lugar com a ilustração completa.
-   Mesma técnica invert+screen dos outros usos (ver .auth-hero-figure) —
-   necessária pro traço escuro aparecer sobre o fundo quase-preto. */
-.landing-hero-emblem {
+/* Fundo do hero — video em loop (comportamento de GIF: autoplay, mudo, sem
+   controles, sem audio) como camada ambiente da primeira dobra. Ocupa o lugar
+   que era do emblema em grafite: duas figuras monocromaticas grandes no mesmo
+   centro competiriam entre si. O emblema continua a existir no /login.
+
+   O material e cinza-azulado e entraria em conflito direto com o mundo
+   Combustao (brasa unica sobre carvao). Em vez de largar cru, e graduado por
+   filtro ate a paleta — mesma logica do invert+screen que as figuras a
+   grafite ja usam: dessatura por completo, reaquece com sepia, roda a matiz
+   ate a Brasa e escurece. Nenhuma cor nova entra no sistema.
+
+   So e montado em ponteiro fino e sem prefers-reduced-motion (ver HeroVideo
+   em inicio/page.tsx) — no celular os 7 MB nem chegam a ser pedidos. */
+.landing-hero-video-layer {
   position: absolute;
-  top: 4%;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 62%;
-  width: auto;
-  max-width: 70%;
-  object-fit: contain;
-  filter: invert(1);
-  mix-blend-mode: screen;
-  opacity: 0.5;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 75%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 75%, transparent 100%);
+  animation: landingHeroVideoIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
-@media (max-width: 760px) {
-  .landing-hero-emblem { display: none; }
+.landing-hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 38%;
+  opacity: 0.6;
+  filter: grayscale(1) sepia(0.55) hue-rotate(-14deg) saturate(1.9) brightness(0.5) contrast(1.15);
+  /* Deriva lenta (24s, alterna) — a camada "ambiente" do skill motion-design:
+     mantem a primeira dobra viva e desencontra a repeticao do loop de 8s do
+     corte exato, sem competir com o headline. So transform. */
+  animation: landingHeroDrift 24s ease-in-out infinite alternate;
+}
+/* Veu de legibilidade: topo levemente escuro (a nav flutua por cima), meio
+   limpo (e onde a estatua se le) e base pesada — todo o conteudo do hero esta
+   ancorado embaixo e precisa de contraste garantido, nao por sorte. */
+.landing-hero-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(85% 60% at 18% 100%, rgba(22,19,22,0.88), transparent 72%),
+    linear-gradient(180deg,
+      rgba(22,19,22,0.40) 0%,
+      rgba(22,19,22,0.12) 26%,
+      rgba(22,19,22,0.74) 74%,
+      rgba(22,19,22,0.96) 100%);
+}
+@keyframes landingHeroVideoIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes landingHeroDrift {
+  from { transform: scale(1.02) translate3d(0, 0, 0); }
+  to   { transform: scale(1.09) translate3d(-1.2%, -1%, 0); }
 }
 .landing-h1 {
   font-family: var(--font-display);
@@ -1272,6 +1302,43 @@ body {
 }
 .landing-reveal.in-view { opacity: 1; transform: translateY(0); }
 
+/* Variante escalonada: nesta seccao o gesto passa do bloco para cada cartao.
+   Dois cartoes a subir em uníssono sao um gesto unico e chato; a 110ms de
+   distancia leem-se como dois factos a chegar, um a seguir ao outro. O
+   wrapper deixa de animar de proposito — movimento sobre movimento e a
+   receita para tudo parecer mole. */
+.landing-reveal-stagger { opacity: 1; transform: none; transition: none; }
+.landing-reveal-stagger .landing-feature-card {
+  opacity: 0;
+  /* O deslocamento vem do scroll (--py, escrito a cada frame pelo
+     useScrollParallax) e por isso o transform NAO entra na transition:
+     transicionar aqui faria cada frame chegar 550ms atrasado e o cartao
+     arrastaria em vez de acompanhar a rolagem. A transition fica so para a
+     opacidade. O movimento de entrada vem de graca do proprio parallax —
+     enquanto o cartao ainda sobe de baixo, --py ja e grande e positivo. */
+  transform: translate3d(0, var(--py, 0px), 0);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.landing-reveal-stagger.in-view .landing-feature-card { opacity: 1; }
+.landing-reveal-stagger.in-view .landing-feature-card:nth-child(2) { transition-delay: 110ms; }
+
+/* Grafico que se desenha ao entrar na viewport (prop drawOnView, so na
+   landing). Camada primaria: o traco cresce da esquerda para a direita —
+   a propriedade certa aqui e stroke-dashoffset, porque a mensagem do cartao
+   e literalmente "sessao a sessao", e uma linha que se constroi diz isso
+   melhor do que qualquer fade. Arranca a 260ms para cair depois de o cartao
+   ter aterrado (o recipiente primeiro, o conteudo a seguir).
+   Camada ambiente: a area sob a linha so preenche quando o traco ja vai a
+   meio — nunca ao mesmo tempo, senao le-se como uma imagem a aparecer. */
+.chart-line-draw {
+  transition: stroke-dashoffset 900ms cubic-bezier(0.16, 1, 0.3, 1) 260ms;
+}
+.chart-area-fade {
+  transition: opacity 700ms ease-out 620ms;
+}
+
+
 /* Coreografia de entrada da primeira dobra — dispara ao montar (não por
    scroll, já está tudo visível de cara): nav, headline (stagger próprio via
    .word-up), texto de apoio, CTA e por fim o card de demo, em cascata. Uma
@@ -1379,6 +1446,41 @@ body {
   animation: photoCardReveal 0.4s ease-out both;
 }
 
+/* ─── DASHBOARD (/) ───────────────────────────────────────────────── */
+/* skill motion-design — "boot sequence" sempre foi a intenção (ver o
+   useCountUp escalonado). Antes: um único fadeUp (.anim-up) no wrapper subia
+   TODOS os cartões juntos. Agora: cascata por região, de cima→baixo e
+   esquerda→direita, o mesmo passo (~55ms) dos contadores. Personalidade
+   Corporate: só decelera na entrada (curva-assinatura do sistema), 9px de
+   deslocamento (bem abaixo de 1/3 de tela), sem overshoot. --i por elemento
+   (0..9) → 10 passos, ~500ms no total, dentro do orçamento. skipIntro (2ª
+   visita na mesma aba) não recebe a classe: entra direto no estado final,
+   igual aos contadores. */
+@keyframes dashBootIn {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dash-boot .boot-i {
+  animation: dashBootIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* Cartão clicável (é um <a>): faltava qualquer reação além da borda. Leve
+   subida + sombra na entrada do ponteiro, volta ao chão no clique — mesmo
+   vocabulário tátil do .btn:active (scale 0.97), curva-assinatura, sem quicar.
+   Vale em qualquer <Link className="card"> do app, não só no dashboard. */
+a.card {
+  transition: border-color 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+}
+a.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.55);
+}
+a.card:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
 /* ─── EVOLUÇÃO FÍSICA (/evolucao) ─────────────────────────────────── */
 /* Troca de sub-aba: um único gesto (fade + micro-slide) reaproveitado nas 4
    abas — não um efeito por aba. key={tab} no painel remonta e replaya. */
@@ -1454,6 +1556,12 @@ body {
 .meta-cap.target { right: 0; }
 
 @media (prefers-reduced-motion: reduce) {
+  .dash-boot .boot-i {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  a.card:hover, a.card:active { transform: none; }
   .evo-panel, .measure-row, .measure-row.fresh, .meta-fill, .meta-marker {
     animation: none !important;
   }
@@ -1466,6 +1574,25 @@ body {
   }
   .flame-icon-wrap::before, .flame-icon-wrap::after, .set-confirm-btn.just-done::after {
     display: none;
+  }
+  /* O HeroVideo nem chega a montar sob reduced-motion (ver inicio/page.tsx);
+     esta regra e a rede de seguranca caso alguem o renderize a forca. */
+  .landing-hero-video-layer { animation: none !important; opacity: 1 !important; }
+  .landing-hero-video { animation: none !important; }
+  /* Cartoes escalonados e grafico que se desenha: sem movimento, mas nunca
+     invisiveis — o conteudo tem de estar la na mesma. */
+  .landing-reveal-stagger .landing-feature-card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .chart-line-draw {
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+  .chart-area-fade {
+    opacity: 1 !important;
+    transition: none !important;
   }
   .landing-reveal, .landing-load {
     opacity: 1 !important;

@@ -21,10 +21,33 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run build
+      # Único passo sem condição: se a instalação falha, nada abaixo tem
+      # significado, e os outros são pulados via steps.install.outcome.
+      - name: Instalar dependências
+        id: install
+        run: npm ci
+
+      # Lint, testes e build correm SEMPRE que a instalação passou — mesmo que
+      # um deles já tenha falhado. Antes eram sequenciais e o lint vinha
+      # primeiro: com ele vermelho, `npm run test` nunca chegava a arrancar, e
+      # a pipeline esteve dias a esconder regressões de teste atrás de um erro
+      # de estilo (ver commits 31e4632 / 0359712). O job continua a falhar se
+      # qualquer um falhar — a diferença é que agora vê-se tudo o que está
+      # partido numa execução só, em vez de descascar um problema por push.
+      #
+      # `!cancelled()` e não `always()`: um cancelamento manual deve mesmo
+      # parar tudo, em vez de continuar a gastar minutos de runner.
+      - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run lint
+
+      - name: Testes unitários
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run test
+
+      - name: Build de produção
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run build
 
   backend:
     runs-on: ubuntu-latest
@@ -41,4 +64,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - run: ./gradlew build
+      # --continue faz o Gradle percorrer todas as tarefas independentes em vez
+      # de parar na primeira que falha: um teste partido deixa de esconder um
+      # erro de compilação noutro módulo. Mesma ideia do !cancelled() acima.
+      - name: Build e testes
+        run: ./gradlew build --continue
