@@ -1,0 +1,18 @@
+{
+  "name": "fitai-worker",
+  "version": "1.0.0",
+  "description": "Worker Node.js que consome pedidos de geração de treino via Kafka, chama a Groq e publica o resultado.",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "kafkajs": "^2.2.4"
+  }
+}

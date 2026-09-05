@@ -8,6 +8,7 @@ import com.fitai.fitai_backend.dto.LoginRequest;
 import com.fitai.fitai_backend.dto.RefreshRequest;
 import com.fitai.fitai_backend.dto.RegisterRequest;
 import com.fitai.fitai_backend.dto.ResetPasswordRequest;
+import com.fitai.fitai_backend.event.AuditEventPublisher;
 import com.fitai.fitai_backend.model.User;
 import com.fitai.fitai_backend.repository.UserRepository;
 import com.fitai.fitai_backend.security.JwtUtil;
@@ -25,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -38,6 +40,7 @@ public class AuthService {
     private final JwtUtil             jwtUtil;
     private final GoogleTokenVerifier googleTokenVerifier;
     private final EmailService        emailService;
+    private final AuditEventPublisher auditEventPublisher;
 
     // Hash de senha nunca usado por conta real — comparado contra o password informado
     // quando o e-mail não existe ou a conta não tem senha (Google-only), pra manter o
@@ -90,6 +93,7 @@ public class AuthService {
         }
 
         log.info("Usuário registrado com sucesso: email={}", user.getEmail());
+        auditEventPublisher.publish("user.registered", user.getEmail(), Map.of());
         return buildAuthResponse(user);
     }
 
@@ -113,6 +117,7 @@ public class AuthService {
         }
 
         log.info("Login bem-sucedido: email={}", user.getEmail());
+        auditEventPublisher.publish("user.login", user.getEmail(), Map.of("method", "password"));
         return buildAuthResponse(user);
     }
 
@@ -150,6 +155,7 @@ public class AuthService {
         }
 
         log.info("Login Google bem-sucedido: email={}", email);
+        auditEventPublisher.publish("user.login", email, Map.of("method", "google"));
         return buildAuthResponse(user);
     }
 

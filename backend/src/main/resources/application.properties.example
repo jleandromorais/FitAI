@@ -35,3 +35,14 @@ sendgrid.from=${SENDGRID_FROM}
 
 # URL do frontend, usada para montar o link de redefinição de senha no e-mail
 app.frontend-url=${FRONTEND_URL:http://localhost:3000}
+
+# Kafka — broker gerenciado (ex: Confluent Cloud), publica eventos de auditoria.
+# Deixe KAFKA_BOOTSTRAP_SERVERS vazio pra desativar (a publicação falha silenciosamente, só logada).
+spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS:}
+spring.kafka.properties.security.protocol=SASL_SSL
+spring.kafka.properties.sasl.mechanism=PLAIN
+spring.kafka.properties.sasl.jaas.config=${KAFKA_SASL_JAAS_CONFIG:}
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
+spring.kafka.producer.properties.spring.json.add.type.headers=false
+app.kafka.audit-topic=${KAFKA_AUDIT_TOPIC:fitai.audit-events}

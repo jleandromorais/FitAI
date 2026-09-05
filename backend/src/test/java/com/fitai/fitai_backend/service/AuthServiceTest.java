@@ -6,6 +6,7 @@ import com.fitai.fitai_backend.dto.LoginRequest;
 import com.fitai.fitai_backend.dto.RefreshRequest;
 import com.fitai.fitai_backend.dto.RegisterRequest;
 import com.fitai.fitai_backend.dto.ResetPasswordRequest;
+import com.fitai.fitai_backend.event.AuditEventPublisher;
 import com.fitai.fitai_backend.model.User;
 import com.fitai.fitai_backend.repository.UserRepository;
 import com.fitai.fitai_backend.security.JwtUtil;
@@ -35,6 +36,7 @@ class AuthServiceTest {
     @Mock JwtUtil              jwtUtil;
     @Mock GoogleTokenVerifier  googleTokenVerifier;
     @Mock EmailService         emailService;
+    @Mock AuditEventPublisher  auditEventPublisher;
 
     @InjectMocks AuthService authService;
 

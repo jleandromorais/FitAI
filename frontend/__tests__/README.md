@@ -41,8 +41,8 @@ frontend/
     │   └── AuthContext.test.tsx
     ├── hooks/
     │   └── useWorkouts.test.tsx
-    └── api/
-        └── generate-workout.test.ts
+    └── app/
+        └── ai-gen.test.tsx
 ```
 
 ---
@@ -196,22 +196,15 @@ Testa os dois hooks de treinos: `useWorkouts()` (lista) e `useWorkout(id)` (indi
 
 ---
 
-### `__tests__/api/generate-workout.test.ts` — 6 testes
+### `__tests__/app/ai-gen.test.tsx`
 
-Testa a rota Next.js (`app/api/generate-workout/route.ts`) que chama o Gemini para gerar treinos com IA.
+Testa a página `app/(dashboard)/ai-gen/page.tsx` — o wizard de geração de treino por IA.
 
-**Por que é importante:** essa rota lida com segredos (API key), comunicação externa e parsing de respostas não determinísticas do modelo. Falhas aqui resultam em erros silenciosos ou exposição de dados.
+**Por que é importante:** desde que a geração virou um pipeline assíncrono (Kafka + worker Node separado), essa página não chama mais IA diretamente: ela enfileira um job no backend Java (`POST /workout-generation-jobs`) e faz *polling* do status (`GET /workout-generation-jobs/{id}`) a cada 2s até `DONE`/`FAILED`. Falhas aqui poderiam deixar o usuário girando pra sempre num job travado ou perder o resultado gerado.
 
-**Abordagem:** `fetch` é mockado globalmente para simular respostas do Gemini sem fazer chamadas reais. A variável de ambiente `GEMINI_API_KEY` é controlada via `vi.stubEnv`.
+**Abordagem:** `lib/api` é mockado (`api.post`/`api.get`), não mais `fetch` cru — a chamada HTTP real vive dentro de `lib/api.ts`, já coberto por `lib/api.test.ts`. `vi.useFakeTimers()` com `vi.advanceTimersByTimeAsync` dirige tanto o ciclo de polling (2s) quanto o carrossel cosmético de mensagens (1800ms), que são independentes um do outro.
 
-| Teste | O que verifica |
-|---|---|
-| Retorna `500` sem `GEMINI_API_KEY` | A rota falha com segurança quando a chave não está configurada |
-| Retorna os treinos gerados corretamente | Fluxo feliz: Gemini responde JSON válido → rota retorna os treinos |
-| Remove blocos ` ```json ``` ` antes de parsear | O Gemini às vezes adiciona markdown; a rota limpa antes de `JSON.parse` |
-| Retorna `502` com JSON inválido | Se o modelo retornar texto livre em vez de JSON, a rota não crasha |
-| Retorna `502` quando Gemini retorna status não-ok | Erros de quota ou timeout do Gemini são repassados como `502` |
-| Prompt contém os dados do usuário | Os campos (nível, objetivo, equipamentos) chegam corretamente no prompt |
+Cobre: enqueue com o payload correto, resposta imediata `FAILED` (sem pollar), transições `PENDING`/`PROCESSING`/`DONE`/`FAILED` via polling, o teto de ~60 tentativas (timeout), e o fluxo de salvar (`saveWorkouts`) inalterado a partir do estado `generatedWorkouts`.
 
 ---
 

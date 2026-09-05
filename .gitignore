@@ -11,6 +11,10 @@ backend/bin
 backend/*.class
 backend/application.properties
 
+# ── Worker ────────────────────────────────────────────────────────
+worker/node_modules
+worker/.env
+
 # ── Sistema ───────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

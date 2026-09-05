@@ -1,6 +1,7 @@
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.*;
+import com.fitai.fitai_backend.event.AuditEventPublisher;
 import com.fitai.fitai_backend.exception.ResourceNotFoundException;
 import com.fitai.fitai_backend.model.*;
 import com.fitai.fitai_backend.repository.UserRepository;
@@ -28,6 +29,7 @@ public class WorkoutService {
     private final WorkoutRepository        workoutRepository;
     private final UserRepository           userRepository;
     private final WorkoutSessionRepository sessionRepository;
+    private final AuditEventPublisher      auditEventPublisher;
 
     /*
      * LISTAR TREINOS
@@ -116,6 +118,7 @@ public class WorkoutService {
 
         WorkoutDto dto = toDto(workoutRepository.save(workout));
         log.info("Treino criado: id={}, email={}", dto.getId(), email);
+        auditEventPublisher.publish("workout.created", email, Map.of("workoutId", dto.getId()));
         return dto;
     }
 
@@ -253,6 +256,10 @@ public class WorkoutService {
         SessionResponse response = new SessionResponse(setsCompleted, totalVolume,
                 req.getDurationMinutes() != null ? req.getDurationMinutes() : 0);
         log.info("Sessão salva: workoutId={}, email={}, series={}, volume={}", workoutId, email, setsCompleted, totalVolume);
+        auditEventPublisher.publish("workout.session_completed", email, Map.of(
+                "workoutId", workoutId,
+                "setsCompleted", setsCompleted,
+                "totalVolume", totalVolume));
         return response;
     }
 
@@ -485,6 +492,7 @@ public class WorkoutService {
                 });
         workoutRepository.delete(w);
         log.info("Treino deletado: id={}, email={}", id, email);
+        auditEventPublisher.publish("workout.deleted", email, Map.of("workoutId", id));
     }
 
     /*

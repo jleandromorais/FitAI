@@ -6,12 +6,13 @@ import { Sparkles, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationDict } from "@/lib/translations";
-import type { GenerateRequest, GeneratedWorkout } from "@/app/api/generate-workout/route";
+import type { GenerateRequest, GeneratedWorkout, WorkoutGenerationJob } from "@/lib/workout-generation-types";
 
 // chip.value é sempre o valor canônico em português — é o que vai pro
-// backend (answers.goal/level/etc) e é pattern-matched literalmente lá
-// (ex: goal === "Força" em generate-workout/route.ts). chip.label é só o
-// texto exibido, no idioma ativo. Nunca traduzir o value.
+// backend (answers.goal/level/etc) e é pattern-matched literalmente no
+// worker (ex: goal === "Força" em worker/src/promptBuilder.js, porta de
+// buildPrompt() que antes vivia em generate-workout/route.ts). chip.label é
+// só o texto exibido, no idioma ativo. Nunca traduzir o value.
 type Chip = { value: string; label: string };
 type Message = { who: "ai" | "me"; text: string; chips?: Chip[] };
 
@@ -29,13 +30,17 @@ function buildInitial(t: TranslationDict): Message[] {
   ];
 }
 
-// Mensagens rotativas durante a geração — não refletem progresso real do
-// backend (a IA responde tudo de uma vez), só reduzem a sensação de espera
-// morta enquanto o request está em andamento. Cadência (5 msgs × 1800ms =
-// 9s) casa com o AbortSignal.timeout(9000) de app/api/generate-workout/route.ts;
-// se um dos dois mudar, ajuste o outro. Ao chegar na última mensagem, o
-// carrossel para de girar de propósito (assentar em "Finalizando..." em vez
-// de repetir do início).
+// Mensagens rotativas durante a geração — puramente cosméticas, não refletem
+// progresso real do job (que agora é assíncrono via Kafka + worker e pode
+// levar bem mais que 9s). Ao chegar na última mensagem, o carrossel para de
+// girar de propósito (assentar em "Finalizando..." em vez de repetir do
+// início). Completamente independente do polling real do status do job logo
+// abaixo — dois setInterval separados, cadências diferentes, sem relação.
+
+// Intervalo de polling do status do job (ms) e teto de tentativas — evita
+// girar pra sempre num job travado sem infra de alerta por trás (~2 min).
+const POLL_INTERVAL_MS = 2000;
+const MAX_POLLS = 60;
 
 function buildFlow(t: TranslationDict): { key: keyof GenerateRequest; q: string; chips: Chip[] }[] {
   return [
@@ -66,6 +71,7 @@ export default function AiGenPage() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<GenerateRequest>>({});
   const [generating, setGenerating] = useState(false);
+  const [jobId, setJobId] = useState<number | null>(null);
   const [generatedWorkouts, setGeneratedWorkouts] = useState<GeneratedWorkout[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +90,46 @@ export default function AiGenPage() {
     }, 1800);
     return () => clearInterval(id);
   }, [generating, t.aiGen.loadingMensagens.length]);
+
+  // Polling real do status do job: enquanto `generating` e houver um jobId
+  // (setado após o enqueue responder), consulta o backend a cada 2s. DONE
+  // popula os treinos, FAILED mostra o erro do backend/worker — em ambos os
+  // casos para de girar. Teto de MAX_POLLS pra nunca ficar preso num job
+  // travado indefinidamente. Efeito independente do carrossel cosmético acima.
+  useEffect(() => {
+    if (!generating || jobId == null) return;
+
+    let pollCount = 0;
+    const id = setInterval(async () => {
+      pollCount++;
+      if (pollCount > MAX_POLLS) {
+        clearInterval(id);
+        setError(t.aiGen.erroTimeout);
+        setGenerating(false);
+        return;
+      }
+
+      try {
+        const job = await api.get<WorkoutGenerationJob>(`/workout-generation-jobs/${jobId}`);
+        if (job.status === "DONE") {
+          clearInterval(id);
+          setGeneratedWorkouts(job.workouts ?? []);
+          setGenerating(false);
+        } else if (job.status === "FAILED") {
+          clearInterval(id);
+          setError(job.errorMessage ?? t.aiGen.erroGerarFalha);
+          setGenerating(false);
+        }
+        // PENDING / PROCESSING: continua fazendo polling.
+      } catch (err) {
+        clearInterval(id);
+        setError(err instanceof Error ? err.message : t.aiGen.erroInesperado);
+        setGenerating(false);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(id);
+  }, [generating, jobId, t.aiGen.erroTimeout, t.aiGen.erroGerarFalha, t.aiGen.erroInesperado]);
 
   async function pick(chip: Chip) {
     const next: Message[] = [...messages, { who: "me", text: chip.label }];
@@ -112,24 +158,25 @@ export default function AiGenPage() {
       setGenerating(true);
       setLoadingMsgIndex(0);
       setError(null);
+      setJobId(null);
 
       try {
-        const res = await fetch("/api/generate-workout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newAnswers as GenerateRequest),
-        });
+        // Enfileira o job direto no backend Java (via lib/api.ts, que já
+        // cuida de auth/refresh) — a geração de fato roda de forma
+        // assíncrona no worker via Kafka. O useEffect de polling acima
+        // assume a partir daqui enquanto `generating` continuar true.
+        const job = await api.post<WorkoutGenerationJob>("/workout-generation-jobs", newAnswers as GenerateRequest);
+        setJobId(job.id);
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error ?? t.aiGen.erroGerar);
+        // Publish síncrono pode falhar na hora (ex: Kafka fora do ar) — o
+        // backend já marca o job como FAILED nesse caso, sem necessidade de
+        // pollar algo que nunca vai sair de PENDING.
+        if (job.status === "FAILED") {
+          setError(job.errorMessage ?? t.aiGen.erroGerarFalha);
+          setGenerating(false);
         }
-
-        const data = await res.json();
-        setGeneratedWorkouts(data.workouts);
       } catch (err) {
         setError(err instanceof Error ? err.message : t.aiGen.erroInesperado);
-      } finally {
         setGenerating(false);
       }
     }
@@ -155,6 +202,7 @@ export default function AiGenPage() {
     setAnswers({});
     setGeneratedWorkouts([]);
     setGenerating(false);
+    setJobId(null);
     setLoadingMsgIndex(0);
     setError(null);
   }

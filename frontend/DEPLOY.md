@@ -39,10 +39,9 @@ Na tela de configuração do projeto (antes do primeiro deploy), adicione:
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | `https://seu-backend.railway.app` | URL do backend em produção |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | `seu-client-id.apps.googleusercontent.com` | Google OAuth2 Client ID |
-| `GEMINI_API_KEY` | `AIza...` | Chave da API Gemini |
 
 > **Atenção:** variáveis prefixadas com `NEXT_PUBLIC_` são expostas no browser.
-> `GEMINI_API_KEY` **não** tem esse prefixo — ela só é acessada no servidor (rota `/api/generate-workout`).
+> A geração de treino por IA não roda mais no frontend — o frontend só enfileira o job no backend Java (`POST /workout-generation-jobs`) e faz polling do status. A chave da IA (`GROQ_API_KEY`) vive só no serviço `worker` (Node.js), não na Vercel.
 
 ---
 

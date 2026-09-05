@@ -1,18 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import AiGenPage from "@/app/(dashboard)/ai-gen/page";
-import type { GeneratedWorkout } from "@/app/api/generate-workout/route";
+import type { GeneratedWorkout, WorkoutGenerationJob } from "@/lib/workout-generation-types";
 
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+// A geração agora é 100% via lib/api.ts (enqueue + polling contra o backend
+// Java) — não há mais `fetch` cru nem rota Next.js envolvida.
 vi.mock("@/lib/api", () => ({
   api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 import { api } from "@/lib/api";
-const mockApi = api as unknown as { post: ReturnType<typeof vi.fn> };
+const mockApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
+
+// Mesma cadência de polling de app/(dashboard)/ai-gen/page.tsx (POLL_INTERVAL_MS).
+const POLL_INTERVAL_MS = 2000;
 
 const WORKOUT: GeneratedWorkout = {
   name: "Treino A", code: "A", schedule: "seg,qua,sex", tags: [],
@@ -20,16 +25,19 @@ const WORKOUT: GeneratedWorkout = {
 };
 
 const ANSWERS = ["Iniciante", "Hipertrofia", "3 dias", "Apenas peso corporal", "30 min"];
+const EXPECTED_REQUEST = {
+  level: "Iniciante", goal: "Hipertrofia", days: "3 dias",
+  equipment: "Apenas peso corporal", duration: "30 min",
+};
 
-function jsonResponse(body: unknown, ok = true) {
-  return { ok, json: async () => body } as Response;
-}
+const PENDING_JOB: WorkoutGenerationJob = { id: 42, status: "PENDING" };
+const DONE_JOB: WorkoutGenerationJob = { id: 42, status: "DONE", workouts: [WORKOUT] };
 
 // getByRole por label de chip só é seguro porque o JSX esconde o conjunto de
 // chips anterior assim que a próxima pergunta é anexada (i === messages.length
 // - 1). Se essa condição mudar (ex: permitir editar respostas antigas), estes
 // testes passam a colidir com "multiple elements found" em vez de falhar de
-// forma clara — ver page.tsx linha ~168.
+// forma clara — ver page.tsx.
 async function answerAllQuestions() {
   for (const label of ANSWERS) {
     await act(async () => {
@@ -38,17 +46,29 @@ async function answerAllQuestions() {
   }
 }
 
+// Avança N ciclos do polling real (2s cada). vi.advanceTimersByTimeAsync
+// (diferente de advanceTimersByTime) flusha as microtasks entre cada tick do
+// timer, o que é necessário aqui porque o callback do setInterval é async
+// (faz `await api.get(...)` antes de atualizar o estado).
+async function advancePolls(cycles = 1) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * cycles);
+  });
+}
+
 describe("AiGenPage", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     mockPush.mockClear();
-    mockApi.post.mockClear();
-    mockApi.post.mockResolvedValue({});
-    vi.stubGlobal("fetch", vi.fn());
+    mockApi.get.mockReset();
+    mockApi.post.mockReset();
+    mockApi.post.mockResolvedValue({ ...PENDING_JOB });
+    mockApi.get.mockResolvedValue({ ...DONE_JOB });
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   describe("fluxo do wizard", () => {
@@ -87,7 +107,7 @@ describe("AiGenPage", () => {
     });
 
     it("esconde os chips da última pergunta assim que a geração começa (evita duplo envio)", async () => {
-      vi.mocked(fetch).mockReturnValue(new Promise(() => {})); // nunca resolve
+      mockApi.post.mockReturnValue(new Promise(() => {})); // enqueue nunca resolve
       render(<AiGenPage />);
       for (const label of ANSWERS.slice(0, 4)) {
         await act(async () => { fireEvent.click(screen.getByRole("button", { name: label })); });
@@ -100,80 +120,160 @@ describe("AiGenPage", () => {
     });
   });
 
-  describe("chamada de geração", () => {
-    it("ao responder a última pergunta, faz POST para /api/generate-workout com todas as respostas", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
+  describe("enfileiramento do job", () => {
+    it("ao responder a última pergunta, faz POST para /workout-generation-jobs com todas as respostas", async () => {
       render(<AiGenPage />);
       await answerAllQuestions();
 
-      const call = vi.mocked(fetch).mock.calls[0];
-      expect(call[0]).toBe("/api/generate-workout");
-      expect(call[1]).toMatchObject({ method: "POST", headers: { "Content-Type": "application/json" } });
-      // Compara o payload desserializado (não a string bruta) para não depender
-      // da ordem de inserção das chaves em `newAnswers`.
-      expect(JSON.parse(call[1]!.body as string)).toEqual({
-        level: "Iniciante", goal: "Hipertrofia", days: "3 dias",
-        equipment: "Apenas peso corporal", duration: "30 min",
-      });
+      expect(mockApi.post).toHaveBeenCalledWith("/workout-generation-jobs", EXPECTED_REQUEST);
+    });
+
+    it("mostra o erro imediatamente quando o job já volta FAILED (ex: publish no Kafka falhou), sem pollar", async () => {
+      mockApi.post.mockResolvedValue({ id: 7, status: "FAILED", errorMessage: "Fila indisponível no momento." });
+      render(<AiGenPage />);
+      await answerAllQuestions();
+
+      expect(screen.getByText("Fila indisponível no momento.")).toBeInTheDocument();
+      expect(mockApi.get).not.toHaveBeenCalled();
+    });
+
+    it("mostra a mensagem genérica de fallback quando o job volta FAILED sem errorMessage", async () => {
+      mockApi.post.mockResolvedValue({ id: 7, status: "FAILED" });
+      render(<AiGenPage />);
+      await answerAllQuestions();
+
+      expect(screen.getByText("Erro ao gerar treino. Tente novamente.")).toBeInTheDocument();
+    });
+
+    it("mostra a mensagem de erro quando o enqueue (POST) falha", async () => {
+      mockApi.post.mockRejectedValue(new Error("Erro 401"));
+      render(<AiGenPage />);
+      await answerAllQuestions();
+
+      expect(screen.getByText("Erro 401")).toBeInTheDocument();
+    });
+  });
+
+  describe("polling do status do job", () => {
+    it("faz polling a cada 2s em GET /workout-generation-jobs/{id} enquanto PENDING/PROCESSING", async () => {
+      mockApi.get
+        .mockResolvedValueOnce({ id: 42, status: "PENDING" })
+        .mockResolvedValueOnce({ id: 42, status: "PROCESSING" })
+        .mockResolvedValueOnce({ ...DONE_JOB });
+
+      render(<AiGenPage />);
+      await answerAllQuestions();
+      // A mensagem cosmética do carrossel (1800ms) e o poll real (2000ms) têm
+      // cadências diferentes e não têm relação — as asserções abaixo checam o
+      // estado real (job ainda não terminou), não o texto do carrossel.
+      expect(screen.queryByText("1 treino gerado!")).not.toBeInTheDocument();
+
+      await advancePolls(1);
+      expect(mockApi.get).toHaveBeenNthCalledWith(1, "/workout-generation-jobs/42");
+      expect(screen.queryByText("1 treino gerado!")).not.toBeInTheDocument();
+
+      await advancePolls(1);
+      expect(mockApi.get).toHaveBeenNthCalledWith(2, "/workout-generation-jobs/42");
+      expect(screen.queryByText("1 treino gerado!")).not.toBeInTheDocument();
+
+      await advancePolls(1);
+      expect(screen.getByText("1 treino gerado!")).toBeInTheDocument();
+    });
+
+    it("em DONE, popula os treinos gerados e para de pollar", async () => {
+      render(<AiGenPage />);
+      await answerAllQuestions();
+      await advancePolls(1);
+
+      expect(screen.getByText("1 treino gerado!")).toBeInTheDocument();
+      expect(screen.getByText("A — Treino A")).toBeInTheDocument();
+      expect(screen.queryByText("Montando seu treino com IA...")).not.toBeInTheDocument();
+
+      const callsAfterDone = mockApi.get.mock.calls.length;
+      await advancePolls(3);
+      expect(mockApi.get.mock.calls.length).toBe(callsAfterDone);
+    });
+
+    it("em FAILED, mostra o erro do backend/worker (ex: cota da IA excedida) e para de pollar", async () => {
+      mockApi.get.mockResolvedValue({ id: 42, status: "FAILED", errorMessage: "Cota diária da IA excedida, tente novamente mais tarde." });
+      render(<AiGenPage />);
+      await answerAllQuestions();
+      await advancePolls(1);
+
+      expect(screen.getByText("Cota diária da IA excedida, tente novamente mais tarde.")).toBeInTheDocument();
+      expect(screen.queryByText("Montando seu treino com IA...")).not.toBeInTheDocument();
+    });
+
+    it("para de pollar e mostra timeout após ~60 tentativas (2 minutos) sem DONE/FAILED", async () => {
+      mockApi.get.mockResolvedValue({ id: 42, status: "PROCESSING" });
+      render(<AiGenPage />);
+      await answerAllQuestions();
+
+      await advancePolls(61);
+
+      expect(screen.getByText("A geração está demorando mais que o esperado. Tente novamente.")).toBeInTheDocument();
+      expect(screen.queryByText("Montando seu treino com IA...")).not.toBeInTheDocument();
+
+      const callsAtTimeout = mockApi.get.mock.calls.length;
+      expect(callsAtTimeout).toBe(60);
+
+      await advancePolls(3);
+      expect(mockApi.get.mock.calls.length).toBe(callsAtTimeout);
+    });
+
+    it("mostra erro e para de pollar se o GET falhar", async () => {
+      mockApi.get.mockRejectedValue(new Error("Erro 500"));
+      render(<AiGenPage />);
+      await answerAllQuestions();
+      await advancePolls(1);
+
+      expect(screen.getByText("Erro 500")).toBeInTheDocument();
     });
   });
 
   describe("mensagens de loading rotativas", () => {
-    // beforeEach/afterEach aninhados: o Vitest executa beforeEach de fora pra
-    // dentro (stub do fetch já ativo quando useFakeTimers roda) e afterEach de
-    // dentro pra fora (useRealTimers antes de restoreAllMocks/unstubAllGlobals),
-    // então não há conflito de ordem entre o stub global e os fake timers.
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
-
+    // Puramente cosmético — independente do polling real. Mantém o job em
+    // PROCESSING pela duração do teste pra não interferir na asserção.
     it("mostra a mensagem inicial e avança a cada 1800ms, sem passar da última", async () => {
-      let resolveFetch!: (r: Response) => void;
-      vi.mocked(fetch).mockReturnValue(new Promise(r => { resolveFetch = r; }));
-
+      mockApi.get.mockResolvedValue({ id: 42, status: "PROCESSING" });
       render(<AiGenPage />);
-      for (const label of ANSWERS) {
-        await act(async () => { fireEvent.click(screen.getByRole("button", { name: label })); });
-      }
+      await answerAllQuestions();
 
       expect(screen.getByText("Montando seu treino com IA...")).toBeInTheDocument();
 
-      act(() => vi.advanceTimersByTime(1800));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1800); });
       expect(screen.getByText("Selecionando os melhores exercícios...")).toBeInTheDocument();
 
       // avança bem além das 5 mensagens (5 * 1800 = 9000) — deve travar na última, não estourar o array
-      act(() => vi.advanceTimersByTime(1800 * 10));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1800 * 10); });
       expect(screen.getByText("Finalizando os detalhes...")).toBeInTheDocument();
-
-      await act(async () => { resolveFetch(jsonResponse({ workouts: [WORKOUT] })); });
     });
 
     it("reinicia a mensagem no início a cada nova tentativa de geração (após um erro)", async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: "Groq indisponível" }, false));
+      mockApi.post.mockResolvedValueOnce({ id: 1, status: "FAILED", errorMessage: "Fila indisponível." });
       render(<AiGenPage />);
-
-      for (const label of ANSWERS) {
-        await act(async () => { fireEvent.click(screen.getByRole("button", { name: label })); });
-      }
-      expect(screen.getByText("Groq indisponível")).toBeInTheDocument();
+      await answerAllQuestions();
+      expect(screen.getByText("Fila indisponível.")).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /Tentar novamente/ }));
 
-      let resolveFetch!: (r: Response) => void;
-      vi.mocked(fetch).mockReturnValue(new Promise(r => { resolveFetch = r; }));
-      for (const label of ANSWERS) {
-        await act(async () => { fireEvent.click(screen.getByRole("button", { name: label })); });
-      }
+      mockApi.post.mockResolvedValueOnce({ ...PENDING_JOB });
+      mockApi.get.mockResolvedValue({ id: 42, status: "PROCESSING" });
+      await answerAllQuestions();
 
       expect(screen.getByText("Montando seu treino com IA...")).toBeInTheDocument();
-      await act(async () => { resolveFetch(jsonResponse({ workouts: [WORKOUT] })); });
     });
   });
 
   describe("estado de sucesso", () => {
-    it("mostra o treino gerado e esconde o balão de loading", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
+    async function generateAndFinish() {
       render(<AiGenPage />);
       await answerAllQuestions();
+      await advancePolls(1);
+    }
+
+    it("mostra o treino gerado e esconde o balão de loading", async () => {
+      await generateAndFinish();
 
       expect(screen.getByText("1 treino gerado!")).toBeInTheDocument();
       expect(screen.getByText("A — Treino A")).toBeInTheDocument();
@@ -181,9 +281,9 @@ describe("AiGenPage", () => {
     });
 
     it("salva ao clicar em 'Salvar e ver treinos', chama api.post e navega", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
-      render(<AiGenPage />);
-      await answerAllQuestions();
+      await generateAndFinish();
+      mockApi.post.mockClear();
+      mockApi.post.mockResolvedValue({});
 
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));
@@ -196,9 +296,10 @@ describe("AiGenPage", () => {
 
     it("chama api.post uma vez para cada treino gerado, na ordem correta", async () => {
       const second: GeneratedWorkout = { ...WORKOUT, code: "B", name: "Treino B" };
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT, second] }));
-      render(<AiGenPage />);
-      await answerAllQuestions();
+      mockApi.get.mockResolvedValue({ id: 42, status: "DONE", workouts: [WORKOUT, second] });
+      await generateAndFinish();
+      mockApi.post.mockClear();
+      mockApi.post.mockResolvedValue({});
 
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));
@@ -209,25 +310,26 @@ describe("AiGenPage", () => {
     });
 
     it("desabilita 'Salvar' e 'Gerar outro' enquanto o salvamento está em andamento", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
+      await generateAndFinish();
       let resolvePost!: () => void;
       mockApi.post.mockReturnValue(new Promise<void>(r => { resolvePost = r; }));
 
-      render(<AiGenPage />);
-      await answerAllQuestions();
+      // fireEvent.click aqui precisa estar dentro de act(async...) em vez de
+      // usar screen.findByRole (waitFor) logo abaixo: com fake timers ativos,
+      // o polling interno do waitFor nunca avança (não é orientado a timers
+      // reais) e o teste trava até o timeout do runner.
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));
+      });
 
-      fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));
-
-      expect(await screen.findByRole("button", { name: "Salvando..." })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Salvando..." })).toBeDisabled();
       expect(screen.getByRole("button", { name: /Gerar outro/ })).toBeDisabled();
 
       await act(async () => { resolvePost(); });
     });
 
     it("'Gerar outro' volta ao wizard do zero", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
-      render(<AiGenPage />);
-      await answerAllQuestions();
+      await generateAndFinish();
 
       fireEvent.click(screen.getByRole("button", { name: /Gerar outro/ }));
 
@@ -237,48 +339,36 @@ describe("AiGenPage", () => {
   });
 
   describe("estado de erro", () => {
-    it("mostra a mensagem de erro da API quando a resposta não é ok, e esconde o balão de loading", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ error: "Chave da Groq ausente" }, false));
+    it("mostra a mensagem de erro do job quando o status final é FAILED, e esconde o balão de loading", async () => {
+      mockApi.get.mockResolvedValue({ id: 42, status: "FAILED", errorMessage: "Chave da IA ausente no worker." });
       render(<AiGenPage />);
       await answerAllQuestions();
+      await advancePolls(1);
 
-      expect(screen.getByText("Chave da Groq ausente")).toBeInTheDocument();
+      expect(screen.getByText("Chave da IA ausente no worker.")).toBeInTheDocument();
       expect(screen.queryByText(/treino gerado/)).not.toBeInTheDocument();
       expect(screen.queryByText("Montando seu treino com IA...")).not.toBeInTheDocument();
     });
 
-    it("mostra data.error mesmo quando a rejeição do fetch é uma instância de Error (TypeError de rede)", async () => {
-      vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"));
+    it("mostra a mensagem do Error quando o enqueue (POST) rejeita com uma instância de Error", async () => {
+      mockApi.post.mockRejectedValue(new Error("Failed to fetch"));
       render(<AiGenPage />);
       await answerAllQuestions();
 
       expect(screen.getByText("Failed to fetch")).toBeInTheDocument();
     });
 
-    it("mostra a mensagem genérica de fallback quando o valor rejeitado não é uma instância de Error", async () => {
+    it("mostra a mensagem genérica de fallback quando o valor rejeitado no enqueue não é uma instância de Error", async () => {
       // Rejeição propositalmente não-Error, para exercitar o branch de fallback
-      vi.mocked(fetch).mockRejectedValue("timeout string cru, não um Error");
+      mockApi.post.mockRejectedValue("timeout string cru, não um Error");
       render(<AiGenPage />);
       await answerAllQuestions();
 
       expect(screen.getByText("Erro inesperado. Tente novamente.")).toBeInTheDocument();
     });
 
-    it("documenta o comportamento quando a resposta de erro não é JSON válido (ex: página HTML de erro 502)", async () => {
-      vi.mocked(fetch).mockResolvedValue({
-        ok: false,
-        json: async () => { throw new SyntaxError("Unexpected token '<'"); },
-      } as unknown as Response);
-      render(<AiGenPage />);
-      await answerAllQuestions();
-
-      // res.json() lança antes do throw new Error(data.error ?? ...) ser alcançado,
-      // então o usuário vê a mensagem crua do parse, não o fallback "Erro ao gerar treino."
-      expect(screen.getByText("Unexpected token '<'")).toBeInTheDocument();
-    });
-
     it("'Tentar novamente' reseta o wizard para a pergunta inicial", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ error: "Erro ao gerar treino." }, false));
+      mockApi.post.mockResolvedValue({ id: 1, status: "FAILED", errorMessage: "Erro ao gerar treino." });
       render(<AiGenPage />);
       await answerAllQuestions();
 
@@ -290,10 +380,11 @@ describe("AiGenPage", () => {
     });
 
     it("erro ao salvar treinos (Error) mostra a mensagem real e não navega", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
-      mockApi.post.mockRejectedValue(new Error("Falha específica do servidor."));
       render(<AiGenPage />);
       await answerAllQuestions();
+      await advancePolls(1);
+
+      mockApi.post.mockRejectedValue(new Error("Falha específica do servidor."));
 
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));
@@ -304,11 +395,12 @@ describe("AiGenPage", () => {
     });
 
     it("erro ao salvar treinos (não-Error) mostra a mensagem de fallback e não navega", async () => {
-      vi.mocked(fetch).mockResolvedValue(jsonResponse({ workouts: [WORKOUT] }));
-      // Rejeição propositalmente não-Error, para exercitar o branch de fallback
-      mockApi.post.mockRejectedValue("string crua, não um Error");
       render(<AiGenPage />);
       await answerAllQuestions();
+      await advancePolls(1);
+
+      // Rejeição propositalmente não-Error, para exercitar o branch de fallback
+      mockApi.post.mockRejectedValue("string crua, não um Error");
 
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "Salvar e ver treinos" }));

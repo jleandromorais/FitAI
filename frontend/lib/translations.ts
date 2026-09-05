@@ -357,6 +357,8 @@ export const translations = {
       pesoCorporal: "Apenas peso corporal",
       perguntaDuracao: "Quanto tempo por sessão?",
       erroGerar: "Erro ao gerar treino.",
+      erroGerarFalha: "Erro ao gerar treino. Tente novamente.",
+      erroTimeout: "A geração está demorando mais que o esperado. Tente novamente.",
       erroInesperado: "Erro inesperado. Tente novamente.",
       erroSalvar: "Erro ao salvar treinos.",
       loadingMensagens: [
@@ -780,6 +782,8 @@ export const translations = {
       pesoCorporal: "Bodyweight only",
       perguntaDuracao: "How much time per session?",
       erroGerar: "Error generating workout.",
+      erroGerarFalha: "Error generating workout. Try again.",
+      erroTimeout: "Generation is taking longer than expected. Try again.",
       erroInesperado: "Unexpected error. Try again.",
       erroSalvar: "Error saving workouts.",
       loadingMensagens: [

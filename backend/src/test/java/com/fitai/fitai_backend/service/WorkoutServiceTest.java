@@ -1,6 +1,7 @@
 package com.fitai.fitai_backend.service;
 
 import com.fitai.fitai_backend.dto.*;
+import com.fitai.fitai_backend.event.AuditEventPublisher;
 import com.fitai.fitai_backend.exception.ResourceNotFoundException;
 import com.fitai.fitai_backend.model.*;
 import com.fitai.fitai_backend.repository.UserRepository;

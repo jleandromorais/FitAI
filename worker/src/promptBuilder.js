@@ -1,54 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { verifyAuthToken } from "@/lib/auth-jwt";
+"use strict";
 
-export interface GenerateRequest {
-  level: string;
-  goal: string;
-  days: string;
-  equipment: string;
-  duration: string;
-}
-
-export interface GeneratedWorkout {
-  name: string;
-  code: string;
-  schedule: string;
-  tags: string[];
-  exercises: {
-    name: string;
-    muscle: string;
-    restSeconds: number;
-    sets: { reps: number; weight: number; done: boolean; prev: number }[];
-  }[];
-}
-
-export interface GenerateResponse {
-  workouts: GeneratedWorkout[];
-}
+// Ported from frontend/app/api/generate-workout/route.ts — same business
+// logic (rep schemes per goal/level, workout splits per day count, prompt
+// text), just stripped of TypeScript types. Keep this in sync if the
+// fitness-domain rules ever change on either side.
 
 // Formato compacto que a IA de fato produz: uma série é sempre repetida
 // idêntica setsCount vezes, então pedir o array inteiro (com 3-5 cópias do
 // mesmo objeto) só gasta tokens à toa — o suficiente pra estourar o limite
 // em treinos maiores e cortar o JSON no meio. Expande pro formato completo
 // que o frontend espera depois de parsear.
-interface RawGeneratedExercise {
-  name: string;
-  muscle: string;
-  restSeconds: number;
-  setsCount: number;
-  reps: number;
-  weight: number;
-}
-
-interface RawGeneratedWorkout {
-  name: string;
-  code: string;
-  schedule: string;
-  tags: string[];
-  exercises: RawGeneratedExercise[];
-}
-
-function expandWorkouts(raw: RawGeneratedWorkout[]): GeneratedWorkout[] {
+function expandWorkouts(raw) {
   return raw.map(w => ({
     ...w,
     exercises: w.exercises.map(ex => {
@@ -70,12 +32,12 @@ function expandWorkouts(raw: RawGeneratedWorkout[]): GeneratedWorkout[] {
 
 // Dias fora de 3-6 não têm um split definido em getSplit() — cai no default
 // "adaptado para N dias", e N cru (incluindo NaN) vaza pro prompt da IA
-function parseValidDays(days: string): number {
+function parseValidDays(days) {
   const n = parseInt(days, 10);
   return Number.isInteger(n) && n >= 3 && n <= 6 ? n : 3;
 }
 
-function getSplit(days: string, goal: string, level: string): string {
+function getSplit(days, goal, level) {
   const n = parseValidDays(days);
   const isStrength = goal === "Força";
   const isFat = goal === "Emagrecimento";
@@ -113,7 +75,7 @@ function getSplit(days: string, goal: string, level: string): string {
   return `SPLIT: ABC (3 dias) adaptado para ${n} dias com rotação`;
 }
 
-function getRepScheme(goal: string, level: string): string {
+function getRepScheme(goal, level) {
   if (goal === "Força") return "3-5 séries de 3-6 reps com cargas altas (85-95% do max), descanso 3-5 min";
   if (goal === "Hipertrofia") return "3-4 séries de 8-12 reps com carga moderada-alta (70-80% do max), descanso 60-90s";
   if (goal === "Resistência") return "3-4 séries de 15-20 reps com carga moderada (50-65% do max), descanso 30-45s";
@@ -121,7 +83,7 @@ function getRepScheme(goal: string, level: string): string {
   return "3-4 séries de 8-12 reps, descanso 60-90s";
 }
 
-function buildPrompt(req: GenerateRequest): string {
+function buildPrompt(req) {
   const split = getSplit(req.days, req.goal, req.level);
   const repScheme = getRepScheme(req.goal, req.level);
   const n = parseValidDays(req.days);
@@ -179,82 +141,10 @@ IMPORTANTE:
 - setsCount é sempre um número (nunca um array) — a quantidade de séries do esquema acima`;
 }
 
-// O plano gratuito do Vercel mata qualquer função em 10s (limite fixo da
-// plataforma, este export não consegue elevar isso) — por isso o provedor
-// precisa ser rápido por padrão, não só ter tokens grátis.
-export const maxDuration = 10;
-
-export async function POST(req: NextRequest) {
-  const userEmail = await verifyAuthToken(req);
-  if (!userEmail) {
-    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "GROQ_API_KEY não configurada." }, { status: 500 });
-  }
-
-  try {
-    const body: GenerateRequest = await req.json();
-
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        // llama-3.3-70b-versatile foi descontinuado pela Groq (404
-        // "model_not_found" em toda chamada). Trocado primeiro pra
-        // qwen/qwen3.8-27b — gerava JSON correto, mas a conta tem um limite
-        // de saída (OTPM) de só 1000 tokens/min pra esse modelo, e um plano
-        // de treino completo pede ~1200-1700 tokens: 429 "rate_limit_exceeded"
-        // em toda chamada real, confirmado nos logs de produção da Vercel.
-        // openai/gpt-oss-120b testado directamente contra a API (6/6 JSON
-        // válido no cenário mais pesado — 6 treinos avançado): margem de
-        // rate limit muito maior (~8000 tokens/min) e ~4-5.6s, dentro do
-        // limite de 9s abaixo. reasoning_effort:"low" é necessário — sem
-        // isso o modelo (é um modelo de raciocínio) gasta o orçamento de
-        // tokens pensando e devolve content vazio.
-        model: "openai/gpt-oss-120b",
-        messages: [{ role: "user", content: buildPrompt(body) }],
-        temperature: 0.7,
-        max_tokens: 6000,
-        reasoning_effort: "low",
-      }),
-      // Deixa uma margem abaixo do limite de 10s do Vercel Hobby pra devolver
-      // um erro tratado em vez do function timeout bruto da plataforma.
-      signal: AbortSignal.timeout(9000),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      // Não repassa o corpo bruto da resposta da Groq ao cliente — pode conter
-      // detalhe interno do provedor. Fica só no log do servidor.
-      console.error("Groq API error:", res.status, err);
-      return NextResponse.json({ error: "Erro ao gerar treino. Tente novamente." }, { status: 502 });
-    }
-
-    const data = await res.json();
-    const raw = data?.choices?.[0]?.message?.content ?? "";
-    const clean = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-
-    if (!clean) {
-      return NextResponse.json({ error: "IA retornou resposta vazia. Tente novamente." }, { status: 502 });
-    }
-
-    const parsed = JSON.parse(clean);
-    if (!Array.isArray(parsed?.workouts)) {
-      return NextResponse.json({ error: "IA retornou formato inesperado. Tente novamente." }, { status: 502 });
-    }
-
-    const workouts = expandWorkouts(parsed.workouts as RawGeneratedWorkout[]);
-    return NextResponse.json({ workouts } satisfies GenerateResponse);
-  } catch (err) {
-    // Não repassa err.message ao cliente — pode conter detalhe interno
-    // (ex: erro de rede, parsing). Fica só no log do servidor.
-    console.error("Falha ao gerar treino:", err);
-    return NextResponse.json({ error: "Erro ao gerar treino. Tente novamente." }, { status: 502 });
-  }
-}
+module.exports = {
+  buildPrompt,
+  getSplit,
+  getRepScheme,
+  parseValidDays,
+  expandWorkouts,
+};

@@ -1,0 +1,85 @@
+# Sobe o pipeline de geração de treino por IA localmente.
+#
+# Dois jeitos de usar:
+#
+# 1) Só infra (mais comum no dia a dia — roda backend/worker fora do Docker
+#    pra ter hot reload):
+#      docker-compose up postgres redpanda
+#    O backend Java (perfil "local") e o worker Node já apontam pra
+#    localhost:5432 / localhost:9092 por padrão — nenhuma env var extra é
+#    necessária nesse modo.
+#
+# 2) Pipeline inteiro containerizado (pra reproduzir/demonstrar o fluxo
+#    completo de ponta a ponta, ex: gravação pro portfólio):
+#      docker-compose up --build
+#    Aqui backend/worker recebem os hostnames internos do Compose
+#    (postgres/redpanda) via env vars que sobrepõem os defaults locais.
+#
+# O frontend Next.js fica de fora de propósito (roda com "npm run dev" pra
+# hot reload), apontando NEXT_PUBLIC_API_URL pro backend em localhost:8081.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fitai-postgres
+    environment:
+      POSTGRES_DB: fitai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: FitAI_local_2026!
+    ports:
+      # 5434 no host (5432 e 5433 já estão ocupados por outros Postgres
+      # nesta máquina) — dentro da rede do Compose, backend/worker continuam
+      # falando com "postgres:5432" normalmente, sem depender dessa porta.
+      - "5434:5432"
+    volumes:
+      - fitai_postgres_data:/var/lib/postgresql/data
+
+  # Redpanda: broker compatível com o protocolo Kafka, muito mais leve que
+  # Kafka+ZooKeeper reais pra dev local — funciona igual com spring-kafka e
+  # kafkajs. Listener duplo (internal/external) pra atender tanto containers
+  # do Compose (backend/worker containerizados, via "redpanda:9092") quanto
+  # processos rodando direto no host (via "localhost:9092", o mesmo endereço
+  # que application-local.properties já usa hoje).
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.18
+    container_name: fitai-redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:9092
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --mode dev-container
+      - --smp 1
+      - --default-log-level=info
+    ports:
+      - "9092:19092"
+
+  backend:
+    build: ./backend
+    container_name: fitai-backend
+    depends_on:
+      - postgres
+      - redpanda
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/fitai
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    ports:
+      - "8081:8080"
+
+  worker:
+    build: ./worker
+    container_name: fitai-worker
+    depends_on:
+      - redpanda
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+    env_file:
+      - ./worker/.env
+    ports:
+      - "8082:8080"
+
+volumes:
+  fitai_postgres_data:

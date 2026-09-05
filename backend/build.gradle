@@ -44,6 +44,20 @@ dependencies {
 	// Flyway — migrations de banco de dados versionadas
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	implementation 'org.flywaydb:flyway-database-postgresql'
+
+	// Kafka — publica eventos de auditoria (login, treino criado, etc.) e agora também
+	// o pedido/resultado de geração de treino por IA. spring-boot-kafka é a autoconfiguração
+	// (KafkaTemplate/@KafkaListener) — no Spring Boot 4, cada tecnologia ganhou seu próprio
+	// módulo de autoconfiguração em vez de tudo dentro de spring-boot-autoconfigure.
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'org.springframework.boot:spring-boot-kafka'
+
+	// ObjectMapper Jackson 2 usado manualmente (não injetado — mesmo padrão de
+	// SendGridClient) pra (de)serializar os eventos/records de geração de treino;
+	// o Boot 4 autoconfigura só um ObjectMapper Jackson 3 (tools.jackson), que não
+	// é o tipo com.fasterxml.jackson usado aqui. jackson-datatype-jsr310 dá suporte
+	// a java.time.Instant na desserialização manual do evento de resultado do worker.
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 }
 
 tasks.named('test') {
