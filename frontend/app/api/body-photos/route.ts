@@ -9,6 +9,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
 // aqui, nunca chega ao browser) e repassa só a URL resultante pro backend
 // Spring Boot gravar, com o mesmo JWT do usuário. O backend nunca vê o
 // arquivo em si — ver BodyPhoto.java (comentário "nunca o arquivo binário").
+//
+// access: "private" de propósito — são fotos do próprio corpo do usuário,
+// não tem por que a URL ser publicamente acessível por qualquer um que a
+// adivinhe. Ler a foto de volta passa pela rota /api/body-photos/image
+// (autenticada), nunca direto pela URL guardada no banco.
 export async function POST(req: NextRequest) {
   const userEmail = await verifyAuthToken(req);
   if (!userEmail) {
@@ -33,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const blob = await put(`body-photos/${userEmail}/${Date.now()}-${file.name}`, file, {
-      access: "public",
+      access: "private",
       addRandomSuffix: true,
     });
 

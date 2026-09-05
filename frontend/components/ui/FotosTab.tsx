@@ -143,8 +143,8 @@ export default function FotosTab() {
               {groupPhotos.map(photo => (
                 <div key={photo.id} className="col photo-card" style={{ gap: 6 }}>
                   <div style={{ position: "relative", borderRadius: "var(--radius-sm)", overflow: "hidden", aspectRatio: "3/4", background: "var(--surface-2)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- URL dinâmica de storage externo (Vercel Blob), fora dos domínios que next/image otimiza sem configuração extra */}
-                    <img src={photo.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {/* eslint-disable-next-line @next/next/no-img-element -- passa pela rota de proxy autenticada (blob é privado), fora dos domínios que next/image otimiza sem configuração extra */}
+                    <img src={`/api/body-photos/image?url=${encodeURIComponent(photo.photoUrl)}`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     <button
                       type="button"
                       onClick={() => handleDelete(photo)}
