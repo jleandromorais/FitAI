@@ -232,6 +232,8 @@ export const translations = {
       pesoCorporal: "Exercício de peso corporal — sem carga registada",
       nenhumExercicio: "Nenhum exercício encontrado.",
       evolucaoDeCarga: "Evolução de carga",
+      sugestaoSubirCarga: "Bateu tudo nesse peso — hora de subir a carga",
+      sugestaoManterCarga: "Não completou tudo — repita esse peso na próxima",
     },
     volumeTab: {
       executeParaVerVolume: "Execute treinos para ver o volume acumulado.",
@@ -589,6 +591,8 @@ export const translations = {
       pesoCorporal: "Bodyweight exercise — no load recorded",
       nenhumExercicio: "No exercises found.",
       evolucaoDeCarga: "Load progress",
+      sugestaoSubirCarga: "Nailed every set — time to add weight",
+      sugestaoManterCarga: "Didn't finish every set — repeat this weight next time",
     },
     volumeTab: {
       executeParaVerVolume: "Do workouts to see accumulated volume.",

@@ -13,13 +13,13 @@ const PROGRESS_DATA: ProgressData = {
   exercises: [
     // `volume` é real (peso × reps das séries feitas, vindo do backend) —
     // não é mais estimado no frontend (ver ExerciseProgressDto.volume).
-    { name: "Supino Reto", muscle: "Peitoral", currentWeight: 70, prevWeight: 60, delta: 10, totalSets: 4, volume: 2100 },
-    { name: "Agachamento", muscle: "Pernas", currentWeight: 100, prevWeight: 90, delta: 10, totalSets: 4, volume: 4000 },
-    { name: "Rosca Direta", muscle: "Bíceps", currentWeight: 20, prevWeight: 0, delta: 0, totalSets: 3, volume: 600 },
-    { name: "Remada Curvada", muscle: "Costas", currentWeight: 60, prevWeight: 65, delta: -5, totalSets: 4, volume: 1800 },
+    { name: "Supino Reto", muscle: "Peitoral", currentWeight: 70, prevWeight: 60, delta: 10, totalSets: 4, volume: 2100, suggestion: null },
+    { name: "Agachamento", muscle: "Pernas", currentWeight: 100, prevWeight: 90, delta: 10, totalSets: 4, volume: 4000, suggestion: null },
+    { name: "Rosca Direta", muscle: "Bíceps", currentWeight: 20, prevWeight: 0, delta: 0, totalSets: 3, volume: 600, suggestion: null },
+    { name: "Remada Curvada", muscle: "Costas", currentWeight: 60, prevWeight: 65, delta: -5, totalSets: 4, volume: 1800, suggestion: null },
     // Primeira vez feito (sem sessão anterior): prevWeight=0 faz delta = currentWeight
     // inteiro, o que parece um "recorde" mas não é — não há nada pra comparar.
-    { name: "Leg Press", muscle: "Pernas", currentWeight: 60, prevWeight: 0, delta: 60, totalSets: 3, volume: 600 },
+    { name: "Leg Press", muscle: "Pernas", currentWeight: 60, prevWeight: 0, delta: 60, totalSets: 3, volume: 600, suggestion: null },
   ],
   currentStreak: 3,
 };

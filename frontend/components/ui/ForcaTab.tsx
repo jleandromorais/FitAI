@@ -59,6 +59,24 @@ export default function ForcaTab({ data, exercisesWithLoad, selectedEx, loadHist
                       </span>
                     )}
                   </div>
+
+                  {/* Sugestão de progressão — computada no backend a partir de
+                      peso atual/anterior e séries concluídas (nunca fabricada
+                      no frontend). "subir_carga" usa a Brasa por ser um convite
+                      à ação; "manter_carga" fica neutro (surface-2/text-dim)
+                      pra não competir com o único acento do sistema. Remonta
+                      (via key) a cada troca de exercício/sugestão pra repetir
+                      a entrada — ver .forca-suggestion em globals.css. */}
+                  {selectedEx.suggestion && (
+                    <div
+                      key={selectedEx.name + selectedEx.suggestion}
+                      className={`forca-suggestion ${selectedEx.suggestion === "subir_carga" ? "forca-suggestion-accent" : "forca-suggestion-neutral"}`}
+                    >
+                      {selectedEx.suggestion === "subir_carga"
+                        ? t.forcaTab.sugestaoSubirCarga
+                        : t.forcaTab.sugestaoManterCarga}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -13,6 +13,7 @@ export interface ExerciseProgress {
   delta: number;        // ganho de carga vs sessão anterior
   totalSets: number;
   volume: number;       // peso × reps das séries feitas — real, vindo do backend (não estimado)
+  suggestion: "subir_carga" | "manter_carga" | null; // ver WorkoutService.computeSuggestion no backend
 }
 
 export interface ProgressData {

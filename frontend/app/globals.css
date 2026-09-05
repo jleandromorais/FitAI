@@ -1316,6 +1316,48 @@ body {
 }
 .pulse { animation: pulse 2s ease infinite; }
 
+/* Sugestão de progressão (ForcaTab) — peso "badge leve", 3 camadas de
+   movimento: primária (posição + opacidade, sobe 6px assentando),
+   secundária (escala 0.96→1, o "toque físico" de chegada), ambiente
+   (a própria cor de fundo entra em fade, não é só um elemento estático
+   aparecendo). Ease-out só na entrada (decelera), sem overshoot — o resto
+   do sistema já usa scale(0.97) como feedback tátil sem quicar, mantém a
+   mesma personalidade "Corporate" aqui. */
+@keyframes forcaSuggestionIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.forca-suggestion {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 12px;
+  animation: forcaSuggestionIn 0.18s cubic-bezier(0.2, 0, 0, 1) both;
+}
+.forca-suggestion-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  animation-name: forcaSuggestionIn, forcaSuggestionBgAccent;
+  animation-duration: 0.18s, 0.28s;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1), ease-out;
+}
+.forca-suggestion-neutral {
+  background: var(--surface-2);
+  color: var(--text-dim);
+  animation-name: forcaSuggestionIn, forcaSuggestionBgNeutral;
+  animation-duration: 0.18s, 0.28s;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1), ease-out;
+}
+@keyframes forcaSuggestionBgAccent {
+  from { background: transparent; }
+  to   { background: var(--accent-soft); }
+}
+@keyframes forcaSuggestionBgNeutral {
+  from { background: transparent; }
+  to   { background: var(--surface-2); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-up, .dot-anim, .pulse, .rep-counter-dot.current, .ai-gen-loading-dot,
   .live-dot, .card-accent.glow-live, .auth-brand-ember, .word-up, .flame-icon,
@@ -1330,5 +1372,10 @@ body {
     transform: none !important;
     transition: none !important;
     animation: none !important;
+  }
+  .forca-suggestion, .forca-suggestion-accent, .forca-suggestion-neutral {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
