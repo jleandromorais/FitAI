@@ -30,6 +30,7 @@ class WorkoutServiceTest {
     @Mock WorkoutRepository        workoutRepository;
     @Mock UserRepository           userRepository;
     @Mock WorkoutSessionRepository sessionRepository;
+    @Mock AuditEventPublisher     auditEventPublisher;
 
     @InjectMocks WorkoutService workoutService;
 
