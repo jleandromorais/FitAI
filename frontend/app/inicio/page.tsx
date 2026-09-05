@@ -22,14 +22,34 @@
     the finish review, the verdict, and DESIGN.md.
 */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Sparkles, Dumbbell, ArrowRight } from "lucide-react";
 import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
 import { LineChart } from "@/components/ui/Charts";
-import heroVictory from "@/img/hero-victory.png";
+
+// "Pode haver movimento rico nesta sessão?" — verdadeiro só sem
+// prefers-reduced-motion e com ponteiro fino (rato/trackpad). É estado que
+// vive fora do React (matchMedia), por isso entra por useSyncExternalStore
+// em vez de um setState dentro de um efeito: no servidor devolve false, no
+// cliente reavalia na hidratação e, ao contrário da versão anterior, reage
+// se o utilizador mudar a preferência a meio da sessão.
+const MOTION_QUERIES = ["(prefers-reduced-motion: reduce)", "(pointer: coarse)"];
+
+function subscribeToMotionPrefs(onChange: () => void) {
+  const lists = MOTION_QUERIES.map(q => window.matchMedia(q));
+  lists.forEach(l => l.addEventListener("change", onChange));
+  return () => lists.forEach(l => l.removeEventListener("change", onChange));
+}
+
+function useRichMotion() {
+  return useSyncExternalStore(
+    subscribeToMotionPrefs,
+    () => MOTION_QUERIES.every(q => !window.matchMedia(q).matches),
+    () => false,
+  );
+}
 
 // Scroll com inércia (técnica de github.com/naocodei — "o conteúdo persegue
 // a posição da rolagem em vez de saltar pra ela"), em JS puro, sem lib.
@@ -41,13 +61,7 @@ import heroVictory from "@/img/hero-victory.png";
 function SmoothScroll({ children }: { children: React.ReactNode }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    if (!reduceMotion && !coarsePointer) setEnabled(true);
-  }, []);
+  const enabled = useRichMotion();
 
   useEffect(() => {
     if (!enabled) return;
@@ -94,6 +108,36 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Vídeo de fundo do hero, em loop e mudo — comportamento de GIF, custo de
+// vídeo (7 MB de mp4 contra dezenas de MB que o mesmo clipe teria em .gif).
+// Mesmo gate do SmoothScroll acima: só monta em ponteiro fino e sem
+// prefers-reduced-motion. Como o <video> só existe depois desse teste, no
+// celular e em quem pede menos movimento o ficheiro nunca chega a ser pedido
+// — a primeira dobra fica com a atmosfera estática (brasa + EffortLines) que
+// a página já tinha. Decorativo: aria-hidden, sem faixa de áudio, sem
+// controlos e sem nada que o teclado possa alcançar.
+function HeroVideo() {
+  const enabled = useRichMotion();
+
+  if (!enabled) return null;
+
+  return (
+    <div className="landing-hero-video-layer" aria-hidden="true">
+      <video
+        className="landing-hero-video"
+        src="/poseidon-storm.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        tabIndex={-1}
+      />
+      <div className="landing-hero-video-scrim" />
+    </div>
+  );
+}
+
 // Revela cada .landing-reveal quando entra na viewport — um único gesto de
 // entrada reaproveitado pela página inteira, nunca uma animação por seção.
 function useScrollReveal() {
@@ -108,6 +152,51 @@ function useScrollReveal() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+  return ref;
+}
+
+// Movimento preso ao scroll — não um gesto único ao entrar. O nó desloca-se
+// verticalmente conforme a sua própria posição na viewport: bem abaixo do
+// centro entra deslocado para baixo, ao passar pelo centro assenta em zero, e
+// continua a subir ao sair por cima. Nunca "acaba", por isso funciona todas as
+// vezes que se passa pela secção — ao contrário do reveal de uma só vez, que
+// quem recarrega a página já a meio nunca chega a ver.
+//
+// A amplitude é diferente por cartão de propósito: é a DIFERENÇA entre eles,
+// não o movimento em si, que se lê como profundidade. Igual em ambos seria
+// apenas a página inteira a deslizar.
+//
+// Lê getBoundingClientRect() a cada frame em vez de calcular a partir de
+// scrollY: dentro do SmoothScroll o conteúdo vive num wrapper transformado que
+// persegue o scroll com atrito, e só o rect devolve a posição realmente
+// desenhada — a conta com scrollY andaria à frente do que está no ecrã.
+function useScrollParallax<T extends HTMLElement>(amplitude: number) {
+  const ref = useRef<T>(null);
+  const richMotion = useRichMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !richMotion) return;
+
+    let frameId = 0;
+    function tick() {
+      const rect = el!.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // Longe da viewport não vale escrever no DOM; o loop continua barato.
+      if (rect.bottom > -vh && rect.top < vh * 2) {
+        // Travado em [-1, 1] para a amplitude ser mesmo o deslocamento maximo:
+        // sem isto um cartao ainda longe da viewport acumulava offsets grandes
+        // e entrava em cena ja deslocado de forma estranha.
+        const bruto = (rect.top + rect.height / 2 - vh / 2) / vh;
+        const progresso = Math.max(-1, Math.min(1, bruto));
+        el!.style.setProperty("--py", `${(progresso * amplitude).toFixed(2)}px`);
+      }
+      frameId = requestAnimationFrame(tick);
+    }
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [amplitude, richMotion]);
+
   return ref;
 }
 
@@ -176,6 +265,16 @@ function AiDemoCard() {
 const EXAMPLE_VOLUME = [3200, 3450, 3400, 3800, 4100, 4050, 4400, 4750];
 
 export default function LandingPage() {
+  // Sinais OPOSTOS, não duas velocidades no mesmo sentido. Com +26/+54 os dois
+  // cartões desciam juntos e só 28px os separavam ao longo de um ecrã inteiro
+  // de rolagem — correcto na matemática, invisível na prática. Em contra-
+  // movimento a diferença passa a 96px: um sobe enquanto o outro desce, e é
+  // esse cisalhamento entre eles que o olho apanha de imediato.
+  // Máximo de 48px por cartão (o progresso vai travado a ±1), muito abaixo do
+  // terço de ecrã — continua a ler-se como relevo, nunca como layout partido.
+  const parallaxBig = useScrollParallax<HTMLDivElement>(48);
+  const parallaxAccent = useScrollParallax<HTMLDivElement>(-48);
+
   return (
     <>
       <nav className="landing-nav landing-load landing-load-nav">
@@ -195,9 +294,9 @@ export default function LandingPage() {
       <div className="landing">
       <section className="landing-hero-outer">
         <div className="landing-hero">
+          <HeroVideo />
           <div className="auth-brand-ember" style={{ opacity: 0.6 }} />
           <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}><EffortLines /></div>
-          <Image src={heroVictory} alt="" aria-hidden="true" className="landing-hero-emblem" priority />
           <div className="landing-hero-bottom">
             <div className="landing-hero-content">
               <h1 className="landing-h1">
@@ -235,9 +334,9 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-section">
-        <Reveal>
+        <Reveal className="landing-reveal-stagger">
           <div className="landing-feature-grid">
-            <div className="landing-feature-card big">
+            <div className="landing-feature-card big" ref={parallaxBig}>
               <div className="landing-feature-card-visual">
                 <RepCounter />
               </div>
@@ -249,10 +348,10 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="landing-feature-card accent">
+            <div className="landing-feature-card accent" ref={parallaxAccent}>
               <div className="landing-feature-card-visual" style={{ flexDirection: "column", alignItems: "stretch" }}>
                 <div className="h-eyebrow" style={{ marginBottom: 8 }}>Exemplo ilustrativo — volume por sessão (kg)</div>
-                <LineChart data={EXAMPLE_VOLUME} height={120} label="Exemplo de evolução de volume" />
+                <LineChart data={EXAMPLE_VOLUME} height={120} label="Exemplo de evolução de volume" drawOnView />
               </div>
               <div>
                 <h3 className="landing-feature-card-title">Carga e volume comparados sessão a sessão, não estimados.</h3>

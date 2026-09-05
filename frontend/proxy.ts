@@ -30,7 +30,16 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Rotas /api/* têm sua própria verificação JWT real (ver lib/auth-jwt.ts) e
-  // devolvem JSON 401 — não devem passar pelo redirect de página deste middleware
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)",],
+  // Rotas /api/* tem sua propria verificacao JWT real (ver lib/auth-jwt.ts) e
+  // devolvem JSON 401 — nao devem passar pelo redirect de pagina deste middleware.
+  //
+  // Ficheiros estaticos de /public ficam igualmente de fora. Sem isso o proxy
+  // responde-lhes com o redirect 307 para /login e o browser recebe o HTML do
+  // login no lugar do binario — foi exatamente o que impediu o <video> do hero
+  // da landing de abrir (DEMUXER_ERROR_COULD_NOT_OPEN). As extensoes sao
+  // listadas explicitamente, em vez de um \.\w+$ generico, pra nao tornar
+  // publica por acidente uma rota futura que tenha ponto no caminho.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:mp4|webm|ogg|mp3|wav|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|otf|txt|xml|webmanifest|pdf)$).*)",
+  ],
 };

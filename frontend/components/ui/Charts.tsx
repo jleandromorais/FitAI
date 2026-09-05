@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { useInView } from "@/hooks/useInView";
 
 interface LineChartProps {
   data: number[];
@@ -9,12 +10,22 @@ interface LineChartProps {
   showDots?: boolean;
   yLabel?: (v: number) => string;
   label?: string;
+  /**
+   * Traça a linha ao entrar na viewport em vez de a mostrar já feita.
+   * Opt-in de propósito: nas telas de Operar (Evolução, Força, Volume) o
+   * número é a tarefa e deve estar lá no instante em que a página abre —
+   * fazer o utilizador esperar por uma animação para ler o seu próprio
+   * treino seria teatro a atrapalhar. Reservado a superfícies de Persuadir,
+   * onde a linha a crescer é o próprio argumento.
+   */
+  drawOnView?: boolean;
 }
 
-export function LineChart({ data, height = 180, color = 'var(--accent)', showDots, yLabel, label }: LineChartProps) {
+export function LineChart({ data, height = 180, color = 'var(--accent)', showDots, yLabel, label, drawOnView }: LineChartProps) {
   // useId() inclui ":" (ex: ":r0:"), inválido em referências url(#id) — remove.
   // Precisa vir antes de qualquer return condicional (Rules of Hooks).
   const gid = `lcg-${useId().replace(/:/g, "")}`;
+  const { ref, inView } = useInView<SVGSVGElement>(0.3);
 
   if (data.length < 2) return null; // precisa de ao menos 2 pontos pra traçar uma linha
 
@@ -25,10 +36,16 @@ export function LineChart({ data, height = 180, color = 'var(--accent)', showDot
   const pts = data.map((v, i) => [padL + i * stepX, padT + (1 - (v - min) / range) * (H - padT - padB)] as [number, number]);
   const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
   const areaPath = path + ` L${pts[pts.length - 1][0]},${H - padB} L${padL},${H - padB} Z`;
-  const fmt = yLabel ?? ((v: number) => v.toString());
+  // Arredonda por defeito: as linhas de grelha caem em terços do intervalo, o
+  // que quase nunca dá inteiro (3200→4750 produz 4233.333333333333). Como o
+  // texto é textAnchor="end" junto à margem esquerda, uma string dessas
+  // transborda para fora do viewBox e aparece cortada a meio ("...33333").
+  // Todos os chamadores menos um já passavam um yLabel que arredondava — o
+  // defeito estava no defeito.
+  const fmt = yLabel ?? ((v: number) => Math.round(v).toString());
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block' }}
       role="img" aria-label={label ?? "Gráfico de evolução"}>
       <defs>
         <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
@@ -51,8 +68,13 @@ export function LineChart({ data, height = 180, color = 'var(--accent)', showDot
           );
         })}
       </g>
-      <path d={areaPath} fill={`url(#${gid})`} />
-      <path d={path} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={areaPath} fill={`url(#${gid})`}
+        className={drawOnView ? "chart-area-fade" : undefined}
+        style={drawOnView ? { opacity: inView ? 1 : 0 } : undefined} />
+      <path d={path} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+        className={drawOnView ? "chart-line-draw" : undefined}
+        pathLength={drawOnView ? 1 : undefined}
+        style={drawOnView ? { strokeDasharray: 1, strokeDashoffset: inView ? 0 : 1 } : undefined} />
       {showDots && pts.map((p, i) => (
         <circle key={i} cx={p[0]} cy={p[1]}
           r={i === pts.length - 1 ? 4.5 : 0}

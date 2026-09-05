@@ -14,7 +14,7 @@ import { useProgress } from "@/hooks/useProgress";
 import { useProgressStats } from "@/hooks/useProgressStats";
 import { useSessions } from "@/hooks/useSessions";
 import { useCountUp } from "@/hooks/useCountUp";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { Workout } from "@/hooks/useWorkouts";
 
 // Só anima a contagem uma vez por sessão de navegador — a 2ª visita ao
@@ -215,10 +215,10 @@ export default function Dashboard() {
     : animatedVolume.toFixed(0);
 
   return (
-    <div className="anim-up">
+    <div className={skipIntro ? undefined : "dash-boot"}>
 
       {/* ── Cabeçalho da página ── */}
-      <div className="page-head">
+      <div className="page-head boot-i" style={{ "--i": 0 } as CSSProperties}>
         <div>
           <div className="h-eyebrow" style={{ marginBottom: 8 }}>
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
@@ -238,7 +238,7 @@ export default function Dashboard() {
           disputando atenção igual. Os outros 3 ficam quietos ao redor, texto
           menor, sem sparkline — apoiam, não competem. */}
       <div className="grid-cols-4" style={{ gap: 16, marginBottom: 24 }}>
-        <div className="card card-accent" style={{ gridColumn: "span 2" }}>
+        <div className="card card-accent boot-i" style={{ gridColumn: "span 2", "--i": 1 } as CSSProperties}>
           <div className="stat-label">{t.dashboard.volumeTotal}</div>
           <div style={{ marginTop: 10 }}>
             <span className="stat-num" style={{ fontSize: 40, ...(volumeCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{volumeDisplay}</span>
@@ -250,7 +250,7 @@ export default function Dashboard() {
         </div>
 
         <div className="col gap-2" style={{ gridColumn: "span 2" }}>
-          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+          <div className="card card-tight row between boot-i" style={{ alignItems: "baseline", "--i": 2 } as CSSProperties}>
             <div className="stat-label">{t.dashboard.treinos}</div>
             <div>
               {/* Mono só enquanto ainda está a contar — assentado, volta pra Space
@@ -259,14 +259,14 @@ export default function Dashboard() {
               <span className="stat-unit"> {t.dashboard.planos}</span>
             </div>
           </div>
-          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+          <div className="card card-tight row between boot-i" style={{ alignItems: "baseline", "--i": 3 } as CSSProperties}>
             <div className="stat-label">{t.dashboard.totalSeries}</div>
             <div>
               <span className="stat-num" style={{ fontSize: 20, ...(setsCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedSets}</span>
               <span className="stat-unit"> {t.dashboard.series}</span>
             </div>
           </div>
-          <div className="card card-tight row between" style={{ alignItems: "baseline" }}>
+          <div className="card card-tight row between boot-i" style={{ alignItems: "baseline", "--i": 4 } as CSSProperties}>
             <div className="stat-label">{t.dashboard.mediaTreino}</div>
             <div>
               <span className="stat-num" style={{ fontSize: 20, ...(avgCount.done ? {} : { fontFamily: "var(--font-mono)" }) }}>{animatedAvg}</span>
@@ -281,7 +281,10 @@ export default function Dashboard() {
         {/* Coluna esquerda */}
         <div className="col-stack">
 
-          {/* Hero: treino em destaque */}
+          {/* Hero: treino em destaque — embrulhado num nó que carrega só a
+              entrada da cascata (boot-i); o próprio cartão mantém o glowPulse
+              ambiente intacto (não podem partilhar a shorthand `animation`). */}
+          <div className="boot-i" style={{ "--i": 5 } as CSSProperties}>
           <div className="card card-accent tech-grid glow-live"
             style={{ padding: 28, position: "relative", overflow: "hidden", animationDelay: skipIntro ? "0s" : "800ms" }}>
             <Image src={heroStrongman} alt="" aria-hidden="true" className="dashboard-hero-figure" />
@@ -340,9 +343,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          </div>
 
           {/* Lista de treinos */}
-          <div>
+          <div className="boot-i" style={{ "--i": 6 } as CSSProperties}>
             <div className="row between" style={{ marginBottom: 12 }}>
               <h3 className="h-display" style={{ fontSize: 18 }}>{t.dashboard.meusTreinos}</h3>
               <Link href="/treinos" style={{ fontSize: 13, color: "var(--text-dim)" }}>{t.dashboard.verTudo}</Link>
@@ -377,7 +381,7 @@ export default function Dashboard() {
               real à IA — vestir isso de "dado computado ao vivo" seria fabricar
               um sinal que o card não tem. Esse vocabulário fica reservado ao
               hero e ao card de PRs, que mostram dado genuinamente real. */}
-          <div className="card">
+          <div className="card boot-i" style={{ "--i": 7 } as CSSProperties}>
             <div className="row gap-2" style={{ marginBottom: 12, alignItems: "center" }}>
               <Sparkles size={16} color="var(--accent)" />
               <h3 className="h-eyebrow" style={{ color: "var(--accent)", margin: 0 }}>{t.dashboard.sugestaoIA}</h3>
@@ -396,7 +400,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recordes pessoais — usa a mesma regra de PR de progresso/page.tsx (delta > 0, com sessão anterior pra comparar) */}
-          <div className="card card-gain" style={{ position: "relative" }}>
+          <div className="card card-gain boot-i" style={{ position: "relative", "--i": 8 } as CSSProperties}>
             <HudCorners color="var(--gain)" size={11} inset={8} />
             <div className="row between" style={{ marginBottom: 14 }}>
               <h3 className="h-eyebrow" style={{ color: "var(--gain)", margin: 0 }}>{t.dashboard.recordesRecentes}</h3>
@@ -419,7 +423,7 @@ export default function Dashboard() {
           </div>
 
           {/* Foco muscular */}
-          <div className="card">
+          <div className="card boot-i" style={{ "--i": 9 } as CSSProperties}>
             <h3 className="h-eyebrow" style={{ marginBottom: 14 }}>{t.dashboard.focoMuscular}</h3>
             {muscleDistribution.length > 0 ? (
               <div className="col gap-3">
