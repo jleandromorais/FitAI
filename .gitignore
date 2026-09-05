@@ -20,3 +20,12 @@ Thumbs.db
 _bmad/
 _bmad-output/
 .claude/
+
+# ── Ferramentas de IA (config/cache local, não é código do produto) ─
+.agents/
+.codex/
+.impeccable/
+.github/agents/
+.github/hooks/
+.github/skills/
+skills-lock.json
