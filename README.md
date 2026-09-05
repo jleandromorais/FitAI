@@ -8,6 +8,24 @@ FitAI é uma aplicação web completa para gestão e acompanhamento de treinos f
 
 ---
 
+## Preview
+
+| Landing page | Login |
+|---|---|
+| ![Landing page do FitAI](docs/screenshots/landing.png) | ![Tela de login do FitAI](docs/screenshots/login.png) |
+
+| Dashboard | Execução de treino |
+|---|---|
+| ![Dashboard do FitAI](docs/screenshots/dashboard.png) | ![Execução de treino ao vivo](docs/screenshots/treino-execucao.png) |
+
+| Progresso | Geração de treino com IA |
+|---|---|
+| ![Gráficos de progresso](docs/screenshots/progresso.png) | ![Gerador de treino com IA](docs/screenshots/ai-gen.png) |
+
+> Imagens ainda não adicionadas. Salve os seus prints em [docs/screenshots/](docs/screenshots/) com esses nomes exatos (`landing.png`, `login.png`, `dashboard.png`, `treino-execucao.png`, `progresso.png`, `ai-gen.png`) e eles aparecem aqui automaticamente — sem precisar editar este arquivo. Para adicionar/remover telas, edite a tabela acima e o nome do arquivo correspondente.
+
+---
+
 ## Stack
 
 | Camada | Tecnologia |
