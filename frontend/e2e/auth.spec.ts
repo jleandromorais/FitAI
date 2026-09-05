@@ -20,8 +20,14 @@ test.describe("Autenticação", () => {
     await expect(page).toHaveURL("/");
   });
 
-  test("bloqueia acesso ao dashboard sem login e redireciona para /login", async ({ page }) => {
+  test("raiz sem login mostra a landing pública (rewrite interno, sem trocar a URL)", async ({ page }) => {
     await page.goto("/");
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("decidido");
+  });
+
+  test("bloqueia acesso a uma rota protegida sem login e redireciona para /login", async ({ page }) => {
+    await page.goto("/perfil");
     await expect(page).toHaveURL(/\/login/);
   });
 });

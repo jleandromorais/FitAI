@@ -7,6 +7,13 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const isPublic = PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + "/"));
 
+  // Raiz sem login: serve a landing pública sem mudar a URL (rewrite, não
+  // redirect) — visitante deslogado vê "/" como a home de marketing;
+  // autenticado continua vendo o Dashboard normalmente na mesma rota.
+  if (!token && pathname === "/") {
+    return NextResponse.rewrite(new URL("/inicio", request.url));
+  }
+
   // Autenticado a tentar aceder ao login → manda para o dashboard
   if (token && isPublic) {
     return NextResponse.redirect(new URL("/", request.url));
