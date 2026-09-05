@@ -41,7 +41,7 @@ O **FitAI** é uma aplicação web completa para gestão e acompanhamento de tre
 
 | Progresso | Geração de treino com IA |
 |---|---|
-| ![Gráficos de progresso](docs/screenshots/progresso.png) | ![Gerador de treino com IA](docs/screenshots/ai-gen.png) |
+| ![Gráficos de progresso](IMGREAD/prog) | ![Gerador de treino com IA](docs/screenshots/ai-gen.png) |
 
 > 💡 **Nota para devs:** Salve os seus *prints* na pasta [`docs/screenshots/`](docs/screenshots/) com os nomes exatos referenciados acima para que sejam renderizados automaticamente.
 
