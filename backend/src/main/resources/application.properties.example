@@ -14,6 +14,8 @@ spring.jpa.show-sql=true
 # Flyway
 spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
+# Deixe true se migrations de branches paralelas puderem chegar fora de ordem.
+spring.flyway.out-of-order=${FLYWAY_OUT_OF_ORDER:true}
 
 # JWT — gere uma chave segura com: openssl rand -base64 64
 jwt.secret=${JWT_SECRET}
