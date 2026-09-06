@@ -33,17 +33,15 @@ O **FitAI** é uma aplicação web completa para gestão e acompanhamento de tre
 
 | Landing page | Login |
 |---|---|
-| ![Landing page do FitAI](IMGREAD/page) | ![Tela de login do FitAI](IMGREAD/login) |
+| ![Landing page do FitAI](docs/screenshots/landing.png) | ![Tela de login do FitAI](docs/screenshots/login.png) |
 
-| Dashboard | Execução de treino |
+| Dashboard | Execução de treino ao vivo |
 |---|---|
-| ![Dashboard do FitAI](IMGREAD/Pagprincipal) | ![Execução de treino ao vivo](docs/screenshots/treino-execucao.png) |
+| ![Dashboard do FitAI](docs/screenshots/dashboard.png) | ![Execução de treino ao vivo](docs/screenshots/treino-execucao.png) |
 
-| Progresso | Geração de treino com IA |
-|---|---|
-| ![Gráficos de progresso](IMGREAD/prog) | ![Gerador de treino com IA](docs/screenshots/ai-gen.png) |
-
-> 💡 **Nota para devs:** Salve os seus *prints* na pasta [`docs/screenshots/`](docs/screenshots/) com os nomes exatos referenciados acima para que sejam renderizados automaticamente.
+| Evolução de carga |
+|---|
+| ![Gráficos de evolução de carga e volume](docs/screenshots/progresso.png) |
 
 ---
 
