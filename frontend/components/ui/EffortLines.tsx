@@ -35,6 +35,8 @@ export default function EffortLines() {
       ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    let visivel = true;
+
     resize();
     window.addEventListener("resize", resize);
 
@@ -59,12 +61,27 @@ export default function EffortLines() {
         ctx.lineWidth = c.width;
         ctx.stroke();
       }
-      if (!reduceMotion) frameId = requestAnimationFrame(draw);
+      if (!reduceMotion && visivel) frameId = requestAnimationFrame(draw);
     }
     draw(0);
 
+    // Sem isto o canvas continuava a repintar-se a 60fps depois de o hero
+    // sair do ecrã — trabalho de pintura em tela cheia que ninguém vê, ao
+    // longo do resto da página. Medido: ~7fps de diferença no scroll.
+    const io = new IntersectionObserver(([e]) => {
+      visivel = e.isIntersecting;
+      if (visivel && !reduceMotion) {
+        cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(draw);
+      } else {
+        cancelAnimationFrame(frameId);
+      }
+    });
+    io.observe(canvas);
+
     return () => {
       window.removeEventListener("resize", resize);
+      io.disconnect();
       cancelAnimationFrame(frameId);
     };
   }, []);
