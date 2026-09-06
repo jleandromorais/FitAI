@@ -196,17 +196,17 @@ export default function CalendarioPage() {
           <div className="h-eyebrow" style={{ marginBottom: 16 }}>{formatMonth(baseDate, dateLocale)}</div>
 
           {/* Cabeçalho dos dias da semana */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4, marginBottom: 4 }}>
             {t.diasCalendario.map(d => (
               <div key={d} style={{
-                fontSize: 9, color: "var(--text-mute)", textAlign: "center",
+                fontSize: 10, color: "var(--text-mute)", textAlign: "center",
                 fontWeight: 700, letterSpacing: "0.06em",
               }}>{d}</div>
             ))}
           </div>
 
           {/* Grade de dias */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
 
             {/* Células vazias antes do 1.º dia */}
             {Array.from({ length: offset }).map((_, i) => (
