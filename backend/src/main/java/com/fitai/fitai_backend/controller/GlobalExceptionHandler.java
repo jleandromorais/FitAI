@@ -1,6 +1,7 @@
 package com.fitai.fitai_backend.controller;
 
 import com.fitai.fitai_backend.exception.ResourceNotFoundException;
+import com.fitai.fitai_backend.exception.TooManyRequestsException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Erro de negócio: {}", ex.getMessage());
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, String>> handleTooManyRequests(TooManyRequestsException ex) {
+        log.warn("Limite de requisições excedido: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "3600")
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

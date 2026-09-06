@@ -6,6 +6,7 @@ import com.fitai.fitai_backend.dto.WorkoutRequest;
 import com.fitai.fitai_backend.event.WorkoutGenerationEventPublisher;
 import com.fitai.fitai_backend.event.WorkoutGenerationResultEvent;
 import com.fitai.fitai_backend.exception.ResourceNotFoundException;
+import com.fitai.fitai_backend.exception.TooManyRequestsException;
 import com.fitai.fitai_backend.model.JobStatus;
 import com.fitai.fitai_backend.model.User;
 import com.fitai.fitai_backend.model.WorkoutGenerationJob;
@@ -101,6 +102,19 @@ class WorkoutGenerationServiceTest {
 
         // Uma vez pra salvar PENDING, outra pra atualizar pra FAILED
         verify(jobRepository, times(2)).save(any(WorkoutGenerationJob.class));
+    }
+
+    @Test
+    void enqueue_cotaPorJanelaExcedida_lancaTooManyRequestsSemSalvarNemPublicar() {
+        when(userRepository.findByEmail("ana@test.com")).thenReturn(Optional.of(user));
+        when(jobRepository.countByUserEmailAndCreatedAtAfter(eq("ana@test.com"), any()))
+                .thenReturn(10L);
+
+        assertThatThrownBy(() -> service.enqueue(request(), "ana@test.com"))
+                .isInstanceOf(TooManyRequestsException.class);
+
+        verify(jobRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test

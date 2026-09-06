@@ -10,6 +10,7 @@ import com.fitai.fitai_backend.event.WorkoutGenerationEventPublisher;
 import com.fitai.fitai_backend.event.WorkoutGenerationRequestedEvent;
 import com.fitai.fitai_backend.event.WorkoutGenerationResultEvent;
 import com.fitai.fitai_backend.exception.ResourceNotFoundException;
+import com.fitai.fitai_backend.exception.TooManyRequestsException;
 import com.fitai.fitai_backend.model.JobStatus;
 import com.fitai.fitai_backend.model.User;
 import com.fitai.fitai_backend.model.WorkoutGenerationJob;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +35,13 @@ public class WorkoutGenerationService {
 
     private static final String GENERIC_FAILURE_MESSAGE =
             "Não foi possível iniciar a geração de treino. Tente novamente.";
+
+    // Cota por usuário: cada enqueue dispara uma chamada paga à Groq no worker,
+    // então sem teto um único usuário autenticado esgota a cota/orçamento num
+    // loop. Janela deslizante contada no banco (ver repository) — não é o
+    // RateLimitFilter por IP, que só cobre /auth/**.
+    private static final int MAX_JOBS_PER_WINDOW = 10;
+    private static final Duration RATE_LIMIT_WINDOW = Duration.ofHours(1);
 
     private final WorkoutGenerationJobRepository jobRepository;
     private final UserRepository userRepository;
@@ -62,6 +71,13 @@ public class WorkoutGenerationService {
                 });
 
         LocalDateTime now = LocalDateTime.now();
+
+        long recentJobs = jobRepository.countByUserEmailAndCreatedAtAfter(email, now.minus(RATE_LIMIT_WINDOW));
+        if (recentJobs >= MAX_JOBS_PER_WINDOW) {
+            log.warn("Cota de geração de treino excedida: email={}, jobs na última {}={}", email, RATE_LIMIT_WINDOW, recentJobs);
+            throw new TooManyRequestsException("Limite de gerações de treino atingido. Tente novamente mais tarde.");
+        }
+
         WorkoutGenerationJob job = WorkoutGenerationJob.builder()
                 .user(user)
                 .status(JobStatus.PENDING)
