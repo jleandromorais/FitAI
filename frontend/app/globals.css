@@ -76,6 +76,12 @@ body {
   overflow-y: auto;
   max-height: 100vh;
 }
+/* Monitores muito largos (>2000px): em vez de esticar o conteúdo por 2500px
+   de largura, dá-lhe um limite de leitura confortável e centra-o no espaço
+   livre à direita da sidebar. Abaixo disto nada muda. */
+@media (min-width: 2000px) {
+  .content { max-width: 1760px; margin-inline: auto; }
+}
 
 /* ─── SIDEBAR ─────────────────────────────────────────────────────── */
 .sidebar {
@@ -288,6 +294,23 @@ body {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 28px;
+  /* Envolve por defeito: em ecrã estreito o título e os botões de ação não
+     cabem lado a lado e o bloco de ações era empurrado para fora da direita
+     (visto em /treinos e /calendario a 320px). Em ecrã largo há espaço de
+     sobra e nunca chega a quebrar. */
+  flex-wrap: wrap;
+}
+.page-actions { flex-wrap: wrap; }
+
+@media (max-width: 600px) {
+  .page-title { font-size: 28px; }
+}
+@media (max-width: 380px) {
+  /* Dois botões de ação lado a lado não cabem abaixo de ~360px; passam a
+     ocupar a largura toda, um por linha. */
+  .page-actions { width: 100%; }
+  .page-actions > .btn,
+  .page-actions > a.btn { flex: 1 1 100%; justify-content: center; }
 }
 .page-title {
   font-family: var(--font-display);
@@ -580,33 +603,41 @@ body {
 .input-with-icon .input { padding-left: 38px; }
 
 /* ─── LAYOUT GRIDS ────────────────────────────────────────────────── */
+/* Todas as colunas fluidas usam `minmax(0, 1fr)`, nunca `1fr` cru. `1fr` é
+   `minmax(auto, 1fr)`, e o `auto` deixa um filho que não encolhe (um `.chip`
+   com `white-space: nowrap`, uma palavra longa, uma imagem) esticar a coluna
+   para além da viewport — foi o que cortava o card de /perfil a 320px. Também
+   `min-width: 0` nos filhos diretos, que é a mesma correção do lado flex. */
 .grid-3 {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 20px;
   align-items: start;
 }
+.grid-3 > * { min-width: 0; }
 
 /* Grids de N colunas iguais usados em cards de stats/listas pelo dashboard —
    nenhum tinha regra pra telas estreitas antes; sem isso, colunas fixas
    (repeat(4,1fr) etc) ficam ilegíveis/espremidas em qualquer celular. */
-.grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); }
-.grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); }
-.grid-cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); }
+.grid-cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 @media (max-width: 900px) {
-  .grid-3 { grid-template-columns: 1fr; }
-  .grid-cols-3, .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .grid-cols-3, .grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .grid-cols-2, .grid-cols-3, .grid-cols-4 { grid-template-columns: 1fr; }
+  .grid-cols-2, .grid-cols-3, .grid-cols-4 { grid-template-columns: minmax(0, 1fr); }
 }
 
 .col-stack {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
+.col-stack > * { min-width: 0; }
 
 .row {
   display: flex;
@@ -652,9 +683,16 @@ body {
   background: var(--bg);
   padding: 24px;
 }
+@media (max-width: 380px) {
+  .auth-page { padding: 16px 12px; }
+}
 .auth-card {
   width: 100%;
   max-width: 420px;
+  min-width: 0;
+  /* Rede de segurança para ecrãs muito estreitos (Galaxy Fold fechado, ~280px):
+     nada dentro do cartão de login pode forçar largura maior que a viewport. */
+  overflow-wrap: break-word;
 }
 
 .auth-brand {

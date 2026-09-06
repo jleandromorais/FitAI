@@ -219,7 +219,7 @@ export default function PerfilPage() {
               <div role="alert" style={{
                 marginTop: 16, padding: "10px 14px", borderRadius: 10,
                 background: "rgba(255,59,48,0.1)", border: "1px solid rgba(255,59,48,0.3)",
-                display: "flex", alignItems: "center", gap: 10, fontSize: 13,
+                display: "flex", alignItems: "center", gap: 10, fontSize: 13, flexWrap: "wrap",
               }}>
                 <AlertCircle size={16} color="var(--danger)" />
                 <span style={{ color: "var(--danger)" }}>{t.perfil.erroCarregar}</span>

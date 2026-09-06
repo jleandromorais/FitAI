@@ -152,7 +152,7 @@ function LoginForm() {
       {/* ── Coluna direita: formulário ── */}
       <div style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "48px 32px",
+        padding: "clamp(24px, 8vw, 48px) clamp(16px, 6vw, 32px)",
       }}>
         <div className="anim-up" style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 24 }}>
 
