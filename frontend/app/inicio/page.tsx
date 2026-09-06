@@ -25,6 +25,20 @@ function useRichMotion() {
   );
 }
 
+// Só prefers-reduced-motion — sem o teste de ponteiro. O SmoothScroll e o
+// parallax continuam a exigir ponteiro fino (são mesmo maus ao toque), mas o
+// vídeo do hero não: depois de a graduação sair para dentro do ficheiro
+// (720 KB, zero filtro por frame) não há razão de peso para o esconder no
+// telemóvel. Um vídeo em loop ainda é movimento, por isso reduced-motion
+// continua a valer.
+function useReducedMotion() {
+  return useSyncExternalStore(
+    subscribeToMotionPrefs,
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
+}
+
 // Scroll com inércia (técnica de github.com/naocodei — "o conteúdo persegue
 // a posição da rolagem em vez de saltar pra ela"), em JS puro, sem lib.
 // O documento real ganha um spacer com a altura do conteúdo (mantém a
@@ -88,12 +102,13 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Como o <video> só é criado depois do gate, no celular o ficheiro nunca
-// chega a ser pedido. Decorativo: aria-hidden, mudo, fora do foco.
+// Aparece em qualquer ecrã; só sai com prefers-reduced-motion. Decorativo:
+// aria-hidden, mudo, fora do foco. preload="metadata" para não puxar o
+// ficheiro inteiro à força em ligações móveis — o autoplay trata do resto.
 function HeroVideo() {
-  const enabled = useRichMotion();
+  const semMovimento = useReducedMotion();
 
-  if (!enabled) return null;
+  if (semMovimento) return null;
 
   return (
     <div className="landing-hero-video-layer" aria-hidden="true">
@@ -104,7 +119,7 @@ function HeroVideo() {
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
         tabIndex={-1}
       />
       <div className="landing-hero-video-scrim" />

@@ -1010,6 +1010,11 @@ body {
   justify-content: space-between;
   align-items: flex-end;
   width: 100%;
+  /* Trava a largura do conteúdo e centra-o. Sem isto, num ecrã de 2560px o
+     headline cola-se à esquerda e o card à direita com ~1400px de vazio no
+     meio — o vídeo continua full-bleed atrás, só o texto é que se reagrupa. */
+  max-width: 1680px;
+  margin-inline: auto;
   gap: clamp(24px, 4vw, 48px);
   padding: clamp(28px, 4vw, 56px);
 }
@@ -1279,6 +1284,19 @@ body {
 @media (max-width: 900px) {
   .landing-feature-grid { grid-template-columns: 1fr 1fr; }
 }
+/* Telas baixas (telemóvel deitado, ~390px de altura): a regra de largura
+   abaixo não é acionada porque a largura passa dos 760px, e o hero herdava o
+   layout de ecrã grande — headline cortado, obrigando a rolar. Aqui o hero
+   passa a ter a altura do próprio conteúdo. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .landing-hero-outer { min-height: auto; padding: 68px 16px 16px; }
+  .landing-hero { min-height: auto; align-items: stretch; }
+  .landing-hero-bottom { flex-direction: column; align-items: stretch; gap: 18px; }
+  .landing-hero-content { max-width: 100%; }
+  .landing-hero-demo { width: 100%; }
+  .landing-h1 { font-size: clamp(26px, 4.5vw, 34px); }
+}
+
 @media (max-width: 760px) {
   .landing-hero-outer { min-height: auto; padding: 84px 14px 14px; }
   .landing-hero { min-height: calc(100svh - 98px); align-items: stretch; }
@@ -1290,6 +1308,12 @@ body {
 }
 @media (max-width: 560px) {
   .landing-nav-link { display: none; }
+  /* headline de 5-6 linhas + lede longa empurravam o card de demonstração
+     quase uma tela inteira pra baixo. Aperta o ritmo vertical sem esconder
+     nada. */
+  .landing-h1 { font-size: 30px; margin-bottom: 14px; }
+  .landing-lede { font-size: 15px; margin-bottom: 22px; }
+  .landing-hero-bottom { gap: 20px; }
 }
 
 /* Revela cada .landing-reveal quando entra na viewport (IntersectionObserver
