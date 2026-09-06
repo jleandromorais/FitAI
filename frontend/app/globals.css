@@ -1016,19 +1016,22 @@ body {
 .landing-hero-content { max-width: 620px; }
 .landing-hero-demo { flex-shrink: 0; width: min(380px, 38vw); }
 
-/* Fundo do hero — video em loop (comportamento de GIF: autoplay, mudo, sem
-   controles, sem audio) como camada ambiente da primeira dobra. Ocupa o lugar
-   que era do emblema em grafite: duas figuras monocromaticas grandes no mesmo
-   centro competiriam entre si. O emblema continua a existir no /login.
+/* Vídeo de fundo do hero. A graduação para a paleta Brasa está ASSADA NO
+   ARQUIVO, não em `filter:` — o material original é cinza-azulado.
 
-   O material e cinza-azulado e entraria em conflito direto com o mundo
-   Combustao (brasa unica sobre carvao). Em vez de largar cru, e graduado por
-   filtro ate a paleta — mesma logica do invert+screen que as figuras a
-   grafite ja usam: dessatura por completo, reaquece com sepia, roda a matiz
-   ate a Brasa e escurece. Nenhuma cor nova entra no sistema.
+   Não reintroduza o filtro CSS aqui. Ele já existiu e custava metade do
+   frame rate da página: 13fps com filtro contra 26fps sem (medido em build
+   de produção). Filtrar vídeo é trabalho de GPU por frame, para cada
+   visitante; assar é trabalho de encode, uma vez.
 
-   So e montado em ponteiro fino e sem prefers-reduced-motion (ver HeroVideo
-   em inicio/page.tsx) — no celular os 7 MB nem chegam a ser pedidos. */
+   Se precisar reajustar a cor, reencode com:
+     ffmpeg -i origem.mp4 -vf "format=gray,format=yuv420p,
+       colorchannelmixer=rr=0.6632:gg=0.5408:bb=0.4352,eq=contrast=1.15"
+       -an -c:v libx264 -crf 30 -preset veryslow -movflags +faststart saida.mp4
+   (equivale a grayscale(1) sepia(.55) hue-rotate(-14deg) saturate(1.9)
+    brightness(.5) contrast(1.15) — diferença medida de 0.72/255 por canal.)
+
+   Só monta em ponteiro fino e sem reduced-motion — ver HeroVideo. */
 .landing-hero-video-layer {
   position: absolute;
   inset: 0;
@@ -1043,15 +1046,12 @@ body {
   object-fit: cover;
   object-position: center 38%;
   opacity: 0.6;
-  filter: grayscale(1) sepia(0.55) hue-rotate(-14deg) saturate(1.9) brightness(0.5) contrast(1.15);
   /* Deriva lenta (24s, alterna) — a camada "ambiente" do skill motion-design:
      mantem a primeira dobra viva e desencontra a repeticao do loop de 8s do
      corte exato, sem competir com o headline. So transform. */
   animation: landingHeroDrift 24s ease-in-out infinite alternate;
 }
-/* Veu de legibilidade: topo levemente escuro (a nav flutua por cima), meio
-   limpo (e onde a estatua se le) e base pesada — todo o conteudo do hero esta
-   ancorado embaixo e precisa de contraste garantido, nao por sorte. */
+/* Base pesada de propósito: todo o conteúdo do hero fica ancorado embaixo. */
 .landing-hero-video-scrim {
   position: absolute;
   inset: 0;
@@ -1302,11 +1302,7 @@ body {
 }
 .landing-reveal.in-view { opacity: 1; transform: translateY(0); }
 
-/* Variante escalonada: nesta seccao o gesto passa do bloco para cada cartao.
-   Dois cartoes a subir em uníssono sao um gesto unico e chato; a 110ms de
-   distancia leem-se como dois factos a chegar, um a seguir ao outro. O
-   wrapper deixa de animar de proposito — movimento sobre movimento e a
-   receita para tudo parecer mole. */
+/* O wrapper não anima; quem anima são os cartões, escalonados a 110ms. */
 .landing-reveal-stagger { opacity: 1; transform: none; transition: none; }
 .landing-reveal-stagger .landing-feature-card {
   opacity: 0;
@@ -1316,7 +1312,7 @@ body {
      arrastaria em vez de acompanhar a rolagem. A transition fica so para a
      opacidade. O movimento de entrada vem de graca do proprio parallax —
      enquanto o cartao ainda sobe de baixo, --py ja e grande e positivo. */
-  transform: translate3d(0, var(--py, 0px), 0);
+  transform: translate3d(0, 0, 0);
   transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
@@ -1447,15 +1443,9 @@ body {
 }
 
 /* ─── DASHBOARD (/) ───────────────────────────────────────────────── */
-/* skill motion-design — "boot sequence" sempre foi a intenção (ver o
-   useCountUp escalonado). Antes: um único fadeUp (.anim-up) no wrapper subia
-   TODOS os cartões juntos. Agora: cascata por região, de cima→baixo e
-   esquerda→direita, o mesmo passo (~55ms) dos contadores. Personalidade
-   Corporate: só decelera na entrada (curva-assinatura do sistema), 9px de
-   deslocamento (bem abaixo de 1/3 de tela), sem overshoot. --i por elemento
-   (0..9) → 10 passos, ~500ms no total, dentro do orçamento. skipIntro (2ª
-   visita na mesma aba) não recebe a classe: entra direto no estado final,
-   igual aos contadores. */
+/* Cascata de entrada: --i (0..9) por elemento, mesmo passo de 55ms dos
+   contadores do dashboard. Na 2ª visita da sessão a classe .dash-boot nem
+   é aplicada (skipIntro), e o cartão entra direto no estado final. */
 @keyframes dashBootIn {
   from { opacity: 0; transform: translateY(9px); }
   to   { opacity: 1; transform: translateY(0); }

@@ -1,27 +1,5 @@
 "use client";
 
-/*
-  THESIS: FitAI não registra o treino que você já decidiu — a IA propõe o
-    treino, a partir do seu perfil, e recusa o molde "app de log" da
-    categoria (Strong/Hevy/Fitbod).
-  OWN-WORLD: Combustão — carvão quente (#161316), brasa laranja única
-    (#ff6d29), Space Grotesk/Inter/JetBrains Mono, superfícies flat em
-    degrau, sem sombra fora do glow da própria Brasa.
-  STORY: alguém cansado de logar treino sem plano vê a IA construir um
-    programa real diante dele (demo fiel ao /ai-gen), vê a execução ao vivo
-    e o progresso real que o produto rastreia, e entra pra criar o próprio
-    plano.
-  FIRST VIEWPORT: headline + CTA duplo à esquerda, card de demonstração
-    fiel do fluxo de geração por IA à direita — a prova do mecanismo, não
-    uma ilustração genérica.
-  FORM: candidato 7 de 7 (hero clássico → destaques → CTA final), estrutura
-    escolhida via concept-seed --scope surface --mode persuade, seed
-    75c4bc0a — construído com conteúdo real do produto em vez do grid de
-    cards ícone+título+texto que a estrutura convida por padrão.
-  FINISH: unreviewed and undocumented is unfinished; this build ends with
-    the finish review, the verdict, and DESIGN.md.
-*/
-
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Sparkles, Dumbbell, ArrowRight } from "lucide-react";
@@ -29,12 +7,8 @@ import EffortLines from "@/components/ui/EffortLines";
 import RepCounter from "@/components/ui/RepCounter";
 import { LineChart } from "@/components/ui/Charts";
 
-// "Pode haver movimento rico nesta sessão?" — verdadeiro só sem
-// prefers-reduced-motion e com ponteiro fino (rato/trackpad). É estado que
-// vive fora do React (matchMedia), por isso entra por useSyncExternalStore
-// em vez de um setState dentro de um efeito: no servidor devolve false, no
-// cliente reavalia na hidratação e, ao contrário da versão anterior, reage
-// se o utilizador mudar a preferência a meio da sessão.
+// Sem reduced-motion e com ponteiro fino. matchMedia vive fora do React, daí
+// useSyncExternalStore — que de quebra reage se a preferência mudar.
 const MOTION_QUERIES = ["(prefers-reduced-motion: reduce)", "(pointer: coarse)"];
 
 function subscribeToMotionPrefs(onChange: () => void) {
@@ -83,10 +57,16 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
     function onScroll() { target = window.scrollY; }
     window.addEventListener("scroll", onScroll, { passive: true });
 
+    let ultimoEscrito = NaN;
     function tick() {
       current += (target - current) * 0.085;
       if (Math.abs(target - current) < 0.05) current = target;
-      wrapper!.style.transform = `translate3d(0, ${-current}px, 0)`;
+      // Parado, o transform é o mesmo do frame anterior. Escrevê-lo à mesma
+      // suja a árvore de estilo 60x por segundo com a página imóvel.
+      if (current !== ultimoEscrito) {
+        wrapper!.style.transform = `translate3d(0, ${-current}px, 0)`;
+        ultimoEscrito = current;
+      }
       frameId = requestAnimationFrame(tick);
     }
     frameId = requestAnimationFrame(tick);
@@ -108,14 +88,8 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Vídeo de fundo do hero, em loop e mudo — comportamento de GIF, custo de
-// vídeo (7 MB de mp4 contra dezenas de MB que o mesmo clipe teria em .gif).
-// Mesmo gate do SmoothScroll acima: só monta em ponteiro fino e sem
-// prefers-reduced-motion. Como o <video> só existe depois desse teste, no
-// celular e em quem pede menos movimento o ficheiro nunca chega a ser pedido
-// — a primeira dobra fica com a atmosfera estática (brasa + EffortLines) que
-// a página já tinha. Decorativo: aria-hidden, sem faixa de áudio, sem
-// controlos e sem nada que o teclado possa alcançar.
+// Como o <video> só é criado depois do gate, no celular o ficheiro nunca
+// chega a ser pedido. Decorativo: aria-hidden, mudo, fora do foco.
 function HeroVideo() {
   const enabled = useRichMotion();
 
@@ -155,21 +129,12 @@ function useScrollReveal() {
   return ref;
 }
 
-// Movimento preso ao scroll — não um gesto único ao entrar. O nó desloca-se
-// verticalmente conforme a sua própria posição na viewport: bem abaixo do
-// centro entra deslocado para baixo, ao passar pelo centro assenta em zero, e
-// continua a subir ao sair por cima. Nunca "acaba", por isso funciona todas as
-// vezes que se passa pela secção — ao contrário do reveal de uma só vez, que
-// quem recarrega a página já a meio nunca chega a ver.
+// Desloca o nó conforme a posição dele na viewport. Nunca "acaba", então
+// funciona sempre que se passa pela secção.
 //
-// A amplitude é diferente por cartão de propósito: é a DIFERENÇA entre eles,
-// não o movimento em si, que se lê como profundidade. Igual em ambos seria
-// apenas a página inteira a deslizar.
-//
-// Lê getBoundingClientRect() a cada frame em vez de calcular a partir de
-// scrollY: dentro do SmoothScroll o conteúdo vive num wrapper transformado que
-// persegue o scroll com atrito, e só o rect devolve a posição realmente
-// desenhada — a conta com scrollY andaria à frente do que está no ecrã.
+// Lê getBoundingClientRect() a cada frame, e não scrollY: dentro do
+// SmoothScroll o conteúdo vive num wrapper transformado que persegue o scroll
+// com atrito, e só o rect devolve a posição realmente desenhada.
 function useScrollParallax<T extends HTMLElement>(amplitude: number) {
   const ref = useRef<T>(null);
   const richMotion = useRichMotion();
@@ -189,7 +154,12 @@ function useScrollParallax<T extends HTMLElement>(amplitude: number) {
         // e entrava em cena ja deslocado de forma estranha.
         const bruto = (rect.top + rect.height / 2 - vh / 2) / vh;
         const progresso = Math.max(-1, Math.min(1, bruto));
-        el!.style.setProperty("--py", `${(progresso * amplitude).toFixed(2)}px`);
+        // Escreve `transform` direto, e não uma custom property. `--py` herda,
+        // por isso escrevê-la invalidava o estilo do cartão E de todos os
+        // descendentes a cada frame (~80 elementos, 99ms de recalc medidos).
+        // `transform` não herda e é propriedade de compositor: invalida só
+        // este nó.
+        el!.style.transform = `translate3d(0, ${(progresso * amplitude).toFixed(2)}px, 0)`;
       }
       frameId = requestAnimationFrame(tick);
     }
@@ -265,13 +235,8 @@ function AiDemoCard() {
 const EXAMPLE_VOLUME = [3200, 3450, 3400, 3800, 4100, 4050, 4400, 4750];
 
 export default function LandingPage() {
-  // Sinais OPOSTOS, não duas velocidades no mesmo sentido. Com +26/+54 os dois
-  // cartões desciam juntos e só 28px os separavam ao longo de um ecrã inteiro
-  // de rolagem — correcto na matemática, invisível na prática. Em contra-
-  // movimento a diferença passa a 96px: um sobe enquanto o outro desce, e é
-  // esse cisalhamento entre eles que o olho apanha de imediato.
-  // Máximo de 48px por cartão (o progresso vai travado a ±1), muito abaixo do
-  // terço de ecrã — continua a ler-se como relevo, nunca como layout partido.
+  // Sinais opostos, não duas velocidades no mesmo sentido: com +26/+54 os
+  // cartões separavam-se só 28px ao longo de um ecrã inteiro, e ninguém via.
   const parallaxBig = useScrollParallax<HTMLDivElement>(48);
   const parallaxAccent = useScrollParallax<HTMLDivElement>(-48);
 

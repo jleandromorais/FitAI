@@ -11,12 +11,8 @@ interface LineChartProps {
   yLabel?: (v: number) => string;
   label?: string;
   /**
-   * Traça a linha ao entrar na viewport em vez de a mostrar já feita.
-   * Opt-in de propósito: nas telas de Operar (Evolução, Força, Volume) o
-   * número é a tarefa e deve estar lá no instante em que a página abre —
-   * fazer o utilizador esperar por uma animação para ler o seu próprio
-   * treino seria teatro a atrapalhar. Reservado a superfícies de Persuadir,
-   * onde a linha a crescer é o próprio argumento.
+   * Traça a linha ao entrar na viewport. Opt-in: nas telas de Operar o número
+   * é a tarefa e tem de estar lá quando a página abre.
    */
   drawOnView?: boolean;
 }

@@ -12,12 +12,9 @@ const TOTAL_SETS = 4;
 export default function RepCounter() {
   const [rep, setRep] = useState(1);
   const [set, setSet] = useState(1);
-  // A contagem só arranca quando o contador está mesmo à vista. Preso ao
-  // mount, numa página longa como a /inicio ele corria desde o carregamento,
-  // três dobras acima: quem rolava até aqui apanhava-o a meio de uma série
-  // qualquer e nunca via a série começar — além do intervalo a queimar a cada
-  // 650ms sem ninguém a olhar. No /login o nó já está visível de imediato,
-  // por isso lá o comportamento não muda.
+  // Preso ao mount, na /inicio isto corria desde o carregamento três
+  // dobras acima e ninguém via a série começar. No /login não muda nada:
+  // o nó já está visível.
   const { ref, inView } = useInView<HTMLDivElement>(0.4);
 
   useEffect(() => {
